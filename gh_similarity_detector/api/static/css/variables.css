@@ -1,0 +1,42 @@
+:root {
+  --mm-bg: 0 0% 100%;
+  --mm-bg-secondary: 210 20% 98%;
+  --mm-bg-card: 0 0% 100%;
+  --mm-border: 214 32% 91%;
+  --mm-border-hover: 214 32% 80%;
+  --mm-text: 222 47% 11%;
+  --mm-text-muted: 215 16% 47%;
+  --mm-text-secondary: 220 14% 71%;
+  --mm-primary: 262 83% 58%;
+  --mm-primary-hover: 263 70% 50%;
+  --mm-primary-foreground: 0 0% 100%;
+  --mm-secondary: 220 14% 96%;
+  --mm-secondary-hover: 220 13% 91%;
+  --mm-destructive: 0 84% 60%;
+  --mm-success: 142 71% 45%;
+  --mm-warning: 38 92% 50%;
+  --mm-accent: 220 14% 96%;
+  --mm-ring: 262 83% 58%;
+  --mm-radius: 0.5rem;
+}
+
+.dark {
+  --mm-bg: 224 71% 4%;
+  --mm-bg-secondary: 222 47% 11%;
+  --mm-bg-card: 224 71% 6%;
+  --mm-border: 215 28% 17%;
+  --mm-border-hover: 215 28% 27%;
+  --mm-text: 213 31% 91%;
+  --mm-text-muted: 215 20% 65%;
+  --mm-text-secondary: 217 17% 49%;
+  --mm-primary: 263 70% 50%;
+  --mm-primary-hover: 263 70% 62%;
+  --mm-primary-foreground: 0 0% 100%;
+  --mm-secondary: 222 47% 11%;
+  --mm-secondary-hover: 217 33% 17%;
+  --mm-destructive: 0 63% 55%;
+  --mm-success: 142 61% 40%;
+  --mm-warning: 38 75% 55%;
+  --mm-accent: 222 47% 11%;
+  --mm-ring: 263 70% 50%;
+}

@@ -1,0 +1,73 @@
+@layer base {
+  * {
+    border-color: hsl(var(--mm-border));
+  }
+  body {
+    background-color: hsl(var(--mm-bg));
+    color: hsl(var(--mm-text));
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  .bg-card {
+    background-color: hsl(var(--mm-bg-card));
+  }
+  .bg-muted {
+    background-color: hsl(var(--mm-bg-secondary));
+  }
+  .text-muted-foreground {
+    color: hsl(var(--mm-text-muted));
+  }
+  .text-foreground {
+    color: hsl(var(--mm-text));
+  }
+  .text-card-foreground {
+    color: hsl(var(--mm-text));
+  }
+  .text-primary {
+    color: hsl(var(--mm-primary));
+  }
+  .text-primary-foreground {
+    color: hsl(var(--mm-primary-foreground));
+  }
+  .bg-primary {
+    background-color: hsl(var(--mm-primary));
+  }
+  .bg-primary-hover,
+  .hover\:bg-primary-hover:hover {
+    background-color: hsl(var(--mm-primary-hover));
+  }
+  .bg-secondary {
+    background-color: hsl(var(--mm-secondary));
+  }
+  .bg-destructive {
+    background-color: hsl(var(--mm-destructive));
+  }
+  .border-border {
+    border-color: hsl(var(--mm-border));
+  }
+  .bg-accent {
+    background-color: hsl(var(--mm-accent));
+  }
+  .ring-ring {
+    --tw-ring-color: hsl(var(--mm-ring));
+  }
+  .bg-primary\/10 {
+    background-color: hsl(var(--mm-primary) / 0.1);
+  }
+  .bg-destructive\/10 {
+    background-color: hsl(var(--mm-destructive) / 0.1);
+  }
+  .shadow-sm {
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  }
+  .shadow-md {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
+  .backdrop-blur-lg {
+    backdrop-filter: blur(16px);
+  }
+}

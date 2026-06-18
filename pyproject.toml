@@ -1,0 +1,119 @@
+[tool.poetry]
+name = "gh-similarity-detector"
+version = "1.0.0"
+description = "GitHub 项目代码相似度检测工具 - 用于自我审视和抄袭溯源"
+authors = ["ModuleMirror Team <modulemirror@example.com>"]
+license = "MIT"
+readme = "README.md"
+packages = [{include = "gh_similarity_detector"}]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Security",
+    "Topic :: Utilities",
+]
+keywords = ["code-similarity", "clone-detection", "plagiarism", "winnowing", "fingerprint"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+tree-sitter = "^0.25.0"
+tree-sitter-python = "^0.23.0"
+tree-sitter-java = "^0.23.0"
+tree-sitter-javascript = "^0.23.0"
+tree-sitter-typescript = "^0.23.0"
+httpx = "^0.24.0"
+tenacity = "^8.2.0"
+click = "^8.1.0"
+rich = "^13.3.0"
+jinja2 = "^3.1.0"
+markupsafe = "^2.1"
+pyyaml = "^6.0"
+numpy = "^1.24"
+prometheus-client = "^0.17"
+PyJWT = "^2.8"
+fastapi = {version = "^0.95.0", optional = true}
+uvicorn = {version = "^0.22.0", optional = true}
+slowapi = {version = "^0.1.9", optional = true}
+opentelemetry-api = {version = "^1.20", optional = true}
+opentelemetry-sdk = {version = "^1.20", optional = true}
+asyncpg = {version = "^0.29", optional = true}
+keyring = {version = "^25.0", optional = true}
+tree-sitter-go = {version = "^0.23.0", optional = true}
+tree-sitter-rust = {version = "^0.23.0", optional = true}
+tree-sitter-c = {version = "^0.23.0", optional = true}
+tree-sitter-cpp = {version = "^0.23.0", optional = true}
+tree-sitter-kotlin = {version = "^0.23.0", optional = true}
+tree-sitter-scala = {version = "^0.23.0", optional = true}
+tree-sitter-php = {version = "^0.23.0", optional = true}
+tree-sitter-ruby = {version = "^0.23.0", optional = true}
+tree-sitter-swift = {version = "^0.23.0", optional = true}
+datasketch = "^1.6.0"
+pyvis = {version = "^0.3.1", optional = true}
+faiss-cpu = {version = "^1.7.0", optional = true}
+sse-starlette = {version = "^2.0.0", optional = true}
+pyecharts = {version = "^2.0.0", optional = true}
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^7.3.0"
+pytest-asyncio = "^0.21.0"
+pytest-cov = "^4.0.0"
+pytest-xdist = "^3.3.0"
+hypothesis = "^6.78.0"
+black = "^23.3.0"
+ruff = "^0.0.265"
+mypy = "^1.2.0"
+bandit = "^1.7.0"
+mkdocs = {version = "^1.5.0", optional = true}
+mkdocs-material = {version = "^9.5.0", optional = true}
+mkdocs-git-revision-date-localized-plugin = {version = "^1.2.0", optional = true}
+mkdocs-minify-plugin = {version = "^0.7.0", optional = true}
+scalene = {version = "^1.5.0", optional = true}
+memray = {version = "^1.7.0", optional = true}
+
+[tool.poetry.extras]
+api = ["fastapi", "uvicorn", "slowapi"]
+otel = ["opentelemetry-api", "opentelemetry-sdk"]
+postgres = ["asyncpg"]
+security = ["keyring", "PyJWT"]
+visualization = ["pyvis"]
+visualization-enhanced = ["pyvis", "pyecharts"]
+vector-index = ["faiss-cpu"]
+realtime = ["sse-starlette"]
+all-languages = ["tree-sitter-go", "tree-sitter-rust", "tree-sitter-c", "tree-sitter-cpp", "tree-sitter-kotlin", "tree-sitter-scala", "tree-sitter-php", "tree-sitter-ruby", "tree-sitter-swift"]
+all = ["fastapi", "uvicorn", "slowapi", "opentelemetry-api", "opentelemetry-sdk", "asyncpg", "keyring", "tree-sitter-go", "tree-sitter-rust", "tree-sitter-c", "tree-sitter-cpp", "tree-sitter-kotlin", "tree-sitter-scala", "tree-sitter-php", "tree-sitter-ruby", "tree-sitter-swift", "pyvis", "faiss-cpu", "sse-starlette", "pyecharts"]
+docs = ["mkdocs", "mkdocs-material", "mkdocs-git-revision-date-localized-plugin", "mkdocs-minify-plugin"]
+profiling = ["scalene", "memray"]
+
+[tool.poetry.scripts]
+gh-sim = "gh_similarity_detector.cli.main:main"
+
+[project.scripts]
+gh-sim = "gh_similarity_detector.cli.main:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

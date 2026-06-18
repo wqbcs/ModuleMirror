@@ -1,0 +1,59 @@
+name: 'ModuleMirror Code Similarity Detector'
+description: 'Detect code similarity between projects using Winnowing + AST fingerprints'
+branding:
+  icon: 'search'
+  color: 'blue'
+
+inputs:
+  target:
+    description: 'Target project path or GitHub URL'
+    required: true
+  candidates:
+    description: 'Candidate projects (comma-separated paths or URLs)'
+    required: true
+  threshold:
+    description: 'Similarity threshold (0-100)'
+    required: false
+    default: '70'
+  language:
+    description: 'Programming language(s) (comma-separated)'
+    required: false
+    default: 'python'
+  output-format:
+    description: 'Report format (json/html/markdown)'
+    required: false
+    default: 'html'
+  output-path:
+    description: 'Report output path'
+    required: false
+    default: './similarity-report'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Install ModuleMirror
+      shell: bash
+      run: pip install gh-similarity-detector
+
+    - name: Run similarity detection
+      shell: bash
+      run: |
+        IFS=',' read -ra CAND <<< "${{ inputs.candidates }}"
+        CAND_ARGS=""
+        for c in "${CAND[@]}"; do
+          CAND_ARGS="$CAND_ARGS -c $c"
+        done
+        
+        IFS=',' read -ra LANG <<< "${{ inputs.language }}"
+        LANG_ARGS=""
+        for l in "${LANG[@]}"; do
+          LANG_ARGS="$LANG_ARGS -l $l"
+        done
+        
+        gh-sim detect \
+          -t "${{ inputs.target }}" \
+          $CAND_ARGS \
+          $LANG_ARGS \
+          --threshold ${{ inputs.threshold }} \
+          --format ${{ inputs.output-format }} \
+          --output ${{ inputs.output-path }}

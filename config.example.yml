@@ -1,0 +1,61 @@
+# GitHub 项目代码相似度检测工具 - 配置文件
+# 复制此文件为 config.yml 并根据需要修改
+
+# 模块粒度: file / function / class
+module_granularity: function
+
+# 支持的编程语言
+supported_languages:
+  - python
+  - java
+  - javascript
+
+# 最小 Token 长度（低于此值的模块不参与检测）
+min_token_length: 50
+
+# 相似度阈值（0-100，低于此值的匹配不输出）
+similarity_threshold: 70.0
+
+# Winnowing 算法参数
+winnowing_window_size: 5
+winnowing_kgram_size: 15
+
+# 报告格式: json / html / markdown
+report_format: html
+
+# 报告输出路径
+output_path: ./report
+
+# 并行检测进程数
+parallelism: 4
+
+# GitHub API 文件数限制（超过此值使用 git clone）
+api_file_limit: 1000
+
+# 是否启用指纹缓存
+enable_cache: true
+
+# 缓存目录
+cache_dir: .cache
+
+# 排除的目录
+exclude_dirs:
+  - node_modules
+  - venv
+  - .git
+  - __pycache__
+  - dist
+  - build
+  - .idea
+  - target
+  - vendor
+
+# 排除的文件模式
+exclude_file_patterns:
+  - "*.min.js"
+  - "*.min.css"
+  - "*.test.*"
+  - "*.spec.*"
+  - "package-lock.json"
+  - "yarn.lock"
+  - "poetry.lock"

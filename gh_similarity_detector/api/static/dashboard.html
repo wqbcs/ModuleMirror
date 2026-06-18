@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ModuleMirror - 代码相似度检测仪表盘</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        border: 'hsl(var(--mm-border))',
+                        input: 'hsl(var(--mm-border))',
+                        ring: 'hsl(var(--mm-ring))',
+                        primary: { DEFAULT: 'hsl(var(--mm-primary))', hover: 'hsl(var(--mm-primary-hover))', foreground: 'hsl(var(--mm-primary-foreground))' },
+                        secondary: { DEFAULT: 'hsl(var(--mm-secondary))', hover: 'hsl(var(--mm-secondary-hover))' },
+                        destructive: 'hsl(var(--mm-destructive))',
+                        muted: { DEFAULT: 'hsl(var(--mm-bg-secondary))', foreground: 'hsl(var(--mm-text-muted))' },
+                        accent: 'hsl(var(--mm-accent))',
+                        card: { DEFAULT: 'hsl(var(--mm-bg-card))', foreground: 'hsl(var(--mm-text))' },
+                        foreground: 'hsl(var(--mm-text))',
+                    },
+                },
+            },
+        };
+    </script>
+    <link rel="stylesheet" href="/static/css/variables.css">
+    <link rel="stylesheet" href="/static/css/app.css">
+    <style>
+        @keyframes animate-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+        .animate-in { animation: animate-in 0.2s ease-out; }
+        @keyframes slide-in-from-right { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
+        .slide-in-from-right { animation: slide-in-from-right 0.3s ease-out; }
+        .gradient-hero { background: linear-gradient(135deg, hsl(var(--mm-primary)) 0%, hsl(280 70% 50%) 100%); }
+        .dark .gradient-hero { background: linear-gradient(135deg, hsl(var(--mm-primary)) 0%, hsl(280 50% 30%) 100%); }
+    </style>
+</head>
+<body class="min-h-screen bg-muted/40 text-foreground">
+    <nav class="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex h-14 items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero">
+                        <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <span class="text-base font-semibold tracking-tight">ModuleMirror</span>
+                    <span class="hidden sm:inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">v1.0</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="MM.Toast.show('已刷新', {variant:'success'})" data-mm-tooltip="刷新数据" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border hover:bg-accent transition-all">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                    </button>
+                    <button onclick="MM.Theme.toggle()" data-mm-tooltip="切换主题" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border hover:bg-accent transition-all">
+                        <svg id="theme-icon-light" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+                        <svg id="theme-icon-dark" class="h-4 w-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 1v2m0 20v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m20 0h2M4.22 19.78l1.42-1.42m12.72-12.72l1.42-1.42"/></svg>
+                    </button>
+                    <button onclick="openDetectDialog()" class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground h-8 px-3 text-sm font-medium shadow-sm hover:bg-primary-hover transition-all">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <span class="hidden sm:inline">开始检测</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+        <section id="stats-section" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div id="stat-card-projects"></div>
+            <div id="stat-card-modules"></div>
+            <div id="stat-card-fingerprints"></div>
+            <div id="stat-card-detections"></div>
+        </section>
+
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 rounded-xl border border-border bg-card shadow-sm">
+                <div class="flex flex-col space-y-1.5 p-6 pb-4">
+                    <h3 class="font-semibold tracking-tight">检测进度</h3>
+                    <p class="text-sm text-muted-foreground">实时追踪当前检测任务执行状态</p>
+                </div>
+                <div class="px-6 pb-2">
+                    <div class="flex justify-between text-sm mb-2">
+                        <span id="progress-text" class="text-muted-foreground">等待开始...</span>
+                        <span id="progress-percent" class="font-medium text-foreground">0%</span>
+                    </div>
+                    <div id="progress-bar-container"></div>
+                </div>
+                <div class="px-6 pb-6">
+                    <div id="detection-log" class="rounded-lg border border-border bg-muted/30 p-3 h-48 overflow-y-auto font-mono text-xs text-muted-foreground space-y-1">
+                        <p class="text-muted-foreground/60">检测日志将在此显示...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-card shadow-sm">
+                <div class="flex flex-col space-y-1.5 p-6 pb-4">
+                    <h3 class="font-semibold tracking-tight">系统状态</h3>
+                    <p class="text-sm text-muted-foreground">服务健康与性能指标</p>
+                </div>
+                <div class="px-6 pb-6 space-y-4" id="system-status">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">服务状态</span>
+                        <span id="health-badge"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">数据库</span>
+                        <span id="db-badge"></span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">运行时间</span>
+                        <span id="uptime" class="text-sm font-medium">-</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-muted-foreground">内存使用</span>
+                        <span id="memory" class="text-sm font-medium">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="rounded-xl border border-border bg-card shadow-sm">
+            <div class="flex items-center justify-between p-6 pb-4">
+                <div>
+                    <h3 class="font-semibold tracking-tight">最近检测结果</h3>
+                    <p class="text-sm text-muted-foreground mt-1">相似度检测与克隆分析结果</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <select id="result-filter" class="h-8 rounded-md border border-border bg-transparent px-2 text-sm" onchange="filterResults()">
+                        <option value="all">全部</option>
+                        <option value="high">高相似度 (&ge;80%)</option>
+                        <option value="medium">中相似度 (60-80%)</option>
+                        <option value="low">低相似度 (&lt;60%)</option>
+                    </select>
+                </div>
+            </div>
+            <div id="results-container" class="px-6 pb-6"></div>
+        </section>
+    </main>
+
+    <footer class="border-t border-border mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between text-xs text-muted-foreground">
+            <span>ModuleMirror &copy; 2024</span>
+            <span>Powered by Winnowing + AST</span>
+        </div>
+    </footer>
+
+    <script src="/static/js/components.js"></script>
+    <script>
+        const API_BASE = window.location.origin;
+        let _progressBar = null;
+        let _resultsTable = null;
+        let _allResults = [];
+
+        function initDashboard() {
+            MM.init();
+
+            document.getElementById('stat-card-projects').appendChild(
+                MM.Card.stats({ label: '项目总数', value: '0', icon: '&#128193;' })
+            );
+            document.getElementById('stat-card-modules').appendChild(
+                MM.Card.stats({ label: '模块总数', value: '0', icon: '&#128196;' })
+            );
+            document.getElementById('stat-card-fingerprints').appendChild(
+                MM.Card.stats({ label: '指纹总数', value: '0', icon: '&#128273;' })
+            );
+            document.getElementById('stat-card-detections').appendChild(
+                MM.Card.stats({ label: '检测次数', value: '0', icon: '&#128269;' })
+            );
+
+            _progressBar = MM.Progress.create({ value: 0 });
+            document.getElementById('progress-bar-container').appendChild(_progressBar);
+
+            _resultsTable = MM.Table.create({
+                headers: ['源项目', '目标项目', '相似度', '匹配数', '时间', '状态']
+            });
+            _resultsTable.setEmpty('暂无检测结果');
+            document.getElementById('results-container').appendChild(_resultsTable);
+
+            document.getElementById('health-badge').appendChild(MM.Badge.create('检查中', 'secondary'));
+            document.getElementById('db-badge').appendChild(MM.Badge.create('-', 'secondary'));
+
+            refreshStats();
+            setupThemeIcons();
+        }
+
+        function setupThemeIcons() {
+            const update = () => {
+                const dark = MM.Theme.isDark();
+                document.getElementById('theme-icon-light').classList.toggle('hidden', dark);
+                document.getElementById('theme-icon-dark').classList.toggle('hidden', !dark);
+            };
+            update();
+            const observer = new MutationObserver(update);
+            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
+        }
+
+        async function refreshStats() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+
+                const statCards = document.querySelectorAll('#stats-section [class*="text-2xl"]');
+                if (data.database) {
+                    statCards[0].textContent = data.database.projects || 0;
+                    statCards[1].textContent = data.database.modules || 0;
+                    statCards[2].textContent = data.database.fingerprints || 0;
+                }
+
+                const healthBadge = document.getElementById('health-badge');
+                healthBadge.innerHTML = '';
+                healthBadge.appendChild(MM.Badge.create(data.status || 'unknown', data.status === 'healthy' ? 'success' : 'destructive'));
+
+                const dbBadge = document.getElementById('db-badge');
+                dbBadge.innerHTML = '';
+                if (data.database) {
+                    dbBadge.appendChild(MM.Badge.create('connected', 'success'));
+                } else {
+                    dbBadge.appendChild(MM.Badge.create('disconnected', 'destructive'));
+                }
+
+                if (data.version) {
+                    document.getElementById('uptime').textContent = `v${data.version}`;
+                }
+
+                addLog('统计信息已刷新');
+            } catch (error) {
+                const healthBadge = document.getElementById('health-badge');
+                healthBadge.innerHTML = '';
+                healthBadge.appendChild(MM.Badge.create('error', 'destructive'));
+                addLog('错误: 无法获取统计信息 - ' + error.message);
+            }
+        }
+
+        function openDetectDialog() {
+            MM.Dialog.open({
+                title: '代码相似度检测',
+                content: `<div class="space-y-3"><div><label class="text-sm font-medium mb-1 block">源项目</label><input id="dialog-source" class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="GitHub URL 或本地路径"></div><div><label class="text-sm font-medium mb-1 block">目标项目</label><input id="dialog-target" class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="GitHub URL 或本地路径"></div></div>`,
+                confirmText: '开始检测',
+                onConfirm: () => {
+                    const source = document.getElementById('dialog-source').value;
+                    const target = document.getElementById('dialog-target').value;
+                    if (source && target) startDetection(source, target);
+                }
+            });
+        }
+
+        async function startDetection(source, target) {
+            addLog(`开始检测: ${source} ↔ ${target}`);
+            updateProgress(0, '初始化...');
+            MM.Toast.show('检测已启动', { variant: 'default' });
+
+            try {
+                const response = await fetch(`${API_BASE}/detect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source, targets: [target] })
+                });
+                const results = await response.json();
+                updateProgress(100, '检测完成');
+                MM.Toast.show('检测完成', { variant: 'success' });
+                addLog(`检测完成: 发现 ${results.length} 个结果`);
+
+                const statCards = document.querySelectorAll('#stats-section [class*="text-2xl"]');
+                statCards[3].textContent = parseInt(statCards[3].textContent) + 1;
+
+                if (results && results.length > 0) {
+                    _allResults = results;
+                    renderResults(results);
+                }
+            } catch (error) {
+                addLog('检测失败: ' + error.message);
+                updateProgress(0, '检测失败');
+                MM.Toast.show('检测失败: ' + error.message, { variant: 'error' });
+            }
+        }
+
+        function updateProgress(percent, text) {
+            if (_progressBar) _progressBar.setValue(percent);
+            document.getElementById('progress-percent').textContent = percent + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        function addLog(message) {
+            const log = document.getElementById('detection-log');
+            const time = new Date().toLocaleTimeString();
+            const line = document.createElement('p');
+            line.textContent = `[${time}] ${message}`;
+            log.appendChild(line);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function renderResults(results) {
+            _resultsTable.clearRows();
+            results.forEach(result => {
+                const similarity = result.statistics?.avg_similarity || 0;
+                const badge = MM.Badge.create(
+                    similarity.toFixed(1) + '%',
+                    similarity >= 80 ? 'destructive' : similarity >= 60 ? 'warning' : 'success'
+                );
+                const statusBadge = MM.Badge.create(
+                    similarity >= 80 ? '高风险' : similarity >= 60 ? '中风险' : '低风险',
+                    similarity >= 80 ? 'destructive' : similarity >= 60 ? 'warning' : 'success'
+                );
+                _resultsTable.addRow([
+                    result.source_project || '-',
+                    result.target_project || '-',
+                    badge,
+                    result.matches?.length || 0,
+                    new Date().toLocaleString(),
+                    statusBadge
+                ]);
+            });
+        }
+
+        function filterResults() {
+            const filter = document.getElementById('result-filter').value;
+            if (!_allResults.length) return;
+            const filtered = _allResults.filter(r => {
+                const sim = r.statistics?.avg_similarity || 0;
+                if (filter === 'high') return sim >= 80;
+                if (filter === 'medium') return sim >= 60 && sim < 80;
+                if (filter === 'low') return sim < 60;
+                return true;
+            });
+            renderResults(filtered);
+        }
+
+        initDashboard();
+    </script>
+</body>
+</html>

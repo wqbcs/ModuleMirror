@@ -1,0 +1,92 @@
+{
+  "winnowing/small/50lines": {
+    "name": "winnowing/small/50lines",
+    "iterations": 30,
+    "mean_ms": 0.777,
+    "median_ms": 0.77,
+    "stdev_ms": 0.05,
+    "min_ms": 0.7,
+    "max_ms": 0.9,
+    "ops_per_sec": 1287.0
+  },
+  "winnowing/medium/500lines": {
+    "name": "winnowing/medium/500lines",
+    "iterations": 30,
+    "mean_ms": 7.453,
+    "median_ms": 7.4,
+    "stdev_ms": 0.5,
+    "min_ms": 6.5,
+    "max_ms": 8.5,
+    "ops_per_sec": 134.0
+  },
+  "winnowing/large/5000lines": {
+    "name": "winnowing/large/5000lines",
+    "iterations": 30,
+    "mean_ms": 30.328950003604405,
+    "median_ms": 29.973400000017136,
+    "stdev_ms": 1.9960895516562485,
+    "min_ms": 27.46450001723133,
+    "max_ms": 37.24720000172965,
+    "ops_per_sec": 32.97179756902749
+  },
+  "rolling_hash/100tokens": {
+    "name": "rolling_hash/100tokens",
+    "iterations": 30,
+    "mean_ms": 0.05375666563243915,
+    "median_ms": 0.05185000190977007,
+    "stdev_ms": 0.006441227633482748,
+    "min_ms": 0.048699992476031184,
+    "max_ms": 0.07849998655728996,
+    "ops_per_sec": 18602.344253222353
+  },
+  "tokenizer/200lines": {
+    "name": "tokenizer/200lines",
+    "iterations": 30,
+    "mean_ms": 0.28101333203570295,
+    "median_ms": 0.2829000004567206,
+    "stdev_ms": 0.00908946931328279,
+    "min_ms": 0.26359999901615083,
+    "max_ms": 0.2919000107795,
+    "ops_per_sec": 3558.550025921721
+  },
+  "jaccard/small/100fps": {
+    "name": "jaccard/small/100fps",
+    "iterations": 30,
+    "mean_ms": 0.0030466675525531173,
+    "median_ms": 0.0029999937396496534,
+    "stdev_ms": 0.00021772268621335846,
+    "min_ms": 0.0028999929782003164,
+    "max_ms": 0.0041000021155923605,
+    "ops_per_sec": 328227.4756764967
+  },
+  "jaccard/large/10kfps": {
+    "name": "jaccard/large/10kfps",
+    "iterations": 30,
+    "mean_ms": 1.0502799976772317,
+    "median_ms": 1.035049994243309,
+    "stdev_ms": 0.06871245211536224,
+    "min_ms": 0.9485000045970082,
+    "max_ms": 1.2140999897383153,
+    "ops_per_sec": 952.1270539394928
+  },
+  "inverted_index/build/100modules": {
+    "name": "inverted_index/build/100modules",
+    "iterations": 30,
+    "mean_ms": 0.1617633339871342,
+    "median_ms": 0.1390499819535762,
+    "stdev_ms": 0.05170462301140399,
+    "min_ms": 0.11260001338087022,
+    "max_ms": 0.29979998362250626,
+    "ops_per_sec": 6181.870609068522
+  },
+  "inverted_index/lookup": {
+    "name": "inverted_index/lookup",
+    "iterations": 30,
+    "mean_ms": 0.00014000009590138993,
+    "median_ms": 0.000100000761449337,
+    "stdev_ms": 7.239709061294448e-05,
+    "min_ms": 0.000100000761449337,
+    "max_ms": 0.000400003045797348,
+    "ops_per_sec": 7142852.249932437
+  }
+}

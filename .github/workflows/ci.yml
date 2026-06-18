@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: L1 规范检查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install ruff
+        run: pip install ruff
+      - name: Ruff check
+        run: ruff check gh_similarity_detector/ tests/
+      - name: Install mypy
+        run: pip install mypy
+      - name: Mypy type check
+        run: mypy gh_similarity_detector/ --ignore-missing-imports || true
+
+  test:
+    name: L2 测试 + 覆盖率 (${{ matrix.os }}, Python ${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Run tests with coverage
+        run: |
+          pytest tests/ -v -n auto --tb=short \
+            --cov=gh_similarity_detector \
+            --cov-report=term-missing \
+            --cov-report=xml \
+            --cov-fail-under=80
+      - name: Upload coverage
+        if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage.xml
+
+  security:
+    name: L3 安全扫描
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install bandit
+        run: pip install bandit[toml]
+      - name: Bandit SAST scan
+        run: |
+          bandit -r gh_similarity_detector/ \
+            -ll -ii \
+            -f json -o bandit-report.json \
+            || true
+          bandit -r gh_similarity_detector/ -ll -ii -f custom
+      - name: Check for HIGH severity
+        run: |
+          python -c "
+          import json
+          with open('bandit-report.json') as f:
+              data = json.load(f)
+          high = data.get('metrics', {}).get('_totals', {}).get('SEVERITY.HIGH', 0)
+          if high > 0:
+              print(f'FAILED: {high} HIGH severity issues found')
+              raise SystemExit(1)
+          print(f'OK: 0 HIGH severity issues')
+          "
+      - name: Install pip-audit
+        run: pip install pip-audit
+      - name: Pip-audit dependency scan
+        run: pip-audit || true
+      - name: Install safety
+        run: pip install safety
+      - name: Safety vulnerability scan
+        run: safety check --full-report || true
+
+  docker:
+    name: L4 Docker 多架构构建
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Build multi-arch images
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: gh-similarity-detector:latest
+
+  quality-gate:
+    name: 质量门禁
+    runs-on: ubuntu-latest
+    needs: [lint, test, security]
+    if: always()
+    steps:
+      - name: Check all jobs passed
+        run: |
+          if [[ "${{ needs.lint.result }}" != "success" || \
+                "${{ needs.test.result }}" != "success" || \
+                "${{ needs.security.result }}" != "success" ]]; then
+            echo "Quality gate FAILED"
+            exit 1
+          fi
+          echo "Quality gate PASSED"

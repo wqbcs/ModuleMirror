@@ -1,0 +1,50 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "gwqbcs"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "deps(pip)"
+      prefix-development: "deps-dev(pip)"
+    groups:
+      production:
+        patterns:
+          - "tree-sitter"
+          - "httpx"
+          - "fastapi"
+          - "uvicorn"
+          - "tenacity"
+          - "pydantic"
+      development:
+        patterns:
+          - "pytest*"
+          - "ruff"
+          - "bandit"
+          - "hypothesis"
+          - "pytest-asyncio"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Asia/Shanghai"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "gwqbcs"
+    labels:
+      - "dependencies"
+      - "ci"
+    commit-message:
+      prefix: "ci"

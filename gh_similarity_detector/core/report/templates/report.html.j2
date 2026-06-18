@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>代码相似度检测报告</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 1280px; margin: 0 auto; padding: 20px; background: #f8f9fa; }
+        h1 { color: #1a1a2e; border-bottom: 3px solid #16213e; padding-bottom: 12px; }
+        h2 { color: #16213e; margin-top: 0; }
+        .timestamp { color: #6c757d; font-size: 0.9em; }
+        .controls { display: flex; gap: 12px; margin: 16px 0; flex-wrap: wrap; }
+        .controls input, .controls select { padding: 8px 12px; border: 1px solid #dee2e6; border-radius: 6px; font-size: 14px; }
+        .controls input { flex: 1; min-width: 200px; }
+        .summary-cards { display: flex; gap: 16px; margin: 16px 0; flex-wrap: wrap; }
+        .summary-card { background: white; border-radius: 8px; padding: 16px; flex: 1; min-width: 140px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); text-align: center; }
+        .summary-card .num { font-size: 28px; font-weight: 700; color: #16213e; }
+        .summary-card .label { font-size: 13px; color: #6c757d; margin-top: 4px; }
+        .chart-container { background: white; border-radius: 8px; padding: 20px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        #simChart { width: 100%; height: 200px; }
+        .heatmap-container { background: white; border-radius: 8px; padding: 20px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: auto; }
+        .heatmap-table { border-collapse: collapse; font-size: 12px; }
+        .heatmap-table th, .heatmap-table td { padding: 6px 10px; border: 1px solid #dee2e6; text-align: center; white-space: nowrap; }
+        .heatmap-table th { background: #f1f3f5; font-weight: 600; position: sticky; left: 0; z-index: 1; }
+        .heatmap-cell { min-width: 48px; font-weight: 600; cursor: default; }
+        .result { background: white; margin: 12px 0; padding: 16px; border: 1px solid #e0e0e0; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .result-header h3 { margin: 0; color: #16213e; }
+        .sim-badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-weight: 600; font-size: 13px; }
+        .sim-badge.high { background: #d4edda; color: #155724; }
+        .sim-badge.medium { background: #fff3cd; color: #856404; }
+        .sim-badge.low { background: #e7f3ff; color: #004085; }
+        .snippet-info { font-size: 12px; color: #6c757d; margin-top: 4px; }
+        .toggle-diff { font-size: 12px; color: #007bff; cursor: pointer; margin-top: 4px; text-decoration: underline; }
+        .ast-verified { font-size: 11px; color: #28a745; margin-left: 8px; }
+        .ast-unverified { font-size: 11px; color: #dc3545; margin-left: 8px; }
+        .diff-container { display: none; margin-top: 8px; }
+        .diff-container.open { display: block; }
+        .diff-table { width: 100%; border-collapse: collapse; font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; line-height: 1.5; }
+        .diff-table th { background: #f1f3f5; padding: 4px 8px; text-align: left; font-size: 11px; }
+        .diff-table td { padding: 0 8px; white-space: pre-wrap; word-break: break-all; }
+        .diff-equal { background: #fff; }
+        .diff-add { background: #e6ffed; }
+        .diff-remove { background: #ffeef0; }
+        .diff-prefix { width: 12px; display: inline-block; }
+        .project-summary { background: white; border-radius: 8px; padding: 20px; margin: 16px 0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .project-summary h2 { margin-top: 0; }
+        .project-pair { display: flex; align-items: center; gap: 12px; margin: 8px 0; padding: 8px; background: #f8f9fa; border-radius: 6px; }
+        .project-pair .arrow { color: #6c757d; font-size: 18px; }
+        .project-pair .name { font-weight: 600; color: #16213e; }
+        .project-pair .stats { color: #6c757d; font-size: 13px; }
+        .disclaimer { margin-top: 30px; padding: 12px; background: #f8f9fa; border-left: 4px solid #6c757d; font-size: 13px; }
+        code { background: #f1f3f5; padding: 2px 6px; border-radius: 3px; font-size: 0.88em; }
+    </style>
+</head>
+<body>
+    <h1>GitHub 项目代码相似度检测报告</h1>
+    <p class="timestamp">生成时间: {{ generated_at }}</p>
+
+    <div class="controls">
+        <input type="text" id="searchInput" placeholder="搜索模块名..." oninput="filterResults()">
+        <select id="thresholdFilter" onchange="filterResults()">
+            <option value="0">全部</option>
+            <option value="90">≥90%</option>
+            <option value="80">≥80%</option>
+            <option value="70">≥70%</option>
+        </select>
+        <select id="sortSelect" onchange="sortResults()">
+            <option value="sim-desc">相似度 ↓</option>
+            <option value="sim-asc">相似度 ↑</option>
+            <option value="name-asc">模块名 A-Z</option>
+        </select>
+    </div>
+
+    <div id="summaryCards" class="summary-cards"></div>
+
+    <div class="chart-container">
+        <canvas id="simChart"></canvas>
+    </div>
+
+    {% if project_pairs | length > 1 %}
+    <div class="heatmap-container">
+        <h2>项目相似度热力图</h2>
+        <table class="heatmap-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for col in project_pairs %}
+                    <th>{{ col.target }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in project_pairs %}
+                <tr>
+                    <th>{{ row.source }}</th>
+                    {% for col in project_pairs %}
+                    <td class="heatmap-cell" id="hm-{{ row.source }}-{{ col.target }}"></td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+
+    <div class="project-summary">
+        <h2>项目对比摘要</h2>
+        {% for pair in project_pairs %}
+        <div class="project-pair">
+            <span class="name">{{ pair.source }}</span>
+            <span class="arrow">↔</span>
+            <span class="name">{{ pair.target }}</span>
+            <span class="stats">匹配 {{ pair.match_count }} 个 · 平均 {{ pair.avg_sim }}% · 最高 {{ pair.max_sim }}%</span>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div id="resultsContainer"></div>
+
+    <div class="disclaimer">
+        <p><strong>免责声明</strong>: 本报告仅供参考，不作为法律依据。</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/diff_match_patch/20121119/diff_match_patch.js"></script>
+    <script>var matchesData = {{ matches_data | safe }};</script>
+    <script>var heatmapData = {{ heatmap_data | safe }};</script>
+    <script>
+    function renderSummary(data) {
+        var total = data.length;
+        var avg = total ? (data.reduce((s, m) => s + m.similarity, 0) / total).toFixed(1) : 0;
+        var high = data.filter(m => m.similarity >= 90).length;
+        var med = data.filter(m => m.similarity >= 80 && m.similarity < 90).length;
+        document.getElementById('summaryCards').innerHTML =
+            '<div class="summary-card"><div class="num">' + total + '</div><div class="label">总匹配数</div></div>' +
+            '<div class="summary-card"><div class="num">' + avg + '%</div><div class="label">平均相似度</div></div>' +
+            '<div class="summary-card"><div class="num">' + high + '</div><div class="label">≥90% 高相似</div></div>' +
+            '<div class="summary-card"><div class="num">' + med + '</div><div class="label">80-90% 中相似</div></div>';
+    }
+    function renderChart(data) {
+        var bins = [0,0,0,0,0];
+        data.forEach(m => {
+            if (m.similarity >= 90) bins[4]++;
+            else if (m.similarity >= 80) bins[3]++;
+            else if (m.similarity >= 70) bins[2]++;
+            else if (m.similarity >= 60) bins[1]++;
+            else bins[0]++;
+        });
+        var labels = ['<60%', '60-70%', '70-80%', '80-90%', '≥90%'];
+        var colors = ['#adb5bd', '#6c757d', '#ffc107', '#fd7e14', '#28a745'];
+        var canvas = document.getElementById('simChart');
+        var ctx = canvas.getContext('2d');
+        canvas.width = canvas.parentElement.clientWidth - 40;
+        canvas.height = 200;
+        var maxVal = Math.max(...bins, 1);
+        var barW = (canvas.width - 60) / bins.length;
+        bins.forEach((v, i) => {
+            var h = (v / maxVal) * (canvas.height - 40);
+            ctx.fillStyle = colors[i];
+            ctx.fillRect(30 + i * barW + 10, canvas.height - 20 - h, barW - 20, h);
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText(v, 30 + i * barW + barW / 2, canvas.height - 24 - h);
+            ctx.fillText(labels[i], 30 + i * barW + barW / 2, canvas.height - 4);
+        });
+    }
+    function renderHeatmap() {
+        if (!heatmapData) return;
+        for (var key in heatmapData) {
+            var el = document.getElementById('hm-' + key);
+            if (!el) continue;
+            var val = heatmapData[key];
+            var r, g, b;
+            if (val >= 90) { r = 40; g = 167; b = 69; }
+            else if (val >= 80) { r = 255; g = 193; b = 7; }
+            else if (val >= 70) { r = 253; g = 126; b = 20; }
+            else { r = 108; g = 117; b = 125; }
+            el.textContent = val + '%';
+            el.style.background = 'rgba(' + r + ',' + g + ',' + b + ',0.2)';
+            el.style.color = 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+    }
+    function renderResults(data) {
+        var container = document.getElementById('resultsContainer');
+        if (!data.length) { container.innerHTML = '<p style="text-align:center;color:#6c757d;padding:20px">无匹配结果</p>'; return; }
+        var html = '';
+        data.forEach((m, i) => {
+            var cls = m.similarity >= 90 ? 'high' : m.similarity >= 80 ? 'medium' : 'low';
+            var snippet = '';
+            if (m.snippet && m.snippet.source_file) {
+                var astTag = '';
+                if (m.snippet.ast_verified === true) astTag = '<span class="ast-verified">AST 验证通过</span>';
+                else if (m.snippet.ast_verified === false) astTag = '<span class="ast-unverified">AST 验证未通过 (node:' + (m.snippet.ast_node_sim||0) + '% struct:' + (m.snippet.ast_struct_sim||0) + '%)</span>';
+                snippet = '<div class="snippet-info">' +
+                    '源: ' + m.snippet.source_file + ':' + m.snippet.source_lines +
+                    ' → 目标: ' + m.snippet.target_file + ':' + m.snippet.target_lines +
+                    ' | <span class="toggle-diff" onclick="toggleDiff(' + i + ')">查看差异</span>' + astTag + '</div>';
+            }
+            html += '<div class="result" id="result-' + i + '">' +
+                '<div class="result-header"><h3><code>' + m.source_module + '</code> ↔ <code>' + m.target_module + '</code></h3>' +
+                '<span class="sim-badge ' + cls + '">' + m.similarity + '%</span></div>' +
+                '<div>' + m.source_project + ' ↔ ' + m.target_project +
+                (m.ast_similarity ? ' | AST: ' + m.ast_similarity + '%' : '') +
+                ' | ' + m.suggestion + '</div>' + snippet +
+                '<div class="diff-container" id="diff-' + i + '"></div></div>';
+        });
+        container.innerHTML = html;
+    }
+    function toggleDiff(idx) {
+        var el = document.getElementById('diff-' + idx);
+        if (el.classList.contains('open')) { el.classList.remove('open'); return; }
+        el.classList.add('open');
+        if (el.innerHTML) return;
+        var m = getFiltered()[idx];
+        if (!m || !m.source_code || !m.target_code) {
+            el.innerHTML = '<p style="color:#6c757d;font-size:12px">差异对比数据不可用（需运行检测时保存源码）</p>';
+            return;
+        }
+        var src = m.source_code.split('\n');
+        var tgt = m.target_code.split('\n');
+        var lines = [];
+        var sm = new diff_match_patch();
+        var d = sm.diff_main(src.join('\n'), tgt.join('\n'));
+        sm.diff_cleanupSemantic(d);
+        d.forEach(function(part) {
+            var tag = part[0] === 0 ? 'equal' : part[0] === 1 ? 'add' : 'remove';
+            var prefix = part[0] === 0 ? ' ' : part[0] === 1 ? '+' : '-';
+            var text = part[1].replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+            lines.push('<tr class="diff-' + tag + '"><td class="diff-content"><span class="diff-prefix">' + prefix + '</span>' + text + '</td></tr>');
+        });
+        el.innerHTML = '<table class="diff-table"><tbody>' + lines.join('') + '</tbody></table>';
+    }
+    function getFiltered() {
+        var search = document.getElementById('searchInput').value.toLowerCase();
+        var thresh = parseInt(document.getElementById('thresholdFilter').value);
+        return matchesData.filter(m => {
+            if (thresh && m.similarity < thresh) return false;
+            if (search && !(m.source_module.toLowerCase().includes(search) || m.target_module.toLowerCase().includes(search))) return false;
+            return true;
+        });
+    }
+    function sortResults() { filterResults(); }
+    function filterResults() {
+        var data = getFiltered();
+        var sort = document.getElementById('sortSelect').value;
+        if (sort === 'sim-desc') data.sort((a, b) => b.similarity - a.similarity);
+        else if (sort === 'sim-asc') data.sort((a, b) => a.similarity - b.similarity);
+        else if (sort === 'name-asc') data.sort((a, b) => a.source_module.localeCompare(b.source_module));
+        renderSummary(data);
+        renderChart(data);
+        renderResults(data);
+    }
+    filterResults();
+    renderHeatmap();
+    </script>
+</body>
+</html>
