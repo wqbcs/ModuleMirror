@@ -16,7 +16,7 @@ try:
 except ImportError:
     HAS_DATASKETCH = False
 
-from ..models.entities import FingerprintSet
+from ...models.entities import FingerprintSet
 from ...utils.logger import logger
 
 
