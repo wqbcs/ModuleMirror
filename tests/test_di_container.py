@@ -8,7 +8,6 @@ from gh_similarity_detector.core.di_container import (
     DIContainer,
     ServiceLifetime,
     ServiceDescriptor,
-    container,
 )
 
 

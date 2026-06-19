@@ -10,7 +10,7 @@ RUN pip install --no-cache-dir poetry
 COPY pyproject.toml poetry.lock* ./
 
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi --extras api
+    && poetry install --without dev --no-interaction --no-ansi --extras api
 
 FROM python:3.11-slim
 

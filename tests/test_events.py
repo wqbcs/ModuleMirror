@@ -4,7 +4,6 @@
 Author: ModuleMirror
 """
 
-import pytest
 from gh_similarity_detector.core.events import (
     EventBus,
     DomainEvent,
@@ -50,7 +49,8 @@ class TestEventBus:
     def test_unsubscribe(self):
         bus = EventBus()
         received = []
-        handler = lambda e: received.append(e)
+        def handler(e):
+            return received.append(e)
         bus.subscribe(DomainEventType.DETECTION_STARTED, handler)
         bus.unsubscribe(DomainEventType.DETECTION_STARTED, handler)
         bus.publish(DomainEvent(event_type=DomainEventType.DETECTION_STARTED))
@@ -77,7 +77,7 @@ class TestEventBus:
         bus = EventBus()
         received = []
         bus.subscribe(DomainEventType.FINGERPRINT_GENERATED, lambda e: received.append(e))
-        event = bus.publish_simple(DomainEventType.FINGERPRINT_GENERATED, module_id="mod1")
+        bus.publish_simple(DomainEventType.FINGERPRINT_GENERATED, module_id="mod1")
         assert len(received) == 1
         assert received[0].payload["module_id"] == "mod1"
 

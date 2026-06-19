@@ -46,6 +46,16 @@ vector-index = ["faiss-cpu>=1.7.0"]
 realtime = ["sse-starlette>=2.0.0"]
 all-languages = ["tree-sitter-go>=0.23.0", "tree-sitter-rust>=0.23.0", "tree-sitter-c>=0.23.0", "tree-sitter-cpp>=0.23.0"]
 all = ["gh-similarity-detector[api,visualization,vector-index,realtime,all-languages]"]
+dev = [
+    "pytest>=7.3.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.3.0",
+    "hypothesis>=6.78.0",
+    "ruff>=0.0.265",
+    "mypy>=1.2.0",
+    "bandit[toml]>=1.7.0",
+]
 
 [project.scripts]
 gh-sim = "gh_similarity_detector.cli.main:main"

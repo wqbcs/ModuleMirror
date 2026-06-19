@@ -8,7 +8,6 @@ Author: ModuleMirror
 """
 
 import random
-import time
 from typing import Callable, List, Dict, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
@@ -109,7 +108,7 @@ class ChaosMonkey:
                         result = fallback()
                         self._result.operations_survived += 1
                         return result
-                    except Exception as e:
+                    except Exception:
                         self._result.operations_failed += 1
                         raise
                 else:
@@ -120,7 +119,7 @@ class ChaosMonkey:
                     result = operation()
                     self._result.operations_survived += 1
                     return result
-                except Exception as e:
+                except Exception:
                     self._result.operations_failed += 1
                     raise
 

@@ -5,8 +5,6 @@ Author: ModuleMirror
 """
 
 import json
-import pytest
-from pathlib import Path
 
 from gh_similarity_detector.core.result_sink import (
     ResultSink,

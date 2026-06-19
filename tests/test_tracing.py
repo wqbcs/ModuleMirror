@@ -4,7 +4,6 @@ OpenTelemetry 链路追踪测试
 Author: ModuleMirror
 """
 
-import pytest
 from gh_similarity_detector.infrastructure.observability.tracing import (
     TracingManager,
     TracingConfig,
@@ -34,7 +33,7 @@ class TestTracingManager:
         config = TracingConfig(ENABLED=True)
         manager = TracingManager(config=config)
         manager.initialize()
-        with manager.span("test_operation", attributes={"key": "value"}) as s:
+        with manager.span("test_operation", attributes={"key": "value"}):
             pass
 
     def test_span_context_manager_disabled(self):
@@ -47,14 +46,14 @@ class TestTracingManager:
         config = TracingConfig(ENABLED=True)
         manager = TracingManager(config=config)
         manager.initialize()
-        with manager.span("test") as s:
+        with manager.span("test"):
             manager.set_span_attribute("test_attr", 42)
 
     def test_add_span_event(self):
         config = TracingConfig(ENABLED=True)
         manager = TracingManager(config=config)
         manager.initialize()
-        with manager.span("test") as s:
+        with manager.span("test"):
             manager.add_span_event("test_event", {"detail": "info"})
 
     def test_shutdown(self):

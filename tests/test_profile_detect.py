@@ -4,10 +4,6 @@
 Author: ModuleMirror
 """
 
-import pytest
-import tempfile
-import os
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 
 from gh_similarity_detector.tools.profile_detect import (

@@ -16,7 +16,7 @@ def test_winnowing(data: bytes) -> None:
     try:
         w = Winnowing(window_size=5, kgram_size=15)
         code = data.decode("utf-8", errors="ignore")
-        fps = w.generate_fingerprints_from_code(code)
+        w.generate_fingerprints_from_code(code)
     except Exception:
         pass
 

@@ -6,7 +6,7 @@ Author: ModuleMirror
 
 import pytest
 import asyncio
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import MagicMock
 
 from gh_similarity_detector.infrastructure.observability.sse_progress import (
     ProgressEvent,

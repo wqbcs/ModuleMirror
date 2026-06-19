@@ -4,7 +4,6 @@
 Author: ModuleMirror
 """
 
-import pytest
 import time
 from gh_similarity_detector.core.fingerprint.vectorized_hash import VectorizedRollingHash
 from gh_similarity_detector.core.fingerprint.winnowing import RollingHash

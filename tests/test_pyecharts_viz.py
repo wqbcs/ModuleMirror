@@ -7,7 +7,6 @@ Author: ModuleMirror
 import pytest
 import tempfile
 import os
-from pathlib import Path
 
 from gh_similarity_detector.infrastructure.reports.pyecharts_viz import (
     generate_similarity_heatmap,
@@ -84,7 +83,7 @@ class TestGenerateSimilarityGraph:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "graph.html")
-            result = generate_similarity_graph(nodes, links, output_path=output_path)
+            generate_similarity_graph(nodes, links, output_path=output_path)
 
             assert os.path.exists(output_path)
 
@@ -113,7 +112,7 @@ class TestGenerateSimilarityHistogram:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "hist.html")
-            result = generate_similarity_histogram(similarities, output_path=output_path)
+            generate_similarity_histogram(similarities, output_path=output_path)
 
             assert os.path.exists(output_path)
 
@@ -145,7 +144,7 @@ class TestGenerateSimilarityPie:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "pie.html")
-            result = generate_similarity_pie(category_counts, output_path=output_path)
+            generate_similarity_pie(category_counts, output_path=output_path)
 
             assert os.path.exists(output_path)
 

@@ -6,7 +6,6 @@ orjson性能基准测试
 Author: ModuleMirror
 """
 
-import pytest
 import json
 import time
 from gh_similarity_detector.utils.json_utils import dumps as orjson_dumps, loads as orjson_loads

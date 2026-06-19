@@ -11,7 +11,7 @@ Author: ModuleMirror
 """
 
 import sys
-from typing import Callable, Any, List
+from typing import Callable, List
 
 try:
     import atheris
@@ -64,7 +64,7 @@ def fuzz_winnowing_target(data: bytes) -> None:
     try:
         w = Winnowing(window_size=5, kgram_size=15)
         code = data.decode("utf-8", errors="ignore")
-        fps = w.generate_fingerprints_from_code(code)
+        w.generate_fingerprints_from_code(code)
     except Exception:
         pass
 

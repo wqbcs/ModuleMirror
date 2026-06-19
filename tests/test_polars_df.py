@@ -7,7 +7,6 @@ Author: ModuleMirror
 import pytest
 import tempfile
 import os
-from pathlib import Path
 
 from gh_similarity_detector.core.similarity.polars_df import SimilarityDataFrame, HAS_POLARS
 
