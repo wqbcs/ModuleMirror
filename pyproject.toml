@@ -1,3 +1,55 @@
+[project]
+name = "gh-similarity-detector"
+version = "1.0.0"
+description = "GitHub 项目代码相似度检测工具 - 用于自我审视和抄袭溯源"
+authors = [{name = "ModuleMirror Team", email = "modulemirror@example.com"}]
+license = {text = "MIT"}
+readme = "README.md"
+requires-python = ">=3.9"
+keywords = ["code-similarity", "clone-detection", "plagiarism", "winnowing", "fingerprint"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Security",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "tree-sitter>=0.25.0",
+    "tree-sitter-python>=0.23.0",
+    "tree-sitter-java>=0.23.0",
+    "tree-sitter-javascript>=0.23.0",
+    "tree-sitter-typescript>=0.23.0",
+    "httpx>=0.24.0",
+    "tenacity>=8.2.0",
+    "click>=8.1.0",
+    "rich>=13.3.0",
+    "jinja2>=3.1.0",
+    "markupsafe>=2.1",
+    "pyyaml>=6.0",
+    "numpy>=1.24",
+    "prometheus-client>=0.17",
+    "PyJWT>=2.8",
+    "datasketch>=1.6.0",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.95.0", "uvicorn>=0.22.0", "slowapi>=0.1.9"]
+visualization = ["pyvis>=0.3.1"]
+visualization-enhanced = ["pyvis>=0.3.1", "pyecharts>=2.0.0"]
+vector-index = ["faiss-cpu>=1.7.0"]
+realtime = ["sse-starlette>=2.0.0"]
+all-languages = ["tree-sitter-go>=0.23.0", "tree-sitter-rust>=0.23.0", "tree-sitter-c>=0.23.0", "tree-sitter-cpp>=0.23.0"]
+all = ["gh-similarity-detector[api,visualization,vector-index,realtime,all-languages]"]
+
+[project.scripts]
+gh-sim = "gh_similarity_detector.cli.main:main"
+
 [tool.poetry]
 name = "gh-similarity-detector"
 version = "1.0.0"
@@ -91,9 +143,6 @@ docs = ["mkdocs", "mkdocs-material", "mkdocs-git-revision-date-localized-plugin"
 profiling = ["scalene", "memray"]
 
 [tool.poetry.scripts]
-gh-sim = "gh_similarity_detector.cli.main:main"
-
-[project.scripts]
 gh-sim = "gh_similarity_detector.cli.main:main"
 
 [build-system]

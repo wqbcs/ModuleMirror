@@ -90,7 +90,7 @@ def _make_progress_callback():
 
 
 @click.group()
-@click.version_option(version="0.1.0", prog_name="gh-sim")
+@click.version_option(version="1.0.0", prog_name="gh-sim")
 def main():
     """GitHub 项目代码相似度检测工具
     

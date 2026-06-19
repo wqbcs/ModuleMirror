@@ -1,3 +1,5 @@
+__version__ = "1.0.0"
+
 from .core import DetectionPipeline
 from .config.config import DetectionConfig
 from .models.entities import Project, Module, CodeFile, FingerprintSet
