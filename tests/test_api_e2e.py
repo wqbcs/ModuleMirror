@@ -14,6 +14,7 @@ from httpx import AsyncClient, ASGITransport
 @pytest.fixture
 def app():
     from gh_similarity_detector.api.app import app
+
     return app
 
 
@@ -42,10 +43,13 @@ class TestDetectE2E:
     async def test_detect_endpoint_exists(self, app):
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            response = await client.post("/detect", json={
-                "target_url": "https://github.com/test/project",
-                "candidate_urls": [],
-            })
+            response = await client.post(
+                "/detect",
+                json={
+                    "target_url": "https://github.com/test/project",
+                    "candidate_urls": [],
+                },
+            )
             assert response.status_code in (200, 202, 422)
 
 

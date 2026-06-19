@@ -21,6 +21,7 @@ class TimeoutConfig:
         read: 读取超时(秒)
         total: 总超时(秒)
     """
+
     connect: float = 5.0
     read: float = 30.0
     total: float = 60.0

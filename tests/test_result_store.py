@@ -14,9 +14,16 @@ class TestResultStore:
     def test_save_and_list(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             store = ResultStore(str(Path(tmpdir) / "results.sqlite"))
-            rid = store.save_result("proj-a", "proj-b", [
-                {"statistics": {"avg_similarity": 75.0}, "matches": [{"m1": True}, {"m2": True}]},
-            ])
+            rid = store.save_result(
+                "proj-a",
+                "proj-b",
+                [
+                    {
+                        "statistics": {"avg_similarity": 75.0},
+                        "matches": [{"m1": True}, {"m2": True}],
+                    },
+                ],
+            )
             assert rid > 0
             history = store.list_history()
             assert len(history) == 1
@@ -61,8 +68,12 @@ class TestResultStore:
     def test_trend(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             store = ResultStore(str(Path(tmpdir) / "results.sqlite"))
-            store.save_result("proj", "a", [{"statistics": {"avg_similarity": 60.0}, "matches": []}])
-            store.save_result("proj", "b", [{"statistics": {"avg_similarity": 80.0}, "matches": []}])
+            store.save_result(
+                "proj", "a", [{"statistics": {"avg_similarity": 60.0}, "matches": []}]
+            )
+            store.save_result(
+                "proj", "b", [{"statistics": {"avg_similarity": 80.0}, "matches": []}]
+            )
             trend = store.get_trend("proj")
             assert len(trend) == 2
             store.close()

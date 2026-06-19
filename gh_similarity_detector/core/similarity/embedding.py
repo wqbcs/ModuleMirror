@@ -49,20 +49,16 @@ class CodeEmbedding:
 
 class EmbeddingEngine(ABC):
     @abstractmethod
-    def embed(self, code: str, code_id: str = "") -> CodeEmbedding:
-        ...
+    def embed(self, code: str, code_id: str = "") -> CodeEmbedding: ...
 
     @abstractmethod
-    def embed_batch(self, codes: Dict[str, str]) -> List[CodeEmbedding]:
-        ...
+    def embed_batch(self, codes: Dict[str, str]) -> List[CodeEmbedding]: ...
 
     @abstractmethod
-    def model_name(self) -> str:
-        ...
+    def model_name(self) -> str: ...
 
     @abstractmethod
-    def dimension(self) -> int:
-        ...
+    def dimension(self) -> int: ...
 
 
 class DummyEngine(EmbeddingEngine):
@@ -95,11 +91,11 @@ class Code2VecEngine(EmbeddingEngine):
 
     def _extract_ast_paths(self, code: str) -> List[Tuple[str, str, str]]:
         paths = []
-        lines = code.split('\n')
+        lines = code.split("\n")
         tokens = []
         for i, line in enumerate(lines):
             for tok in line.strip().split():
-                if tok and not tok.startswith('#'):
+                if tok and not tok.startswith("#"):
                     tokens.append((tok, i))
 
         for i, (start_tok, start_line) in enumerate(tokens):
@@ -176,6 +172,7 @@ class CodeBERTEngine(EmbeddingEngine):
             return
         try:
             from transformers import AutoTokenizer, AutoModel
+
             self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
             self._model = AutoModel.from_pretrained(self._model_name)
             self._model.eval()
@@ -187,6 +184,7 @@ class CodeBERTEngine(EmbeddingEngine):
     def embed(self, code: str, code_id: str = "") -> CodeEmbedding:
         self._load_model()
         import torch
+
         inputs = self._tokenizer(code, return_tensors="pt", truncation=True, max_length=512)
         if self._device != "cpu":
             inputs = {k: v.to(self._device) for k, v in inputs.items()}
@@ -222,18 +220,22 @@ def create_embedding_engine(engine_type: str = "dummy", **kwargs) -> EmbeddingEn
     return cls(**kwargs)
 
 
-def compute_semantic_similarity(embeddings_a: List[CodeEmbedding], embeddings_b: List[CodeEmbedding]) -> List[Dict[str, Any]]:
+def compute_semantic_similarity(
+    embeddings_a: List[CodeEmbedding], embeddings_b: List[CodeEmbedding]
+) -> List[Dict[str, Any]]:
     results = []
     for emb_a in embeddings_a:
         for emb_b in embeddings_b:
             if emb_a.model_name != emb_b.model_name:
                 continue
             sim = emb_a.cosine_similarity(emb_b)
-            results.append({
-                "source_id": emb_a.code_id,
-                "target_id": emb_b.code_id,
-                "semantic_similarity": round(sim, 4),
-                "model": emb_a.model_name,
-                "euclidean_distance": round(emb_a.euclidean_distance(emb_b), 4),
-            })
+            results.append(
+                {
+                    "source_id": emb_a.code_id,
+                    "target_id": emb_b.code_id,
+                    "semantic_similarity": round(sim, 4),
+                    "model": emb_a.model_name,
+                    "euclidean_distance": round(emb_a.euclidean_distance(emb_b), 4),
+                }
+            )
     return results

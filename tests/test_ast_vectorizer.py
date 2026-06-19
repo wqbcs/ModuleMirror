@@ -13,34 +13,54 @@ from gh_similarity_detector.core.similarity.ast_vectorizer import (
 
 class TestASTFeatureVector:
     def test_cosine_similarity_identical(self):
-        v = ASTFeatureVector(module_id="a", vector=[1.0, 0.5, 0.0], node_type_histogram={}, depth=1, node_count=3)
+        v = ASTFeatureVector(
+            module_id="a", vector=[1.0, 0.5, 0.0], node_type_histogram={}, depth=1, node_count=3
+        )
         assert abs(v.cosine_similarity(v) - 1.0) < 0.001
 
     def test_cosine_similarity_orthogonal(self):
-        v1 = ASTFeatureVector(module_id="a", vector=[1.0, 0.0], node_type_histogram={}, depth=1, node_count=1)
-        v2 = ASTFeatureVector(module_id="b", vector=[0.0, 1.0], node_type_histogram={}, depth=1, node_count=1)
+        v1 = ASTFeatureVector(
+            module_id="a", vector=[1.0, 0.0], node_type_histogram={}, depth=1, node_count=1
+        )
+        v2 = ASTFeatureVector(
+            module_id="b", vector=[0.0, 1.0], node_type_histogram={}, depth=1, node_count=1
+        )
         assert abs(v1.cosine_similarity(v2)) < 0.001
 
     def test_cosine_similarity_zero_vector(self):
-        v1 = ASTFeatureVector(module_id="a", vector=[1.0, 0.0], node_type_histogram={}, depth=1, node_count=1)
-        v2 = ASTFeatureVector(module_id="b", vector=[0.0, 0.0], node_type_histogram={}, depth=1, node_count=0)
+        v1 = ASTFeatureVector(
+            module_id="a", vector=[1.0, 0.0], node_type_histogram={}, depth=1, node_count=1
+        )
+        v2 = ASTFeatureVector(
+            module_id="b", vector=[0.0, 0.0], node_type_histogram={}, depth=1, node_count=0
+        )
         assert v1.cosine_similarity(v2) == 0.0
 
     def test_cosine_similarity_different_lengths(self):
-        v1 = ASTFeatureVector(module_id="a", vector=[1.0, 0.5, 0.3], node_type_histogram={}, depth=1, node_count=3)
-        v2 = ASTFeatureVector(module_id="b", vector=[1.0, 0.5], node_type_histogram={}, depth=1, node_count=2)
+        v1 = ASTFeatureVector(
+            module_id="a", vector=[1.0, 0.5, 0.3], node_type_histogram={}, depth=1, node_count=3
+        )
+        v2 = ASTFeatureVector(
+            module_id="b", vector=[1.0, 0.5], node_type_histogram={}, depth=1, node_count=2
+        )
         sim = v1.cosine_similarity(v2)
         assert 0.0 <= sim <= 1.0
 
     def test_lsh_hash_deterministic(self):
-        v = ASTFeatureVector(module_id="a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10)
+        v = ASTFeatureVector(
+            module_id="a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10
+        )
         h1 = v.to_lsh_hash()
         h2 = v.to_lsh_hash()
         assert h1 == h2
 
     def test_lsh_hash_similar_vectors(self):
-        v1 = ASTFeatureVector(module_id="a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10)
-        v2 = ASTFeatureVector(module_id="b", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10)
+        v1 = ASTFeatureVector(
+            module_id="a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10
+        )
+        v2 = ASTFeatureVector(
+            module_id="b", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10
+        )
         h1 = v1.to_lsh_hash()
         h2 = v2.to_lsh_hash()
         assert h1 == h2  # Identical vectors must have identical hashes
@@ -65,11 +85,17 @@ class TestASTVectorizer:
         tree = {
             "type": "module",
             "children": [
-                {"type": "function_definition", "children": [
-                    {"type": "if_statement", "children": [
-                        {"type": "call", "children": []},
-                    ]},
-                ]},
+                {
+                    "type": "function_definition",
+                    "children": [
+                        {
+                            "type": "if_statement",
+                            "children": [
+                                {"type": "call", "children": []},
+                            ],
+                        },
+                    ],
+                },
             ],
         }
         fv = vectorizer.vectorize_ast_tree(tree)
@@ -93,8 +119,12 @@ class TestASTVectorizer:
 class TestLSHIndex:
     def test_add_and_query(self):
         index = LSHIndex()
-        v1 = ASTFeatureVector(module_id="mod_a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10)
-        v2 = ASTFeatureVector(module_id="mod_b", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10)
+        v1 = ASTFeatureVector(
+            module_id="mod_a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10
+        )
+        v2 = ASTFeatureVector(
+            module_id="mod_b", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10
+        )
         index.add(v1)
         index.add(v2)
         results = index.query(v1)
@@ -102,8 +132,20 @@ class TestLSHIndex:
 
     def test_query_different_vectors(self):
         index = LSHIndex()
-        v1 = ASTFeatureVector(module_id="mod_a", vector=[1.0, 0.0] + [0.0] * 30, node_type_histogram={}, depth=1, node_count=1)
-        v2 = ASTFeatureVector(module_id="mod_b", vector=[0.0, 1.0] + [0.0] * 30, node_type_histogram={}, depth=1, node_count=1)
+        v1 = ASTFeatureVector(
+            module_id="mod_a",
+            vector=[1.0, 0.0] + [0.0] * 30,
+            node_type_histogram={},
+            depth=1,
+            node_count=1,
+        )
+        v2 = ASTFeatureVector(
+            module_id="mod_b",
+            vector=[0.0, 1.0] + [0.0] * 30,
+            node_type_histogram={},
+            depth=1,
+            node_count=1,
+        )
         index.add(v1)
         index.add(v2)
         results = index.query(v1, min_bands=1)
@@ -112,7 +154,9 @@ class TestLSHIndex:
 
     def test_remove(self):
         index = LSHIndex()
-        v = ASTFeatureVector(module_id="mod_a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10)
+        v = ASTFeatureVector(
+            module_id="mod_a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=10
+        )
         index.add(v)
         assert index.size == 1
         index.remove("mod_a")
@@ -121,14 +165,24 @@ class TestLSHIndex:
     def test_size(self):
         index = LSHIndex()
         assert index.size == 0
-        v = ASTFeatureVector(module_id="a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=1)
+        v = ASTFeatureVector(
+            module_id="a", vector=[0.5] * 32, node_type_histogram={}, depth=1, node_count=1
+        )
         index.add(v)
         assert index.size == 1
 
     def test_min_bands_filter(self):
         index = LSHIndex()
-        v1 = ASTFeatureVector(module_id="a", vector=[1.0] + [0.0] * 31, node_type_histogram={}, depth=1, node_count=1)
-        v2 = ASTFeatureVector(module_id="b", vector=[0.0, 1.0] + [0.0] * 30, node_type_histogram={}, depth=1, node_count=1)
+        v1 = ASTFeatureVector(
+            module_id="a", vector=[1.0] + [0.0] * 31, node_type_histogram={}, depth=1, node_count=1
+        )
+        v2 = ASTFeatureVector(
+            module_id="b",
+            vector=[0.0, 1.0] + [0.0] * 30,
+            node_type_histogram={},
+            depth=1,
+            node_count=1,
+        )
         index.add(v1)
         index.add(v2)
         results_strict = index.query(v1, min_bands=5)

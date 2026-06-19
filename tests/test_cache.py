@@ -27,7 +27,7 @@ def sample_module():
         start_line=1,
         end_line=1,
         language="python",
-        token_count=10
+        token_count=10,
     )
 
 
@@ -37,10 +37,10 @@ class TestFingerprintCache:
             module_id=sample_module.id,
             winnowing_fingerprints={100, 200, 300},
             ast_fingerprints={400, 500},
-            token_count=10
+            token_count=10,
         )
         cache.put(sample_module, fp_set)
-        
+
         result = cache.get(sample_module)
         assert result is not None
         assert result.winnowing_fingerprints == {100, 200, 300}
@@ -52,12 +52,10 @@ class TestFingerprintCache:
 
     def test_content_change_invalidates(self, cache, sample_module):
         fp_set = FingerprintSet(
-            module_id=sample_module.id,
-            winnowing_fingerprints={100, 200},
-            token_count=5
+            module_id=sample_module.id, winnowing_fingerprints={100, 200}, token_count=5
         )
         cache.put(sample_module, fp_set)
-        
+
         modified = Module(
             name="test_func",
             file_path="test.py",
@@ -66,7 +64,7 @@ class TestFingerprintCache:
             start_line=1,
             end_line=1,
             language="python",
-            token_count=10
+            token_count=10,
         )
         result = cache.get(modified)
         assert result is None
@@ -74,13 +72,11 @@ class TestFingerprintCache:
     def test_flush_persists(self, cache_dir, sample_module):
         cache1 = FingerprintCache(cache_dir)
         fp_set = FingerprintSet(
-            module_id=sample_module.id,
-            winnowing_fingerprints={100},
-            token_count=5
+            module_id=sample_module.id, winnowing_fingerprints={100}, token_count=5
         )
         cache1.put(sample_module, fp_set)
         cache1.flush()
-        
+
         cache2 = FingerprintCache(cache_dir)
         result = cache2.get(sample_module)
         assert result is not None
@@ -88,9 +84,7 @@ class TestFingerprintCache:
 
     def test_invalidate(self, cache, sample_module):
         fp_set = FingerprintSet(
-            module_id=sample_module.id,
-            winnowing_fingerprints={100},
-            token_count=5
+            module_id=sample_module.id, winnowing_fingerprints={100}, token_count=5
         )
         cache.put(sample_module, fp_set)
         cache.invalidate(sample_module.id)
@@ -100,6 +94,6 @@ class TestFingerprintCache:
         h1 = FingerprintCache.compute_content_hash("def foo(): pass")
         h2 = FingerprintCache.compute_content_hash("def foo(): pass")
         assert h1 == h2
-        
+
         h3 = FingerprintCache.compute_content_hash("def bar(): pass")
         assert h1 != h3

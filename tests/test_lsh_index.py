@@ -94,9 +94,7 @@ class TestMinHashLSHIndex:
             "mod_b": _make_fp_set("mod_b", set(range(100, 150))),
         }
         idx.build(fps)
-        candidates = idx.get_candidates(
-            set(range(1, 50)), top_k=10, min_jaccard=0.5
-        )
+        candidates = idx.get_candidates(set(range(1, 50)), top_k=10, min_jaccard=0.5)
         for cand_id in candidates:
             assert cand_id not in ("mod_b",)
 

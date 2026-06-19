@@ -19,12 +19,18 @@ class TestIRNode:
         assert len(n.structural_hash()) == 12
 
     def test_identical_hash(self):
-        n1 = IRNode(node_type=IRNodeType.FUNCTION, children=[
-            IRNode(node_type=IRNodeType.RETURN),
-        ])
-        n2 = IRNode(node_type=IRNodeType.FUNCTION, children=[
-            IRNode(node_type=IRNodeType.RETURN),
-        ])
+        n1 = IRNode(
+            node_type=IRNodeType.FUNCTION,
+            children=[
+                IRNode(node_type=IRNodeType.RETURN),
+            ],
+        )
+        n2 = IRNode(
+            node_type=IRNodeType.FUNCTION,
+            children=[
+                IRNode(node_type=IRNodeType.RETURN),
+            ],
+        )
         assert n1.structural_hash() == n2.structural_hash()
 
     def test_different_hash(self):
@@ -33,18 +39,27 @@ class TestIRNode:
         assert n1.structural_hash() != n2.structural_hash()
 
     def test_depth(self):
-        n = IRNode(node_type=IRNodeType.BLOCK, children=[
-            IRNode(node_type=IRNodeType.FUNCTION, children=[
-                IRNode(node_type=IRNodeType.RETURN),
-            ])
-        ])
+        n = IRNode(
+            node_type=IRNodeType.BLOCK,
+            children=[
+                IRNode(
+                    node_type=IRNodeType.FUNCTION,
+                    children=[
+                        IRNode(node_type=IRNodeType.RETURN),
+                    ],
+                )
+            ],
+        )
         assert n.depth() == 3
 
     def test_node_count(self):
-        n = IRNode(node_type=IRNodeType.BLOCK, children=[
-            IRNode(node_type=IRNodeType.FUNCTION),
-            IRNode(node_type=IRNodeType.CLASS),
-        ])
+        n = IRNode(
+            node_type=IRNodeType.BLOCK,
+            children=[
+                IRNode(node_type=IRNodeType.FUNCTION),
+                IRNode(node_type=IRNodeType.CLASS),
+            ],
+        )
         assert n.node_count() == 3
 
     def test_to_dict(self):
@@ -129,10 +144,13 @@ class TestCrossLanguageDetector:
 class TestCrossLanguageClone:
     def test_to_dict(self):
         clone = CrossLanguageClone(
-            source_id="a.py", target_id="b.java",
-            source_language="python", target_language="java",
+            source_id="a.py",
+            target_id="b.java",
+            source_language="python",
+            target_language="java",
             structural_similarity=0.85,
-            ir_hash_source="abc", ir_hash_target="def",
+            ir_hash_source="abc",
+            ir_hash_target="def",
         )
         d = clone.to_dict()
         assert d["source_language"] == "python"

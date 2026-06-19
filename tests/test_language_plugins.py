@@ -16,7 +16,6 @@ from gh_similarity_detector.core.fingerprint.language_plugins import (
 
 
 class TestPythonPlugin:
-
     def test_get_language(self):
         plugin = PythonPlugin()
         lang = plugin.get_language()
@@ -47,7 +46,6 @@ class TestPythonPlugin:
 
 
 class TestJavaPlugin:
-
     def test_get_language(self):
         plugin = JavaPlugin()
         lang = plugin.get_language()
@@ -60,7 +58,6 @@ class TestJavaPlugin:
 
 
 class TestJavaScriptPlugin:
-
     def test_get_language(self):
         plugin = JavaScriptPlugin()
         lang = plugin.get_language()
@@ -73,7 +70,6 @@ class TestJavaScriptPlugin:
 
 
 class TestPluginRegistry:
-
     def test_register_and_get(self):
         registry = PluginRegistry()
         registry.register(PythonPlugin())
@@ -144,7 +140,6 @@ class TestPluginRegistry:
 
 
 class TestDefaultRegistry:
-
     def test_has_builtin_languages(self):
         assert default_registry.supports_language("python") is True
         assert default_registry.supports_language("java") is True
@@ -160,9 +155,9 @@ class TestDefaultRegistry:
 
 
 class TestTypeScriptPlugin:
-
     def test_capabilities(self):
         from gh_similarity_detector.core.fingerprint.language_plugins import TypeScriptPlugin
+
         plugin = TypeScriptPlugin()
         cap = plugin.get_capabilities()
         assert cap.language == "typescript"
@@ -170,9 +165,9 @@ class TestTypeScriptPlugin:
 
 
 class TestPhpPlugin:
-
     def test_capabilities(self):
         from gh_similarity_detector.core.fingerprint.language_plugins import PhpPlugin
+
         plugin = PhpPlugin()
         cap = plugin.get_capabilities()
         assert cap.language == "php"
@@ -182,6 +177,7 @@ class TestPhpPlugin:
 
     def test_ignore_patterns(self):
         from gh_similarity_detector.core.fingerprint.language_plugins import PhpPlugin
+
         plugin = PhpPlugin()
         patterns = plugin.get_ignore_patterns()
         assert "vendor/" in patterns
@@ -189,15 +185,16 @@ class TestPhpPlugin:
     def test_get_language(self):
         pytest.importorskip("tree_sitter_php")
         from gh_similarity_detector.core.fingerprint.language_plugins import PhpPlugin
+
         plugin = PhpPlugin()
         lang = plugin.get_language()
         assert lang is not None
 
 
 class TestRubyPlugin:
-
     def test_capabilities(self):
         from gh_similarity_detector.core.fingerprint.language_plugins import RubyPlugin
+
         plugin = RubyPlugin()
         cap = plugin.get_capabilities()
         assert cap.language == "ruby"
@@ -206,6 +203,7 @@ class TestRubyPlugin:
 
     def test_ignore_patterns(self):
         from gh_similarity_detector.core.fingerprint.language_plugins import RubyPlugin
+
         plugin = RubyPlugin()
         patterns = plugin.get_ignore_patterns()
         assert "vendor/" in patterns
@@ -213,15 +211,16 @@ class TestRubyPlugin:
     def test_get_language(self):
         pytest.importorskip("tree_sitter_ruby")
         from gh_similarity_detector.core.fingerprint.language_plugins import RubyPlugin
+
         plugin = RubyPlugin()
         lang = plugin.get_language()
         assert lang is not None
 
 
 class TestSwiftPlugin:
-
     def test_capabilities(self):
         from gh_similarity_detector.core.fingerprint.language_plugins import SwiftPlugin
+
         plugin = SwiftPlugin()
         cap = plugin.get_capabilities()
         assert cap.language == "swift"
@@ -230,6 +229,7 @@ class TestSwiftPlugin:
 
     def test_ignore_patterns(self):
         from gh_similarity_detector.core.fingerprint.language_plugins import SwiftPlugin
+
         plugin = SwiftPlugin()
         patterns = plugin.get_ignore_patterns()
         assert ".build/" in patterns
@@ -237,13 +237,13 @@ class TestSwiftPlugin:
     def test_get_language(self):
         pytest.importorskip("tree_sitter_swift")
         from gh_similarity_detector.core.fingerprint.language_plugins import SwiftPlugin
+
         plugin = SwiftPlugin()
         lang = plugin.get_language()
         assert lang is not None
 
 
 class TestNewPluginsInRegistry:
-
     def test_php_in_default_registry(self):
         pytest.importorskip("tree_sitter_php")
         registry = create_default_registry()
@@ -268,7 +268,6 @@ class TestNewPluginsInRegistry:
 
 
 class TestLanguageCapability:
-
     def test_default_values(self):
         cap = LanguageCapability(
             language="test",

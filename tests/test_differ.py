@@ -33,17 +33,17 @@ class TestCodeDiffer:
         source = "x = 1\n"
         target = "x = 2\n"
         diff_text = differ.format_unified_diff(source, target)
-        assert '-x = 1' in diff_text
-        assert '+x = 2' in diff_text
+        assert "-x = 1" in diff_text
+        assert "+x = 2" in diff_text
 
     def test_html_diff(self, differ):
         source = "x = 1\ny = 2\n"
         target = "x = 1\ny = 3\n"
         result = differ.diff(source, target)
         html = differ.format_html_diff(result)
-        assert 'diff-table' in html
-        assert 'diff-stats' in html
-        assert 'diff-equal' in html
+        assert "diff-table" in html
+        assert "diff-stats" in html
+        assert "diff-equal" in html
 
     def test_added_lines(self, differ):
         source = "x = 1\n"

@@ -29,54 +29,54 @@ class BehaviorCategory(Enum):
 
 
 API_PATTERNS = {
-    "http_request": [re.compile(r'\b(requests|httpx|urllib|fetch|axios)\.\w+\(', re.I)],
-    "database": [re.compile(r'\b(sqlite|mysql|postgres|mongo|redis|sqlalchemy)\.\w+\(', re.I)],
-    "file_io": [re.compile(r'\bopen\s*\(|\bread\s*\(|\bwrite\s*\(|\.read\(|\.write\(', re.I)],
-    "network": [re.compile(r'\bsocket\s*\(|\.connect\s*\(|\.bind\s*\(', re.I)],
-    "logging": [re.compile(r'\blogger\.\w+\(|logging\.\w+\(', re.I)],
-    "testing": [re.compile(r'\bassert\s+|\bpytest|unittest|\.assertEqual', re.I)],
-    "serialization": [re.compile(r'\bjson\.\w+\(|\.dumps\(|\.loads\(|pickle\.\w+\(', re.I)],
-    "cli": [re.compile(r'\bargparse|click|sys\.argv', re.I)],
+    "http_request": [re.compile(r"\b(requests|httpx|urllib|fetch|axios)\.\w+\(", re.I)],
+    "database": [re.compile(r"\b(sqlite|mysql|postgres|mongo|redis|sqlalchemy)\.\w+\(", re.I)],
+    "file_io": [re.compile(r"\bopen\s*\(|\bread\s*\(|\bwrite\s*\(|\.read\(|\.write\(", re.I)],
+    "network": [re.compile(r"\bsocket\s*\(|\.connect\s*\(|\.bind\s*\(", re.I)],
+    "logging": [re.compile(r"\blogger\.\w+\(|logging\.\w+\(", re.I)],
+    "testing": [re.compile(r"\bassert\s+|\bpytest|unittest|\.assertEqual", re.I)],
+    "serialization": [re.compile(r"\bjson\.\w+\(|\.dumps\(|\.loads\(|pickle\.\w+\(", re.I)],
+    "cli": [re.compile(r"\bargparse|click|sys\.argv", re.I)],
 }
 
 EXCEPTION_PATTERNS = [
-    re.compile(r'\btry\s*:', re.I),
-    re.compile(r'\bexcept\s+\w+', re.I),
-    re.compile(r'\bfinally\s*:', re.I),
-    re.compile(r'\braise\s+\w+', re.I),
-    re.compile(r'\bthrow\s+\w+', re.I),
+    re.compile(r"\btry\s*:", re.I),
+    re.compile(r"\bexcept\s+\w+", re.I),
+    re.compile(r"\bfinally\s*:", re.I),
+    re.compile(r"\braise\s+\w+", re.I),
+    re.compile(r"\bthrow\s+\w+", re.I),
 ]
 
 CONCURRENCY_PATTERNS = [
-    re.compile(r'\bthreading\.\w+|Thread\s*\(', re.I),
-    re.compile(r'\basync\s+def|await\s+', re.I),
-    re.compile(r'\bmultiprocessing\.\w+|Process\s*\(', re.I),
-    re.compile(r'\bconcurrent\.\w+', re.I),
-    re.compile(r'\bmutex|Lock\s*\(|Semaphore', re.I),
+    re.compile(r"\bthreading\.\w+|Thread\s*\(", re.I),
+    re.compile(r"\basync\s+def|await\s+", re.I),
+    re.compile(r"\bmultiprocessing\.\w+|Process\s*\(", re.I),
+    re.compile(r"\bconcurrent\.\w+", re.I),
+    re.compile(r"\bmutex|Lock\s*\(|Semaphore", re.I),
 ]
 
 DATA_TRANSFORM_PATTERNS = [
-    re.compile(r'\bmap\s*\(|\.map\s*\(', re.I),
-    re.compile(r'\bfilter\s*\(|\.filter\s*\(', re.I),
-    re.compile(r'\breduce\s*\(', re.I),
-    re.compile(r'\bsorted\s*\(|\.sort\s*\(', re.I),
-    re.compile(r'\bsum\s*\(|max\s*\(|min\s*\(', re.I),
-    re.compile(r'\bgroupby\s*\(', re.I),
+    re.compile(r"\bmap\s*\(|\.map\s*\(", re.I),
+    re.compile(r"\bfilter\s*\(|\.filter\s*\(", re.I),
+    re.compile(r"\breduce\s*\(", re.I),
+    re.compile(r"\bsorted\s*\(|\.sort\s*\(", re.I),
+    re.compile(r"\bsum\s*\(|max\s*\(|min\s*\(", re.I),
+    re.compile(r"\bgroupby\s*\(", re.I),
 ]
 
 ALGORITHM_PATTERNS = {
-    "sorting": re.compile(r'\bsort|sorted|qsort|mergesort', re.I),
-    "searching": re.compile(r'\bbinary_search|bsearch|find|index', re.I),
-    "graph": re.compile(r'\bbfs|dfs|dijkstra|bellman|floyd', re.I),
-    "dynamic_programming": re.compile(r'\bmemoriz|dp\[|fibonacci', re.I),
-    "hashing": re.compile(r'\bhash|md5|sha256|digest', re.I),
-    "encryption": re.compile(r'\bencrypt|decrypt|cipher|aes|rsa', re.I),
+    "sorting": re.compile(r"\bsort|sorted|qsort|mergesort", re.I),
+    "searching": re.compile(r"\bbinary_search|bsearch|find|index", re.I),
+    "graph": re.compile(r"\bbfs|dfs|dijkstra|bellman|floyd", re.I),
+    "dynamic_programming": re.compile(r"\bmemoriz|dp\[|fibonacci", re.I),
+    "hashing": re.compile(r"\bhash|md5|sha256|digest", re.I),
+    "encryption": re.compile(r"\bencrypt|decrypt|cipher|aes|rsa", re.I),
 }
 
 SECURITY_PATTERNS = [
-    re.compile(r'\bsanitiz|escape|encode|validate', re.I),
-    re.compile(r'\bauth|permission|token|jwt|csrf', re.I),
-    re.compile(r'\bpassword|secret|credential', re.I),
+    re.compile(r"\bsanitiz|escape|encode|validate", re.I),
+    re.compile(r"\bauth|permission|token|jwt|csrf", re.I),
+    re.compile(r"\bpassword|secret|credential", re.I),
 ]
 
 
@@ -103,7 +103,10 @@ class BehaviorSignature:
 
     def behavior_hash(self) -> str:
         import hashlib
-        cats = ":".join(f"{k.value}={','.join(sorted(v))}" for k, v in sorted(self.categories.items()))
+
+        cats = ":".join(
+            f"{k.value}={','.join(sorted(v))}" for k, v in sorted(self.categories.items())
+        )
         return hashlib.md5(cats.encode()).hexdigest()[:12]
 
     def similarity(self, other: "BehaviorSignature") -> float:
@@ -151,7 +154,9 @@ class BehaviorExtractor:
         for pattern in EXCEPTION_PATTERNS:
             if pattern.search(code):
                 sig.has_exception_handling = True
-                sig.categories.setdefault(BehaviorCategory.EXCEPTION_HANDLING, []).append("try_catch")
+                sig.categories.setdefault(BehaviorCategory.EXCEPTION_HANDLING, []).append(
+                    "try_catch"
+                )
                 break
 
         for pattern in CONCURRENCY_PATTERNS:
@@ -163,7 +168,9 @@ class BehaviorExtractor:
         for pattern in DATA_TRANSFORM_PATTERNS:
             m = pattern.search(code)
             if m:
-                sig.categories.setdefault(BehaviorCategory.DATA_TRANSFORM, []).append(m.group(0)[:20])
+                sig.categories.setdefault(BehaviorCategory.DATA_TRANSFORM, []).append(
+                    m.group(0)[:20]
+                )
 
         for algo_name, pattern in ALGORITHM_PATTERNS.items():
             if pattern.search(code):

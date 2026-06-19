@@ -21,12 +21,17 @@ def _make_result(sim: float = 85.0) -> DetectionResult:
                 reuse_suggestion=ReuseSuggestion.REFERENCE_ADAPT,
             )
         ],
-        statistics={"avg_similarity": sim, "max_similarity": sim, "count_90": 0, "count_80": 1, "count_70": 0},
+        statistics={
+            "avg_similarity": sim,
+            "max_similarity": sim,
+            "count_90": 0,
+            "count_80": 1,
+            "count_70": 0,
+        },
     )
 
 
 class TestReportSanitizer:
-
     def test_redacts_api_key(self):
         s = ReportSanitizer()
         text = 'api_key = "sk-12345"'
@@ -40,12 +45,11 @@ class TestReportSanitizer:
 
     def test_preserves_normal_code(self):
         s = ReportSanitizer()
-        text = 'def foo(x): return x + 1'
+        text = "def foo(x): return x + 1"
         assert s.sanitize(text) == text
 
 
 class TestReportGenerator:
-
     def test_markdown_report(self, tmp_path):
         config = DetectionConfig(
             report_format=ReportFormat.MARKDOWN,
@@ -54,7 +58,7 @@ class TestReportGenerator:
         gen = ReportGenerator(config)
         path = gen.generate_report([_make_result()])
         assert Path(path).exists()
-        content = Path(path).read_text(encoding='utf-8')
+        content = Path(path).read_text(encoding="utf-8")
         assert "proj-a" in content
         assert "proj-b" in content
 
@@ -66,7 +70,7 @@ class TestReportGenerator:
         gen = ReportGenerator(config)
         path = gen.generate_report([_make_result()])
         assert Path(path).exists()
-        content = Path(path).read_text(encoding='utf-8')
+        content = Path(path).read_text(encoding="utf-8")
         assert '"proj-a"' in content
 
     def test_html_report(self, tmp_path):
@@ -77,7 +81,7 @@ class TestReportGenerator:
         gen = ReportGenerator(config)
         path = gen.generate_report([_make_result()])
         assert Path(path).exists()
-        content = Path(path).read_text(encoding='utf-8')
+        content = Path(path).read_text(encoding="utf-8")
         assert "代码相似度检测报告" in content
         assert "matchesData" in content
 

@@ -16,7 +16,6 @@ from gh_similarity_detector.utils.logger import (
 
 
 class TestCorrelationId:
-
     def test_set_and_get(self):
         cid = set_correlation_id("test-123")
         assert cid == "test-123"
@@ -58,7 +57,6 @@ class TestCorrelationId:
 
 
 class TestModuleLogger:
-
     def test_get_module_logger(self):
         mod_logger = get_module_logger("fingerprint")
         assert mod_logger.component == "fingerprint"
@@ -74,7 +72,6 @@ class TestModuleLogger:
 
 
 class TestStructuredLoggerComponent:
-
     def test_component_in_extra(self):
         sl = StructuredLogger(name="test.comp", component="similarity")
         extra = sl._build_extra(None, None, {})
@@ -95,15 +92,20 @@ class TestStructuredLoggerComponent:
 
 
 class TestJSONFormatterWithCorrelation:
-
     def test_format_with_correlation_id(self):
         import logging
+
         set_correlation_id("corr-test-123")
         try:
             formatter = JSONFormatter()
             record = logging.LogRecord(
-                name="test", level=logging.INFO, pathname="", lineno=0,
-                msg="hello", args=(), exc_info=None,
+                name="test",
+                level=logging.INFO,
+                pathname="",
+                lineno=0,
+                msg="hello",
+                args=(),
+                exc_info=None,
             )
             output = formatter.format(record)
             data = json.loads(output)
@@ -113,11 +115,17 @@ class TestJSONFormatterWithCorrelation:
 
     def test_format_without_correlation_id(self):
         import logging
+
         clear_correlation_id()
         formatter = JSONFormatter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="hello", args=(), exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="hello",
+            args=(),
+            exc_info=None,
         )
         output = formatter.format(record)
         data = json.loads(output)
@@ -125,10 +133,16 @@ class TestJSONFormatterWithCorrelation:
 
     def test_format_with_component(self):
         import logging
+
         formatter = JSONFormatter()
         record = logging.LogRecord(
-            name="test", level=logging.INFO, pathname="", lineno=0,
-            msg="hello", args=(), exc_info=None,
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="hello",
+            args=(),
+            exc_info=None,
         )
         record.component = "fingerprint"
         output = formatter.format(record)

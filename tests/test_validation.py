@@ -22,9 +22,10 @@ from gh_similarity_detector.utils.validation import (
 
 
 class TestDetectRequest:
-
     def test_valid_request(self):
-        req = DetectRequest(source_url="https://github.com/a/b", target_url="https://github.com/c/d")
+        req = DetectRequest(
+            source_url="https://github.com/a/b", target_url="https://github.com/c/d"
+        )
         assert req.threshold == 0.7
 
     def test_custom_threshold(self):
@@ -58,7 +59,6 @@ class TestDetectRequest:
 
 
 class TestPlagiarismRequest:
-
     def test_valid_request(self):
         req = PlagiarismRequest(target_url="a", candidate_urls=["b", "c"])
         assert len(req.candidate_urls) == 2
@@ -77,7 +77,6 @@ class TestPlagiarismRequest:
 
 
 class TestProjectModel:
-
     def test_valid_project(self):
         p = ProjectModel(name="test/project", source="github")
         assert p.name == "test/project"
@@ -93,30 +92,52 @@ class TestProjectModel:
 
 
 class TestModuleModel:
-
     def test_valid_module(self):
-        m = ModuleModel(name="foo", file_path="a.py", module_type="function",
-                        start_line=1, end_line=10, language="python")
+        m = ModuleModel(
+            name="foo",
+            file_path="a.py",
+            module_type="function",
+            start_line=1,
+            end_line=10,
+            language="python",
+        )
         assert m.start_line == 1
 
     def test_invalid_module_type(self):
         with pytest.raises(ValidationError):
-            ModuleModel(name="foo", file_path="a.py", module_type="invalid",
-                        start_line=1, end_line=1, language="python")
+            ModuleModel(
+                name="foo",
+                file_path="a.py",
+                module_type="invalid",
+                start_line=1,
+                end_line=1,
+                language="python",
+            )
 
     def test_end_before_start(self):
         with pytest.raises(ValidationError):
-            ModuleModel(name="foo", file_path="a.py", module_type="function",
-                        start_line=10, end_line=1, language="python")
+            ModuleModel(
+                name="foo",
+                file_path="a.py",
+                module_type="function",
+                start_line=10,
+                end_line=1,
+                language="python",
+            )
 
     def test_path_traversal(self):
         with pytest.raises(ValidationError):
-            ModuleModel(name="foo", file_path="../etc/passwd", module_type="function",
-                        start_line=1, end_line=1, language="python")
+            ModuleModel(
+                name="foo",
+                file_path="../etc/passwd",
+                module_type="function",
+                start_line=1,
+                end_line=1,
+                language="python",
+            )
 
 
 class TestFingerprintSetModel:
-
     def test_valid(self):
         f = FingerprintSetModel(module_id="m1", winnowing_fingerprints={1, 2, 3})
         assert len(f.winnowing_fingerprints) == 3
@@ -127,7 +148,6 @@ class TestFingerprintSetModel:
 
 
 class TestSimilarityResultModel:
-
     def test_valid(self):
         r = SimilarityResultModel(source_module_id="m1", target_module_id="m2", similarity=85.5)
         assert r.similarity == 85.5
@@ -142,7 +162,6 @@ class TestSimilarityResultModel:
 
 
 class TestDetectionTaskModel:
-
     def test_valid(self):
         t = DetectionTaskModel(target_project="user/repo")
         assert t.status == "pending"
@@ -157,7 +176,6 @@ class TestDetectionTaskModel:
 
 
 class TestSearchRequest:
-
     def test_valid(self):
         s = SearchRequest(query="python detector")
         assert s.max_results == 20
@@ -176,7 +194,6 @@ class TestSearchRequest:
 
 
 class TestReportRequest:
-
     def test_valid(self):
         r = ReportRequest(format="html")
         assert r.format == "html"
@@ -187,7 +204,6 @@ class TestReportRequest:
 
 
 class TestValidateGitHubUrl:
-
     def test_valid_https(self):
         result = validate_github_url("https://github.com/user/repo")
         assert result == "https://github.com/user/repo"
@@ -214,7 +230,6 @@ class TestValidateGitHubUrl:
 
 
 class TestValidateProjectName:
-
     def test_valid(self):
         assert validate_project_name("user/repo") == "user/repo"
 
@@ -232,7 +247,6 @@ class TestValidateProjectName:
 
 
 class TestValidateFilePath:
-
     def test_valid(self):
         assert validate_file_path("src/main.py") == "src/main.py"
 

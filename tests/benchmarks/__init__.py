@@ -128,9 +128,9 @@ class BenchmarkRunner:
         lines = ["=" * 72, "Benchmark Results", "=" * 72]
         for r in self.results:
             lines.append(
-                f"{r.name:40s}  mean={r.mean*1000:8.3f}ms  "
-                f"med={r.median*1000:8.3f}ms  "
-                f"std={r.stdev*1000:8.3f}ms  "
+                f"{r.name:40s}  mean={r.mean * 1000:8.3f}ms  "
+                f"med={r.median * 1000:8.3f}ms  "
+                f"std={r.stdev * 1000:8.3f}ms  "
                 f"ops/s={r.ops_per_sec:10.1f}"
             )
         lines.append("=" * 72)

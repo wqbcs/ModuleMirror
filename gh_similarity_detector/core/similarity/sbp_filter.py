@@ -39,7 +39,10 @@ class SBPResult:
 
     @property
     def is_safe_derivative(self) -> bool:
-        return self.patch_status in (PatchStatus.PATCHED, PatchStatus.PARTIALLY_PATCHED) and self.confidence >= 0.6
+        return (
+            self.patch_status in (PatchStatus.PATCHED, PatchStatus.PARTIALLY_PATCHED)
+            and self.confidence >= 0.6
+        )
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -56,28 +59,31 @@ class SBPResult:
 
 
 COMMIT_KEYWORDS = [
-    re.compile(r'\bcve[-_]\d{4}[-_]\d+', re.IGNORECASE),
-    re.compile(r'\bfix\s+(security|vuln|vulnerability)', re.IGNORECASE),
-    re.compile(r'\b(security|vulnerability)\s+fix', re.IGNORECASE),
-    re.compile(r'\bpatch\s+(security|vuln)', re.IGNORECASE),
-    re.compile(r'\b(address|resolve|close)\s+(cve|vuln|security)', re.IGNORECASE),
-    re.compile(r'\b(xss|injection|csrf|ssrf|rce)\b', re.IGNORECASE),
-    re.compile(r'\bfix\s+(xss|injection|csrf|ssrf|rce)', re.IGNORECASE),
-    re.compile(r'\bbuffer\s+overflow', re.IGNORECASE),
-    re.compile(r'\bprivilege\s+escalation', re.IGNORECASE),
+    re.compile(r"\bcve[-_]\d{4}[-_]\d+", re.IGNORECASE),
+    re.compile(r"\bfix\s+(security|vuln|vulnerability)", re.IGNORECASE),
+    re.compile(r"\b(security|vulnerability)\s+fix", re.IGNORECASE),
+    re.compile(r"\bpatch\s+(security|vuln)", re.IGNORECASE),
+    re.compile(r"\b(address|resolve|close)\s+(cve|vuln|security)", re.IGNORECASE),
+    re.compile(r"\b(xss|injection|csrf|ssrf|rce)\b", re.IGNORECASE),
+    re.compile(r"\bfix\s+(xss|injection|csrf|ssrf|rce)", re.IGNORECASE),
+    re.compile(r"\bbuffer\s+overflow", re.IGNORECASE),
+    re.compile(r"\bprivilege\s+escalation", re.IGNORECASE),
 ]
 
 SECURITY_CODE_PATTERNS = [
-    (re.compile(r'\binput_sanitiz\w+', re.IGNORECASE), "input_sanitization"),
-    (re.compile(r'\bparam\w*_check\w*', re.IGNORECASE), "parameter_check"),
-    (re.compile(r'\bbound\w*_check\w*', re.IGNORECASE), "boundary_check"),
-    (re.compile(r'\b(length|size|count)\s*[<>=!]+\s*\w+', re.IGNORECASE), "length_validation"),
-    (re.compile(r'\b(escape|encode|sanitize)\s*\(', re.IGNORECASE), "output_encoding"),
-    (re.compile(r'\b(auth|permission|access)_check\w*', re.IGNORECASE), "access_control"),
-    (re.compile(r'\b(prepared|parameterized)\s*statement', re.IGNORECASE), "sql_injection_prevention"),
-    (re.compile(r'\bcrypt\w*_compare\w*', re.IGNORECASE), "timing_safe_compare"),
-    (re.compile(r'\b(csrf|token)_verify', re.IGNORECASE), "csrf_protection"),
-    (re.compile(r'\brate\s*limit', re.IGNORECASE), "rate_limiting"),
+    (re.compile(r"\binput_sanitiz\w+", re.IGNORECASE), "input_sanitization"),
+    (re.compile(r"\bparam\w*_check\w*", re.IGNORECASE), "parameter_check"),
+    (re.compile(r"\bbound\w*_check\w*", re.IGNORECASE), "boundary_check"),
+    (re.compile(r"\b(length|size|count)\s*[<>=!]+\s*\w+", re.IGNORECASE), "length_validation"),
+    (re.compile(r"\b(escape|encode|sanitize)\s*\(", re.IGNORECASE), "output_encoding"),
+    (re.compile(r"\b(auth|permission|access)_check\w*", re.IGNORECASE), "access_control"),
+    (
+        re.compile(r"\b(prepared|parameterized)\s*statement", re.IGNORECASE),
+        "sql_injection_prevention",
+    ),
+    (re.compile(r"\bcrypt\w*_compare\w*", re.IGNORECASE), "timing_safe_compare"),
+    (re.compile(r"\b(csrf|token)_verify", re.IGNORECASE), "csrf_protection"),
+    (re.compile(r"\brate\s*limit", re.IGNORECASE), "rate_limiting"),
 ]
 
 
@@ -130,7 +136,9 @@ class SBPFilter:
         new_fp_ratio = 0.0
         if source_fingerprints and target_fingerprints:
             new_in_target = target_fingerprints - source_fingerprints
-            new_fp_ratio = len(new_in_target) / len(target_fingerprints) if target_fingerprints else 0.0
+            new_fp_ratio = (
+                len(new_in_target) / len(target_fingerprints) if target_fingerprints else 0.0
+            )
             if new_fp_ratio >= self.new_fingerprint_ratio_threshold:
                 confidence += 0.3
                 patch_indicators.append(f"new_fingerprint_ratio={new_fp_ratio:.2f}")

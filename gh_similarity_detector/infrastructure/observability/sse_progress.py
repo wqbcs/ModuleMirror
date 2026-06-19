@@ -12,6 +12,7 @@ from typing import AsyncGenerator, Any, Dict, List
 
 try:
     from sse_starlette.sse import EventSourceResponse
+
     HAS_SSE = True
 except ImportError:
     HAS_SSE = False
@@ -70,11 +71,15 @@ async def progress_generator(
 
     results = []
     for i, item in enumerate(items):
-        event.set_stage(stage_name, f"处理中 {i+1}/{total}")
+        event.set_stage(stage_name, f"处理中 {i + 1}/{total}")
         yield event.to_dict()
 
         try:
-            result = await process_func(item) if asyncio.iscoroutinefunction(process_func) else process_func(item)
+            result = (
+                await process_func(item)
+                if asyncio.iscoroutinefunction(process_func)
+                else process_func(item)
+            )
             results.append(result)
             event.advance()
             yield event.to_dict()
@@ -138,7 +143,9 @@ class ProgressTracker:
 
 
 if not HAS_SSE:
+
     class MockEventSourceResponse:
         def __init__(self, content):
             self.content = content
+
     EventSourceResponse = MockEventSourceResponse

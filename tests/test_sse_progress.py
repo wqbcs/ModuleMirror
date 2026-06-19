@@ -144,6 +144,7 @@ class TestProgressGenerator:
 class TestCreateSSEResponse:
     def test_without_sse(self):
         if not HAS_SSE:
+
             async def gen():
                 yield {"test": 1}
 
@@ -153,6 +154,7 @@ class TestCreateSSEResponse:
 
     def test_with_sse(self):
         if HAS_SSE:
+
             async def gen():
                 yield {"progress": 50}
 

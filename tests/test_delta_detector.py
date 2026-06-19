@@ -9,7 +9,6 @@ from gh_similarity_detector.core.delta_detector import (
 
 
 class TestDeltaDetector:
-
     def test_compute_file_hash_deterministic(self):
         h1 = DeltaDetector.compute_file_hash("hello world")
         h2 = DeltaDetector.compute_file_hash("hello world")
@@ -90,7 +89,6 @@ class TestDeltaDetector:
 
 
 class TestDeltaResult:
-
     def test_has_changes_true(self):
         result = DeltaResult(added=["a.py"])
         assert result.has_changes is True
@@ -109,7 +107,6 @@ class TestDeltaResult:
 
 
 class TestGetChangedModules:
-
     def test_affected_modules(self):
         detector = DeltaDetector()
         detector.record_file_hash("a.py", "old_hash")

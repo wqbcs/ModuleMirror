@@ -14,32 +14,34 @@ from typing import FrozenSet
 from urllib.parse import urlparse
 
 
-ALLOWED_DOMAINS: FrozenSet[str] = frozenset({
-    'github.com',
-    'api.github.com',
-    'codeload.github.com',
-    'raw.githubusercontent.com',
-    'gist.github.com',
-    'uploads.github.com',
-    'github.githubassets.com',
-})
+ALLOWED_DOMAINS: FrozenSet[str] = frozenset(
+    {
+        "github.com",
+        "api.github.com",
+        "codeload.github.com",
+        "raw.githubusercontent.com",
+        "gist.github.com",
+        "uploads.github.com",
+        "github.githubassets.com",
+    }
+)
 
-ALLOWED_SCHEMES: FrozenSet[str] = frozenset({'https', 'http'})
+ALLOWED_SCHEMES: FrozenSet[str] = frozenset({"https", "http"})
 
 PRIVATE_NETWORKS = [
-    ipaddress.ip_network('10.0.0.0/8'),
-    ipaddress.ip_network('172.16.0.0/12'),
-    ipaddress.ip_network('192.168.0.0/16'),
-    ipaddress.ip_network('127.0.0.0/8'),
-    ipaddress.ip_network('169.254.0.0/16'),
-    ipaddress.ip_network('0.0.0.0/8'),
-    ipaddress.ip_network('100.64.0.0/10'),
-    ipaddress.ip_network('198.18.0.0/15'),
-    ipaddress.ip_network('224.0.0.0/4'),
-    ipaddress.ip_network('240.0.0.0/4'),
-    ipaddress.ip_network('::1/128'),
-    ipaddress.ip_network('fc00::/7'),
-    ipaddress.ip_network('fe80::/10'),
+    ipaddress.ip_network("10.0.0.0/8"),
+    ipaddress.ip_network("172.16.0.0/12"),
+    ipaddress.ip_network("192.168.0.0/16"),
+    ipaddress.ip_network("127.0.0.0/8"),
+    ipaddress.ip_network("169.254.0.0/16"),
+    ipaddress.ip_network("0.0.0.0/8"),
+    ipaddress.ip_network("100.64.0.0/10"),
+    ipaddress.ip_network("198.18.0.0/15"),
+    ipaddress.ip_network("224.0.0.0/4"),
+    ipaddress.ip_network("240.0.0.0/4"),
+    ipaddress.ip_network("::1/128"),
+    ipaddress.ip_network("fc00::/7"),
+    ipaddress.ip_network("fe80::/10"),
 ]
 
 
@@ -83,10 +85,10 @@ class SSRFProtector:
         if len(url) > 4096:
             raise SSRFError(f"URL长度超过限制: {len(url)}")
 
-        if re.search(r'[\x00-\x1f\x7f]', url):
+        if re.search(r"[\x00-\x1f\x7f]", url):
             raise SSRFError("URL包含控制字符")
 
-        ssh_match = re.match(r'git@([^:]+):(.+)', url)
+        ssh_match = re.match(r"git@([^:]+):(.+)", url)
         if ssh_match:
             hostname = ssh_match.group(1)
             self._validate_domain(hostname)
@@ -112,14 +114,14 @@ class SSRFProtector:
 
     def _validate_domain(self, hostname: str) -> None:
         """验证域名是否在白名单中"""
-        hostname = hostname.lower().rstrip('.')
+        hostname = hostname.lower().rstrip(".")
 
         if hostname in self.allowed_domains:
             return
 
-        parts = hostname.split('.')
+        parts = hostname.split(".")
         for i in range(len(parts)):
-            candidate = '.'.join(parts[i:])
+            candidate = ".".join(parts[i:])
             if candidate in self.allowed_domains:
                 return
 

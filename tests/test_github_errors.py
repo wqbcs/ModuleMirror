@@ -11,7 +11,6 @@ from gh_similarity_detector.infrastructure.github_client.client import (
 
 
 class TestGitHubAPIErrors:
-
     def test_api_error_format(self):
         err = GitHubAPIError(500, "服务异常")
         assert err.status_code == 500

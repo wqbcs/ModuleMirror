@@ -14,19 +14,20 @@ from .enums import ModuleType
 @dataclass
 class CodeFile:
     """代码文件
-    
+
     Attributes:
         path: 文件相对路径
         content: 文件内容
         language: 编程语言
     """
+
     path: str
     content: str
     language: str
-    
+
     def __hash__(self) -> int:
         return hash(self.path)
-    
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, CodeFile):
             return False
@@ -36,7 +37,7 @@ class CodeFile:
 @dataclass
 class Project:
     """项目
-    
+
     Attributes:
         id: 项目唯一标识
         name: 项目名称
@@ -48,6 +49,7 @@ class Project:
         file_count: 文件数量
         module_count: 模块数量
     """
+
     name: str
     source: str
     files: List[CodeFile] = field(default_factory=list)
@@ -57,16 +59,16 @@ class Project:
     language: str = "python"
     file_count: int = 0
     module_count: int = 0
-    
+
     def __post_init__(self) -> None:
         if self.id is None:
             self.id = self.url if self.url else self.name
         if self.file_count == 0 and self.files:
             self.file_count = len(self.files)
-    
+
     def __hash__(self) -> int:
         return hash(self.id)
-    
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Project):
             return False
@@ -76,7 +78,7 @@ class Project:
 @dataclass
 class Module:
     """代码模块
-    
+
     Attributes:
         id: 模块唯一标识
         name: 模块名称
@@ -89,6 +91,7 @@ class Module:
         token_count: token 数量
         project_id: 所属项目 ID
     """
+
     name: str
     file_path: str
     module_type: ModuleType
@@ -99,19 +102,19 @@ class Module:
     id: Optional[str] = None
     token_count: int = 0
     project_id: Optional[str] = None
-    
+
     def __post_init__(self) -> None:
         if self.id is None:
             self.id = f"{self.file_path}:{self.name}:{self.start_line}"
-    
+
     def __hash__(self) -> int:
         return hash(self.id)
-    
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, Module):
             return False
         return self.id == other.id
-    
+
     def __str__(self) -> str:
         return f"{self.module_type.value} {self.name} (lines {self.start_line}-{self.end_line})"
 
@@ -119,21 +122,22 @@ class Module:
 @dataclass
 class FingerprintSet:
     """指纹集合
-    
+
     Attributes:
         module_id: 模块 ID
         winnowing_fingerprints: Winnowing 指纹集合
         ast_fingerprints: AST 结构指纹集合
         token_count: token 数量
     """
+
     module_id: str
     winnowing_fingerprints: Set[int] = field(default_factory=set)
     ast_fingerprints: Set[int] = field(default_factory=set)
     token_count: int = 0
-    
+
     def __hash__(self) -> int:
         return hash(self.module_id)
-    
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FingerprintSet):
             return False

@@ -120,9 +120,11 @@ class TestNCDParallel:
         src3.mkdir()
         (src3 / "other.py").write_text("def other(): pass")
         ncd = NCD()
-        results = ncd.compute_project_similarity_parallel([
-            (str(src1), str(src2)),
-            (str(src1), str(src3)),
-        ])
+        results = ncd.compute_project_similarity_parallel(
+            [
+                (str(src1), str(src2)),
+                (str(src1), str(src3)),
+            ]
+        )
         assert len(results) == 2
         assert all(0 <= r <= 100 for r in results)

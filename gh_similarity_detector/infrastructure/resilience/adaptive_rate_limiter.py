@@ -18,6 +18,7 @@ from ...utils.logger import logger
 @dataclass
 class RateLimitState:
     """速率限制状态"""
+
     remaining: int = 5000
     limit: int = 5000
     reset_at: float = 0.0
@@ -96,9 +97,7 @@ class AdaptiveRateLimiter:
         self._state.last_updated = time.monotonic()
 
         if self._state.is_low:
-            logger.info(
-                f"GitHub API 配额低: remaining={self._state.remaining}/{self._state.limit}"
-            )
+            logger.info(f"GitHub API 配额低: remaining={self._state.remaining}/{self._state.limit}")
 
     def get_wait_time(self) -> float:
         """获取下次请求前的等待时间
@@ -122,6 +121,7 @@ class AdaptiveRateLimiter:
     async def wait_if_needed(self) -> None:
         """根据当前状态等待（异步）"""
         import asyncio
+
         wait = self.get_wait_time()
         if wait > 0:
             self._total_wait_time += wait

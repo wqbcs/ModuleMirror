@@ -15,7 +15,6 @@ from gh_similarity_detector.infrastructure.resilience.bulkhead import (
 
 
 class TestBulkheadBasic:
-
     def test_create(self):
         bh = Bulkhead("test", max_concurrent=5)
         assert bh.max_concurrent == 5
@@ -50,7 +49,6 @@ class TestBulkheadBasic:
 
 
 class TestBulkheadConcurrency:
-
     def test_reject_when_full(self):
         bh = Bulkhead("test", max_concurrent=1)
         assert bh.acquire() is True
@@ -97,7 +95,6 @@ class TestBulkheadConcurrency:
 
 
 class TestBulkheadPredefined:
-
     def test_github_bulkhead(self):
         assert github_bulkhead.max_concurrent == 5
 

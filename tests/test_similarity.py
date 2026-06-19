@@ -24,7 +24,7 @@ def _make_module(name, file_path="test.py"):
         start_line=1,
         end_line=1,
         language="python",
-        token_count=5
+        token_count=5,
     )
 
 
@@ -32,7 +32,7 @@ def _make_fingerprint(module_id, winnowing_fps, ast_fps=None):
     return FingerprintSet(
         module_id=module_id,
         winnowing_fingerprints=set(winnowing_fps),
-        ast_fingerprints=set(ast_fps) if ast_fps else set()
+        ast_fingerprints=set(ast_fps) if ast_fps else set(),
     )
 
 

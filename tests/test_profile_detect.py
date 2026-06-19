@@ -75,9 +75,7 @@ class TestRunScaleneProfile:
         script = tmp_path / "test.py"
         script.write_text("print('hello')", encoding="utf-8")
 
-        result = run_scalene_profile(
-            str(script), str(tmp_path), extra_args=["--cpu-only"]
-        )
+        result = run_scalene_profile(str(script), str(tmp_path), extra_args=["--cpu-only"])
 
         assert result is not None
         call_args = mock_run.call_args[0][0]
@@ -169,9 +167,7 @@ class TestProfileSimilarityDetect:
     def test_creates_script_file(self, mock_scalene, tmp_path):
         mock_scalene.return_value = None
 
-        profile_similarity_detect(
-            str(tmp_path), str(tmp_path), use_scalene=True, use_memray=False
-        )
+        profile_similarity_detect(str(tmp_path), str(tmp_path), use_scalene=True, use_memray=False)
 
         script_path = tmp_path / "profile_detect_script.py"
         assert script_path.exists()

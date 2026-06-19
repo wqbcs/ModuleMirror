@@ -24,7 +24,7 @@ class CloneLineage:
     similarity: float
     propagation_path: List[str] = field(default_factory=list)
     detected_at: str = ""
-    
+
     def __post_init__(self):
         if not self.detected_at:
             self.detected_at = datetime.now().isoformat()
@@ -43,7 +43,7 @@ class CloneLineageTracker:
     def __init__(self):
         self._nodes: Dict[str, LineageNode] = {}
         self._edges: List[Tuple[str, str, float]] = []
-    
+
     def add_version(
         self,
         version: str,
@@ -57,7 +57,7 @@ class CloneLineageTracker:
                 version=version,
             )
         logger.info(f"版本 {version} 添加 {len(modules)} 个模块")
-    
+
     def add_clone_relation(
         self,
         source_node: str,
@@ -68,12 +68,12 @@ class CloneLineageTracker:
         if source_node in self._nodes and target_node in self._nodes:
             self._nodes[source_node].children.append(target_node)
             self._nodes[target_node].parent = source_node
-    
+
     def find_source(self, module_id: str, version: str) -> Optional[str]:
         node_id = f"{version}:{module_id}"
         visited = set()
         current = node_id
-        
+
         while current and current not in visited:
             visited.add(current)
             if current in self._nodes:
@@ -86,9 +86,9 @@ class CloneLineageTracker:
                     break
             else:
                 break
-        
+
         return None
-    
+
     def trace_lineage(
         self,
         module_id: str,
@@ -101,12 +101,12 @@ class CloneLineageTracker:
         current = node_id
         source_node = None
         similarity = 0.0
-        
+
         for _ in range(max_depth):
             if current in visited:
                 break
             visited.add(current)
-            
+
             if current in self._nodes:
                 parent = self._nodes[current].parent
                 if parent:
@@ -121,7 +121,7 @@ class CloneLineageTracker:
                     break
             else:
                 break
-        
+
         if source_node:
             source_parts = source_node.split(":", 1)
             source_ver = source_parts[0]
@@ -129,7 +129,7 @@ class CloneLineageTracker:
         else:
             source_ver = version
             source_mod = module_id
-        
+
         return CloneLineage(
             clone_id=f"lineage:{module_id}:{version}",
             source_version=source_ver,
@@ -139,7 +139,7 @@ class CloneLineageTracker:
             similarity=similarity,
             propagation_path=path,
         )
-    
+
     def get_propagation_tree(
         self,
         source_module: str,
@@ -149,20 +149,20 @@ class CloneLineageTracker:
         tree: Dict[str, List[str]] = {}
         queue = [source_node]
         visited = set()
-        
+
         while queue:
             current = queue.pop(0)
             if current in visited:
                 continue
             visited.add(current)
-            
+
             if current in self._nodes:
                 children = self._nodes[current].children
                 tree[current] = children
                 queue.extend(children)
-        
+
         return tree
-    
+
     def get_stats(self) -> Dict[str, int]:
         return {
             "nodes": len(self._nodes),

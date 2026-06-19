@@ -1,12 +1,25 @@
 """领域异常体系测试"""
 
 from gh_similarity_detector.utils.exceptions import (
-    ModuleMirrorError, ConfigurationError, InvalidThresholdError,
-    UnsupportedLanguageError, FingerprintError, TokenizationError,
-    WinnowingError, SimilarityError, EmptyFingerprintError,
-    StorageError, DatabaseError, CacheError, ProjectError,
-    ProjectFetchError, ModuleExtractionError, APIError,
-    RateLimitExceededError, AuthenticationError, ResourceNotFoundError,
+    ModuleMirrorError,
+    ConfigurationError,
+    InvalidThresholdError,
+    UnsupportedLanguageError,
+    FingerprintError,
+    TokenizationError,
+    WinnowingError,
+    SimilarityError,
+    EmptyFingerprintError,
+    StorageError,
+    DatabaseError,
+    CacheError,
+    ProjectError,
+    ProjectFetchError,
+    ModuleExtractionError,
+    APIError,
+    RateLimitExceededError,
+    AuthenticationError,
+    ResourceNotFoundError,
 )
 
 

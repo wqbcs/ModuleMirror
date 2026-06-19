@@ -53,7 +53,9 @@ class MultiViewFeature:
         combined = f"{self.ast_feature.structural_hash}:{self.dfg_feature.structural_hash}:{self.cfg_feature.structural_hash}"
         return hashlib.md5(combined.encode()).hexdigest()[:16]
 
-    def fused_similarity(self, other: "MultiViewFeature", weights: Dict[str, float] = None) -> float:
+    def fused_similarity(
+        self, other: "MultiViewFeature", weights: Dict[str, float] = None
+    ) -> float:
         w = weights or {"ast": 0.4, "dfg": 0.3, "cfg": 0.3}
 
         ast_sim = self._view_similarity(self.ast_feature, other.ast_feature)
@@ -94,7 +96,7 @@ class MultiViewFeature:
 
 class ASTViewExtractor:
     def extract(self, code: str) -> ViewFeature:
-        lines = code.strip().split('\n')
+        lines = code.strip().split("\n")
         node_types = []
         max_depth = 0
         edge_types = []
@@ -146,7 +148,7 @@ class ASTViewExtractor:
 
 class DFGViewExtractor:
     def extract(self, code: str) -> ViewFeature:
-        lines = code.strip().split('\n')
+        lines = code.strip().split("\n")
         definitions: Dict[str, int] = {}
         uses: List[str] = []
         def_use_edges: List[str] = []
@@ -164,9 +166,17 @@ class DFGViewExtractor:
                     def_use_edges.append("def")
 
             import re
-            identifiers = re.findall(r'\b[a-zA-Z_]\w*\b', stripped)
+
+            identifiers = re.findall(r"\b[a-zA-Z_]\w*\b", stripped)
             for ident in identifiers:
-                if ident in definitions and ident not in ("if", "for", "while", "return", "def", "class"):
+                if ident in definitions and ident not in (
+                    "if",
+                    "for",
+                    "while",
+                    "return",
+                    "def",
+                    "class",
+                ):
                     uses.append(ident)
                     def_use_edges.append("use")
 
@@ -187,7 +197,7 @@ class DFGViewExtractor:
 
 class CFGViewExtractor:
     def extract(self, code: str) -> ViewFeature:
-        lines = code.strip().split('\n')
+        lines = code.strip().split("\n")
         node_types = []
         edge_types = []
         has_loop = False
@@ -195,7 +205,11 @@ class CFGViewExtractor:
 
         for line in lines:
             stripped = line.strip()
-            if stripped.startswith("if ") or stripped.startswith("elif ") or stripped.startswith("else"):
+            if (
+                stripped.startswith("if ")
+                or stripped.startswith("elif ")
+                or stripped.startswith("else")
+            ):
                 node_types.append("branch_block")
                 edge_types.append("branch")
             elif stripped.startswith("for ") or stripped.startswith("while "):

@@ -136,10 +136,7 @@ def network_retry(
     特点: 最多5次 + 指数退避 + 总超时 + 网络异常重试
     """
     return retry(
-        stop=(
-            stop_after_attempt(max_attempts)
-            | stop_after_delay(max_delay_seconds)
-        ),
+        stop=(stop_after_attempt(max_attempts) | stop_after_delay(max_delay_seconds)),
         wait=wait_exponential(
             multiplier=1.0,
             min=exponential_min,

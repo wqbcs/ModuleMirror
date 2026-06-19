@@ -20,6 +20,7 @@ from ...utils.logger import logger
 @dataclass
 class MultiProjectResult:
     """多项目检测结果"""
+
     mode: str
     results: Dict[str, List[DetectionResult]] = field(default_factory=dict)
     errors: Dict[str, str] = field(default_factory=dict)
@@ -42,10 +43,7 @@ class MultiProjectResult:
             "project_count": self.project_count,
             "total_matches": self.total_matches,
             "error_count": self.error_count,
-            "projects": {
-                target: len(results)
-                for target, results in self.results.items()
-            },
+            "projects": {target: len(results) for target, results in self.results.items()},
         }
 
 
@@ -82,7 +80,8 @@ class MultiRepositoryComparator:
         result = MultiProjectResult(mode="one_to_many")
         try:
             detection_results = self._pipeline.detect(
-                target, candidates,
+                target,
+                candidates,
                 progress_callback=progress_callback,
                 update_db=update_db,
             )
@@ -120,7 +119,8 @@ class MultiRepositoryComparator:
         def _detect_target(target: str) -> tuple:
             try:
                 results = self._pipeline.detect(
-                    target, candidates,
+                    target,
+                    candidates,
                     update_db=update_db,
                 )
                 return (target, results, None)
@@ -128,10 +128,7 @@ class MultiRepositoryComparator:
                 return (target, None, str(e))
 
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            future_to_target = {
-                executor.submit(_detect_target, t): t
-                for t in targets
-            }
+            future_to_target = {executor.submit(_detect_target, t): t for t in targets}
             for future in as_completed(future_to_target):
                 target, results, error = future.result()
                 if results is not None:
@@ -143,8 +140,7 @@ class MultiRepositoryComparator:
                     progress_callback(completed / total)
 
         logger.info(
-            f"多对多检测完成: {len(result.results)}/{total} 成功, "
-            f"{result.error_count} 失败"
+            f"多对多检测完成: {len(result.results)}/{total} 成功, {result.error_count} 失败"
         )
         return result
 
@@ -178,7 +174,8 @@ class MultiRepositoryComparator:
                 continue
             try:
                 results = self._pipeline.detect(
-                    target, others,
+                    target,
+                    others,
                     update_db=update_db,
                 )
                 result.results[target] = results
@@ -190,8 +187,5 @@ class MultiRepositoryComparator:
             if progress_callback:
                 progress_callback(completed / total)
 
-        logger.info(
-            f"矩阵检测完成: {len(result.results)}/{total} 成功, "
-            f"{result.error_count} 失败"
-        )
+        logger.info(f"矩阵检测完成: {len(result.results)}/{total} 成功, {result.error_count} 失败")
         return result

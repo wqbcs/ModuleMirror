@@ -24,6 +24,7 @@ def _make_fp_set(module_id: str, fingerprints: set) -> FingerprintSet:
 
 def _generate_fingerprints(n_modules: int, fps_per_module: int = 50) -> dict:
     import random
+
     random.seed(42)
     fps = {}
     base = 1

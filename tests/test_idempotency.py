@@ -21,20 +21,23 @@ class TestDeterministicContext:
 
     def test_apply_and_restore(self):
         import os
-        original = os.environ.get('PYTHONHASHSEED')
+
+        original = os.environ.get("PYTHONHASHSEED")
         ctx = DeterministicContext(hash_seed=123, freeze_hash_seed=True)
         prev = ctx.apply()
-        assert os.environ.get('PYTHONHASHSEED') == '123'
+        assert os.environ.get("PYTHONHASHSEED") == "123"
         ctx.restore(prev)
         if original is None:
-            assert 'PYTHONHASHSEED' not in os.environ or os.environ.get('PYTHONHASHSEED') == original
+            assert (
+                "PYTHONHASHSEED" not in os.environ or os.environ.get("PYTHONHASHSEED") == original
+            )
         else:
-            assert os.environ.get('PYTHONHASHSEED') == original
+            assert os.environ.get("PYTHONHASHSEED") == original
 
     def test_no_freeze(self):
         ctx = DeterministicContext(freeze_hash_seed=False)
         prev = ctx.apply()
-        assert 'PYTHONHASHSEED' not in prev
+        assert "PYTHONHASHSEED" not in prev
         ctx.restore(prev)
 
     def test_frozen_context(self):
@@ -58,6 +61,7 @@ class TestComputeResultHash:
         @dataclass
         class Match:
             fps: set
+
         m1 = Match(fps={3, 1, 2})
         m2 = Match(fps={2, 3, 1})
         h1 = compute_result_hash("s", "t", [m1])
@@ -157,6 +161,7 @@ class TestComputeConfigHash:
         class Cfg:
             threshold: float = 0.7
             kgram: int = 15
+
         h1 = compute_config_hash(Cfg())
         h2 = compute_config_hash(Cfg())
         assert h1 == h2
@@ -165,6 +170,7 @@ class TestComputeConfigHash:
         @dataclass
         class Cfg:
             threshold: float = 0.7
+
         h1 = compute_config_hash(Cfg(threshold=0.7))
         h2 = compute_config_hash(Cfg(threshold=0.9))
         assert h1 != h2

@@ -53,17 +53,20 @@ async def health():
 
 
 @router.post("/search")
-async def search_repositories(req: SearchRequest, x_github_token: Optional[str] = Header(None, alias="X-GitHub-Token")):
+async def search_repositories(
+    req: SearchRequest, x_github_token: Optional[str] = Header(None, alias="X-GitHub-Token")
+):
     """搜索 GitHub 仓库"""
     client = GitHubClient(token=x_github_token)
 
     try:
         results = await client.search_repositories(
-            req.query, language=req.language,
-            sort=req.sort, max_results=req.max_results
+            req.query, language=req.language, sort=req.sort, max_results=req.max_results
         )
     except RateLimitError as e:
-        raise HTTPException(status_code=429, detail=f"API 限流，请稍后重试 (reset: {e.retry_after})")
+        raise HTTPException(
+            status_code=429, detail=f"API 限流，请稍后重试 (reset: {e.retry_after})"
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

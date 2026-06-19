@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 try:
     from datasketch import MinHash, MinHashLSHForest
+
     HAS_DATASKETCH = True
 except ImportError:
     HAS_DATASKETCH = False
@@ -47,6 +48,7 @@ def tune_minhash_params(
     fp_items = list(fingerprints.items())
     if len(fp_items) > sample_size:
         import random
+
         random.seed(42)
         fp_items = random.sample(fp_items, sample_size)
         sample_fps = dict(fp_items)
@@ -69,7 +71,7 @@ def tune_minhash_params(
                         continue
                     mh = MinHash(num_perm=num_perm)
                     for fp in fps:
-                        mh.update(str(fp).encode('utf8'))
+                        mh.update(str(fp).encode("utf8"))
                     minhashes[module_id] = mh
                     forest.add(module_id, mh)
 
@@ -81,7 +83,7 @@ def tune_minhash_params(
                 fp_count = 0
                 fn_count = 0
 
-                for module_id in list(minhashes.keys())[:min(50, len(minhashes))]:
+                for module_id in list(minhashes.keys())[: min(50, len(minhashes))]:
                     mh = minhashes[module_id]
                     candidates = forest.query(mh, top_k)
 
@@ -96,17 +98,23 @@ def tune_minhash_params(
 
                 recall = tp / (tp + fn_count) if (tp + fn_count) > 0 else 0.0
                 precision = tp / (tp + fp_count) if (tp + fp_count) > 0 else 0.0
-                f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0.0
+                f1 = (
+                    2 * precision * recall / (precision + recall)
+                    if (precision + recall) > 0
+                    else 0.0
+                )
 
-                results.append(TuningResult(
-                    num_perm=num_perm,
-                    l_param=l_param,
-                    recall=recall,
-                    precision=precision,
-                    f1_score=f1,
-                    build_time_ms=build_time,
-                    query_time_ms=query_time,
-                ))
+                results.append(
+                    TuningResult(
+                        num_perm=num_perm,
+                        l_param=l_param,
+                        recall=recall,
+                        precision=precision,
+                        f1_score=f1,
+                        build_time_ms=build_time,
+                        query_time_ms=query_time,
+                    )
+                )
 
                 logger.info(
                     f"num_perm={num_perm}, l={l_param}: "
@@ -126,8 +134,5 @@ def recommend_params(results: List[TuningResult]) -> Tuple[int, int]:
         return (128, 64)
 
     best = results[0]
-    logger.info(
-        f"推荐参数: num_perm={best.num_perm}, l={best.l_param}, "
-        f"F1={best.f1_score:.3f}"
-    )
+    logger.info(f"推荐参数: num_perm={best.num_perm}, l={best.l_param}, F1={best.f1_score:.3f}")
     return (best.num_perm, best.l_param)

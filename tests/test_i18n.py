@@ -5,7 +5,11 @@ Author: ModuleMirror
 """
 
 from gh_similarity_detector.infrastructure.i18n import (
-    I18n, set_locale, get_locale, t, register_messages,
+    I18n,
+    set_locale,
+    get_locale,
+    t,
+    register_messages,
 )
 
 

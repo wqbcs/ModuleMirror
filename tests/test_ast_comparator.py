@@ -14,13 +14,12 @@ def _make_module(name: str, code: str, language: str = "python") -> Module:
         module_type=ModuleType.FUNCTION,
         source_code=code,
         start_line=1,
-        end_line=code.count('\n') + 1,
+        end_line=code.count("\n") + 1,
         language=language,
     )
 
 
 class TestASTDeepComparator:
-
     def setup_method(self):
         self.comparator = ASTDeepComparator(languages=["python"])
 

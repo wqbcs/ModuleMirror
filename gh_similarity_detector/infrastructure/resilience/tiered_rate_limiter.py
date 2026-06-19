@@ -60,7 +60,7 @@ class TokenBucket:
         if self.tokens >= tokens:
             return 0.0
         needed = tokens - self.tokens
-        return needed / self.refill_rate if self.refill_rate > 0 else float('inf')
+        return needed / self.refill_rate if self.refill_rate > 0 else float("inf")
 
 
 class TieredRateLimiter:
@@ -68,7 +68,9 @@ class TieredRateLimiter:
         "global": RateLimitRule(max_requests=1000, window_seconds=60, level=LimitLevel.GLOBAL),
         "detect": RateLimitRule(max_requests=100, window_seconds=60, level=LimitLevel.OPERATION),
         "plagiarism": RateLimitRule(max_requests=50, window_seconds=60, level=LimitLevel.OPERATION),
-        "add_project": RateLimitRule(max_requests=200, window_seconds=60, level=LimitLevel.OPERATION),
+        "add_project": RateLimitRule(
+            max_requests=200, window_seconds=60, level=LimitLevel.OPERATION
+        ),
         "lookup": RateLimitRule(max_requests=500, window_seconds=60, level=LimitLevel.OPERATION),
         "history": RateLimitRule(max_requests=300, window_seconds=60, level=LimitLevel.OPERATION),
         "health": RateLimitRule(max_requests=60, window_seconds=60, level=LimitLevel.ENDPOINT),
@@ -87,7 +89,9 @@ class TieredRateLimiter:
             refill_rate=refill_rate,
         )
 
-    def _get_bucket_key(self, operation: str, user_id: Optional[str] = None, endpoint: Optional[str] = None) -> str:
+    def _get_bucket_key(
+        self, operation: str, user_id: Optional[str] = None, endpoint: Optional[str] = None
+    ) -> str:
         parts = [operation]
         if user_id:
             parts.append(f"u:{user_id}")
@@ -99,7 +103,9 @@ class TieredRateLimiter:
         if key in self._buckets:
             return self._buckets[key]
 
-        rule = self.rules.get(operation, self.DEFAULT_RULES.get(operation, self.DEFAULT_RULES["global"]))
+        rule = self.rules.get(
+            operation, self.DEFAULT_RULES.get(operation, self.DEFAULT_RULES["global"])
+        )
         refill_rate = rule.max_requests / rule.window_seconds
         bucket = TokenBucket(
             max_tokens=rule.effective_max,
@@ -128,7 +134,9 @@ class TieredRateLimiter:
             wait = bucket.wait_time()
             rule = self.rules.get(operation, self.DEFAULT_RULES["global"])
             level_name = rule.level.value
-            logger.warning(f"{level_name}级速率限制触发: {operation} (key={bucket_key})，需等待 {wait:.2f}s")
+            logger.warning(
+                f"{level_name}级速率限制触发: {operation} (key={bucket_key})，需等待 {wait:.2f}s"
+            )
             return False, wait, {"level": level_name, "operation": operation, "retry_after": wait}
 
         return True, 0.0, {"level": "ok", "operation": operation}
@@ -141,7 +149,9 @@ class TieredRateLimiter:
     ) -> Dict:
         bucket_key = self._get_bucket_key(operation, user_id, endpoint)
         bucket = self._buckets.get(bucket_key)
-        rule = self.rules.get(operation, self.DEFAULT_RULES.get(operation, self.DEFAULT_RULES["global"]))
+        rule = self.rules.get(
+            operation, self.DEFAULT_RULES.get(operation, self.DEFAULT_RULES["global"])
+        )
 
         if bucket:
             now = time.monotonic()
@@ -151,7 +161,9 @@ class TieredRateLimiter:
                 "operation": operation,
                 "available_tokens": available,
                 "max_tokens": bucket.max_tokens,
-                "utilization": 1.0 - available / bucket.max_tokens if bucket.max_tokens > 0 else 0.0,
+                "utilization": 1.0 - available / bucket.max_tokens
+                if bucket.max_tokens > 0
+                else 0.0,
                 "level": rule.level.value,
             }
         return {
@@ -164,7 +176,9 @@ class TieredRateLimiter:
 
     def reset(self, operation: Optional[str] = None) -> None:
         if operation:
-            keys_to_remove = [k for k in self._buckets if k.startswith(operation) or k == "__global__"]
+            keys_to_remove = [
+                k for k in self._buckets if k.startswith(operation) or k == "__global__"
+            ]
             for k in keys_to_remove:
                 del self._buckets[k]
         else:

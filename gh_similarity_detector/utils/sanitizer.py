@@ -13,17 +13,19 @@ from typing import Optional
 from pathlib import Path
 
 
-_PATH_TRAVERSAL_PATTERNS = re.compile(r'\.\.|\~|\\')
-_COMMAND_INJECTION_PATTERNS = re.compile(r'[;&|`$\\]|\b\w*\s*>\s*')
-_SHELL_META_CHARS = set(';|&$`\\<>!(){}[]')
+_PATH_TRAVERSAL_PATTERNS = re.compile(r"\.\.|\~|\\")
+_COMMAND_INJECTION_PATTERNS = re.compile(r"[;&|`$\\]|\b\w*\s*>\s*")
+_SHELL_META_CHARS = set(";|&$`\\<>!(){}[]")
 
-ALLOWED_GITHUB_DOMAINS = frozenset({
-    'github.com',
-    'api.github.com',
-    'codeload.github.com',
-    'raw.githubusercontent.com',
-    'gist.github.com',
-})
+ALLOWED_GITHUB_DOMAINS = frozenset(
+    {
+        "github.com",
+        "api.github.com",
+        "codeload.github.com",
+        "raw.githubusercontent.com",
+        "gist.github.com",
+    }
+)
 
 MAX_INPUT_LENGTH = 4096
 MAX_PATH_DEPTH = 20
@@ -76,12 +78,12 @@ def sanitize_path(
     if _PATH_TRAVERSAL_PATTERNS.search(path):
         raise PathTraversalError(f"路径包含遍历字符: {path}")
 
-    parts = path.replace('\\', '/').split('/')
+    parts = path.replace("\\", "/").split("/")
     if len(parts) > MAX_PATH_DEPTH:
         raise PathTraversalError(f"路径深度超过限制({MAX_PATH_DEPTH})")
 
     for part in parts:
-        if part == '..' or part == '.':
+        if part == ".." or part == ".":
             raise PathTraversalError(f"路径包含相对遍历: {path}")
 
     if os.path.isabs(path) and not allow_absolute:
@@ -152,14 +154,15 @@ def sanitize_url(url: str, allowed_domains: frozenset = ALLOWED_GITHUB_DOMAINS) 
         raise PathTraversalError(f"URL包含注入字符: {url}")
 
     from urllib.parse import urlparse
+
     parsed = urlparse(url)
 
-    if parsed.scheme and parsed.scheme not in ('https', 'http', 'git'):
+    if parsed.scheme and parsed.scheme not in ("https", "http", "git"):
         raise PathTraversalError(f"不允许的协议: {parsed.scheme}")
 
     if parsed.hostname:
-        domain_parts = parsed.hostname.split('.')
-        main_domain = '.'.join(domain_parts[-2:]) if len(domain_parts) >= 2 else parsed.hostname
+        domain_parts = parsed.hostname.split(".")
+        main_domain = ".".join(domain_parts[-2:]) if len(domain_parts) >= 2 else parsed.hostname
         if main_domain not in allowed_domains and parsed.hostname not in allowed_domains:
             raise PathTraversalError(f"域名不在白名单: {parsed.hostname}")
 
@@ -189,11 +192,11 @@ def check_regex_safety(pattern: str) -> str:
     if len(pattern) > MAX_REGEX_LENGTH:
         raise ReDoSVulnerabilityError(f"正则长度超过限制({MAX_REGEX_LENGTH})")
 
-    nested_quantifier = re.compile(r'\([^)]*[+*][^)]*\)[+*{]')
+    nested_quantifier = re.compile(r"\([^)]*[+*][^)]*\)[+*{]")
     if nested_quantifier.search(pattern):
         raise ReDoSVulnerabilityError(f"检测到嵌套量词(潜在ReDoS): {pattern}")
 
-    overlapping_alternation = re.compile(r'\((\w+)\\|\1\)[+*]')
+    overlapping_alternation = re.compile(r"\((\w+)\\|\1\)[+*]")
     if overlapping_alternation.search(pattern):
         raise ReDoSVulnerabilityError(f"检测到重叠交替(潜在ReDoS): {pattern}")
 
@@ -218,7 +221,7 @@ def sanitize_string(value: str, max_length: int = MAX_INPUT_LENGTH) -> str:
     if not value:
         return value
 
-    value = re.sub(r'[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]', '', value)
+    value = re.sub(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", "", value)
 
     value = value.strip()
 

@@ -221,36 +221,26 @@ class FallbackStrategy:
                 circuit.check()
             except Exception:
                 circuit_open = True
-                logger.warning(
-                    f"FallbackStrategy [{self.name}]: Circuit OPEN, 走fallback路径"
-                )
+                logger.warning(f"FallbackStrategy [{self.name}]: Circuit OPEN, 走fallback路径")
 
         if not circuit_open:
             try:
                 result = await primary_fn()
                 self._success_count += 1
-                self._cache.put(
-                    self._category, key, result, source="primary"
-                )
+                self._cache.put(self._category, key, result, source="primary")
                 return result
             except Exception as e:
-                logger.warning(
-                    f"FallbackStrategy [{self.name}]: 主数据源失败({e}), 尝试fallback"
-                )
+                logger.warning(f"FallbackStrategy [{self.name}]: 主数据源失败({e}), 尝试fallback")
 
         fallback_value = self._cache.get(
             self._category, key, accept_expired=accept_expired_fallback
         )
         if fallback_value is not None:
             self._fallback_count += 1
-            logger.info(
-                f"FallbackStrategy [{self.name}]: 使用缓存兜底 [{key}]"
-            )
+            logger.info(f"FallbackStrategy [{self.name}]: 使用缓存兜底 [{key}]")
             return fallback_value
 
-        logger.warning(
-            f"FallbackStrategy [{self.name}]: 无缓存数据, 返回默认值 [{key}]"
-        )
+        logger.warning(f"FallbackStrategy [{self.name}]: 无缓存数据, 返回默认值 [{key}]")
         self._fallback_count += 1
         return self._default_value
 
@@ -262,8 +252,7 @@ class FallbackStrategy:
             "success_count": self._success_count,
             "fallback_count": self._fallback_count,
             "fallback_rate": (
-                self._fallback_count
-                / (self._success_count + self._fallback_count)
+                self._fallback_count / (self._success_count + self._fallback_count)
                 if (self._success_count + self._fallback_count) > 0
                 else 0.0
             ),

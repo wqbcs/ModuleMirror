@@ -30,6 +30,7 @@ try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
     from slowapi.util import get_remote_address
     from slowapi.errors import RateLimitExceeded
+
     _limiter = Limiter(key_func=get_remote_address)
     RATE_LIMIT_ENABLED = True
 except ImportError:
@@ -121,6 +122,7 @@ if _static_dir.exists():
 @app.get("/dashboard")
 async def dashboard():
     from fastapi.responses import FileResponse
+
     dashboard_path = _static_dir / "dashboard.html"
     if dashboard_path.exists():
         return FileResponse(str(dashboard_path))
@@ -161,7 +163,9 @@ async def security_headers_and_auth(request: Request, call_next):
         provided = request.headers.get("X-API-Key")
         if provided != api_key:
             graceful_shutdown.end_request()
-            return Response(content='{"detail":"Unauthorized"}', status_code=401, media_type="application/json")
+            return Response(
+                content='{"detail":"Unauthorized"}', status_code=401, media_type="application/json"
+            )
 
     response = await call_next(request)
     response.headers["X-Request-ID"] = request_id

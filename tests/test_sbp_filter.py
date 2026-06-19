@@ -14,37 +14,53 @@ from gh_similarity_detector.core.similarity.sbp_filter import (
 class TestSBPResult:
     def test_unpatched_not_safe(self):
         result = SBPResult(
-            source_id="a", target_id="b", similarity=80.0,
-            patch_status=PatchStatus.UNPATCHED, confidence=0.3,
+            source_id="a",
+            target_id="b",
+            similarity=80.0,
+            patch_status=PatchStatus.UNPATCHED,
+            confidence=0.3,
         )
         assert not result.is_safe_derivative
 
     def test_patched_high_confidence_safe(self):
         result = SBPResult(
-            source_id="a", target_id="b", similarity=80.0,
-            patch_status=PatchStatus.PATCHED, confidence=0.8,
+            source_id="a",
+            target_id="b",
+            similarity=80.0,
+            patch_status=PatchStatus.PATCHED,
+            confidence=0.8,
         )
         assert result.is_safe_derivative
 
     def test_patched_low_confidence_not_safe(self):
         result = SBPResult(
-            source_id="a", target_id="b", similarity=80.0,
-            patch_status=PatchStatus.PATCHED, confidence=0.3,
+            source_id="a",
+            target_id="b",
+            similarity=80.0,
+            patch_status=PatchStatus.PATCHED,
+            confidence=0.3,
         )
         assert not result.is_safe_derivative
 
     def test_partially_patched_safe(self):
         result = SBPResult(
-            source_id="a", target_id="b", similarity=75.0,
-            patch_status=PatchStatus.PARTIALLY_PATCHED, confidence=0.7,
+            source_id="a",
+            target_id="b",
+            similarity=75.0,
+            patch_status=PatchStatus.PARTIALLY_PATCHED,
+            confidence=0.7,
         )
         assert result.is_safe_derivative
 
     def test_to_dict(self):
         result = SBPResult(
-            source_id="a", target_id="b", similarity=85.0,
-            patch_status=PatchStatus.PATCHED, confidence=0.9,
-            patch_indicators=["cve fix"], security_patterns_found=["input_sanitization"],
+            source_id="a",
+            target_id="b",
+            similarity=85.0,
+            patch_status=PatchStatus.PATCHED,
+            confidence=0.9,
+            patch_indicators=["cve fix"],
+            security_patterns_found=["input_sanitization"],
         )
         d = result.to_dict()
         assert d["patch_status"] == "patched"
@@ -66,7 +82,11 @@ class TestSBPFilter:
     def test_cve_commit_message(self):
         f = SBPFilter()
         result = f.analyze(
-            "a", "b", 85.0, {1, 2}, {1, 2},
+            "a",
+            "b",
+            85.0,
+            {1, 2},
+            {1, 2},
             commit_messages=["fix CVE-2024-1234: buffer overflow"],
         )
         assert result.patch_status in (PatchStatus.PATCHED, PatchStatus.PARTIALLY_PATCHED)
@@ -75,7 +95,11 @@ class TestSBPFilter:
     def test_security_fix_commit(self):
         f = SBPFilter()
         result = f.analyze(
-            "a", "b", 80.0, {1}, {1},
+            "a",
+            "b",
+            80.0,
+            {1},
+            {1},
             commit_messages=["fix security vulnerability in login"],
         )
         assert result.confidence > 0
@@ -84,7 +108,11 @@ class TestSBPFilter:
         f = SBPFilter()
         code = "def sanitize_input(data): return escape(data)"
         result = f.analyze(
-            "a", "b", 90.0, {1}, {1},
+            "a",
+            "b",
+            90.0,
+            {1},
+            {1},
             source_code=code,
         )
         assert len(result.security_patterns_found) > 0
@@ -107,7 +135,11 @@ class TestSBPFilter:
     def test_combined_indicators_high_confidence(self):
         f = SBPFilter()
         result = f.analyze(
-            "a", "b", 90.0, {1, 2}, {1, 2, 3, 4, 5, 6},
+            "a",
+            "b",
+            90.0,
+            {1, 2},
+            {1, 2, 3, 4, 5, 6},
             commit_messages=["fix CVE-2023-4567: XSS vulnerability"],
             source_code="def input_sanitizer(data): boundary_check(data)",
         )
@@ -136,7 +168,11 @@ class TestSBPFilter:
     def test_xss_fix_keyword(self):
         f = SBPFilter()
         result = f.analyze(
-            "a", "b", 80.0, {1}, {1},
+            "a",
+            "b",
+            80.0,
+            {1},
+            {1},
             commit_messages=["fix XSS in user input rendering"],
         )
         assert result.confidence > 0
@@ -144,7 +180,11 @@ class TestSBPFilter:
     def test_injection_fix_keyword(self):
         f = SBPFilter()
         result = f.analyze(
-            "a", "b", 80.0, {1}, {1},
+            "a",
+            "b",
+            80.0,
+            {1},
+            {1},
             commit_messages=["fix SQL injection in query builder"],
         )
         assert result.confidence > 0

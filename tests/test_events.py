@@ -41,16 +41,22 @@ class TestEventBus:
     def test_multiple_handlers(self):
         bus = EventBus()
         count = [0]
-        bus.subscribe(DomainEventType.DETECTION_COMPLETED, lambda e: count.__setitem__(0, count[0] + 1))
-        bus.subscribe(DomainEventType.DETECTION_COMPLETED, lambda e: count.__setitem__(0, count[0] + 1))
+        bus.subscribe(
+            DomainEventType.DETECTION_COMPLETED, lambda e: count.__setitem__(0, count[0] + 1)
+        )
+        bus.subscribe(
+            DomainEventType.DETECTION_COMPLETED, lambda e: count.__setitem__(0, count[0] + 1)
+        )
         bus.publish(DomainEvent(event_type=DomainEventType.DETECTION_COMPLETED))
         assert count[0] == 2
 
     def test_unsubscribe(self):
         bus = EventBus()
         received = []
+
         def handler(e):
             return received.append(e)
+
         bus.subscribe(DomainEventType.DETECTION_STARTED, handler)
         bus.unsubscribe(DomainEventType.DETECTION_STARTED, handler)
         bus.publish(DomainEvent(event_type=DomainEventType.DETECTION_STARTED))

@@ -7,7 +7,6 @@ from gh_similarity_detector.models.entities import FingerprintSet
 
 
 class TestInvertedIndexIncremental:
-
     def test_add_module(self):
         idx = InvertedIndex()
         idx.add_module("m1", {100, 200, 300})

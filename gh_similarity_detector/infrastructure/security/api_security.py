@@ -28,6 +28,7 @@ class EndpointStatus(Enum):
 @dataclass
 class APIEndpoint:
     """API 端点注册信息"""
+
     path: str
     method: str
     status: EndpointStatus = EndpointStatus.ACTIVE
@@ -122,6 +123,7 @@ class APIInventory:
 @dataclass
 class ThirdPartyAPIConfig:
     """第三方 API 安全配置"""
+
     name: str
     base_url: str
     allowed_status_codes: Set[int] = field(default_factory=lambda: {200, 201, 204, 301, 302})
@@ -187,11 +189,13 @@ class ThirdPartyAPIValidator:
 
         result = {"valid": len(errors) == 0, "errors": errors}
         if not result["valid"]:
-            self._validation_errors.append({
-                "api": api_name,
-                "errors": errors,
-                "timestamp": time.monotonic(),
-            })
+            self._validation_errors.append(
+                {
+                    "api": api_name,
+                    "errors": errors,
+                    "timestamp": time.monotonic(),
+                }
+            )
             logger.warning(f"第三方API响应验证失败 [{api_name}]: {errors}")
 
         return result
@@ -218,9 +222,7 @@ class ThirdPartyAPIValidator:
         etag = headers.get("ETag") or headers.get("etag")
         if etag is None:
             return True
-        body_hash = hashlib.md5(
-            json.dumps(body, sort_keys=True, default=str).encode()
-        ).hexdigest()
+        body_hash = hashlib.md5(json.dumps(body, sort_keys=True, default=str).encode()).hexdigest()
         expected = etag.strip('"')
         return body_hash == expected
 
@@ -240,12 +242,14 @@ api_inventory = APIInventory()
 
 third_party_validator = ThirdPartyAPIValidator()
 
-third_party_validator.register(ThirdPartyAPIConfig(
-    name="github_api",
-    base_url="https://api.github.com",
-    allowed_status_codes={200, 201, 204, 301, 302, 304, 403, 404, 422},
-    max_response_size=50 * 1024 * 1024,
-    required_headers={"X-RateLimit-Remaining"},
-    response_schema=None,
-    enable_integrity_check=False,
-))
+third_party_validator.register(
+    ThirdPartyAPIConfig(
+        name="github_api",
+        base_url="https://api.github.com",
+        allowed_status_codes={200, 201, 204, 301, 302, 304, 403, 404, 422},
+        max_response_size=50 * 1024 * 1024,
+        required_headers={"X-RateLimit-Remaining"},
+        response_schema=None,
+        enable_integrity_check=False,
+    )
+)

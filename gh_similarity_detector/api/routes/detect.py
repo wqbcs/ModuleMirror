@@ -23,13 +23,15 @@ class DetectRequest(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [{
-                "target": "https://github.com/user/repo1",
-                "candidates": ["https://github.com/user/repo2"],
-                "language": ["python"],
-                "threshold": 70.0,
-                "granularity": "function",
-            }]
+            "examples": [
+                {
+                    "target": "https://github.com/user/repo1",
+                    "candidates": ["https://github.com/user/repo2"],
+                    "language": ["python"],
+                    "threshold": 70.0,
+                    "granularity": "function",
+                }
+            ]
         }
     }
 
@@ -57,7 +59,7 @@ async def detect(req: DetectRequest):
     granularity_map = {
         "file": ModuleType.FILE,
         "function": ModuleType.FUNCTION,
-        "class": ModuleType.CLASS
+        "class": ModuleType.CLASS,
     }
 
     config = DetectionConfig(
@@ -80,13 +82,15 @@ async def detect(req: DetectRequest):
     all_matches = []
     for r in results:
         for m in r.matches:
-            all_matches.append({
-                "source_module": m.source_module_id,
-                "target_module": m.target_module_id,
-                "similarity": m.similarity,
-                "reuse_suggestion": m.reuse_suggestion.value,
-                "snippet": m.matched_code_snippet,
-            })
+            all_matches.append(
+                {
+                    "source_module": m.source_module_id,
+                    "target_module": m.target_module_id,
+                    "similarity": m.similarity,
+                    "reuse_suggestion": m.reuse_suggestion.value,
+                    "snippet": m.matched_code_snippet,
+                }
+            )
 
     return DetectResponse(results=all_matches, total_matches=len(all_matches))
 
@@ -99,12 +103,10 @@ async def compute_ncd(req: NcdRequest):
     if not source.is_dir() or not target.is_dir():
         raise HTTPException(status_code=400, detail="源目录或目标目录不存在")
     ncd = NCD()
-    exts = req.extensions or ['.py', '.js', '.java', '.ts']
+    exts = req.extensions or [".py", ".js", ".java", ".ts"]
     sim = ncd.compute_project_similarity(req.source_dir, req.target_dir, exts)
     return NcdResponse(
-        similarity=sim,
-        source=Path(req.source_dir).name,
-        target=Path(req.target_dir).name
+        similarity=sim, source=Path(req.source_dir).name, target=Path(req.target_dir).name
     )
 
 
@@ -117,12 +119,17 @@ class PlagiarismRequest(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [{
-                "source": "https://github.com/victim/repo",
-                "suspects": ["https://github.com/suspect/repo1", "https://github.com/suspect/repo2"],
-                "language": ["python"],
-                "threshold": 60.0,
-            }]
+            "examples": [
+                {
+                    "source": "https://github.com/victim/repo",
+                    "suspects": [
+                        "https://github.com/suspect/repo1",
+                        "https://github.com/suspect/repo2",
+                    ],
+                    "language": ["python"],
+                    "threshold": 60.0,
+                }
+            ]
         }
     }
 
@@ -155,10 +162,12 @@ class QualityGateRequest(BaseModel):
 
     model_config = {
         "json_schema_extra": {
-            "examples": [{
-                "results": [{"statistics": {"avg_similarity": 75.0}, "matches": []}],
-                "gate_name": "default",
-            }]
+            "examples": [
+                {
+                    "results": [{"statistics": {"avg_similarity": 75.0}, "matches": []}],
+                    "gate_name": "default",
+                }
+            ]
         }
     }
 

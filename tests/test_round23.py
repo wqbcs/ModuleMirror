@@ -2,11 +2,13 @@
 
 from unittest.mock import MagicMock
 from gh_similarity_detector.core.comparison.result_comparator import (
-    ResultComparator, MatchDiff,
+    ResultComparator,
+    MatchDiff,
 )
 from gh_similarity_detector.infrastructure.io.stream_reader import StreamReader
 from gh_similarity_detector.infrastructure.resilience.adaptive_rate_limiter import (
-    AdaptiveRateLimiter, RateLimitState,
+    AdaptiveRateLimiter,
+    RateLimitState,
 )
 from gh_similarity_detector.models.results import DetectionResult
 
@@ -73,7 +75,13 @@ class TestResultComparator:
 
 class TestMatchDiff:
     def test_delta(self):
-        d = MatchDiff(source_module="a", target_module="b", old_similarity=80.0, new_similarity=90.0, change_type="changed")
+        d = MatchDiff(
+            source_module="a",
+            target_module="b",
+            old_similarity=80.0,
+            new_similarity=90.0,
+            change_type="changed",
+        )
         assert abs(d.delta - 10.0) < 0.01
         assert abs(d.abs_delta - 10.0) < 0.01
 
@@ -103,7 +111,7 @@ class TestStreamReader:
     def test_read_smart_small(self, tmp_path):
         f = tmp_path / "small.py"
         f.write_text("small file")
-        reader = StreamReader(max_file_size=1024*1024)
+        reader = StreamReader(max_file_size=1024 * 1024)
         content = reader.read_smart(str(f))
         assert content == "small file"
 
@@ -127,20 +135,24 @@ class TestAdaptiveRateLimiter:
 
     def test_update_from_headers(self):
         limiter = AdaptiveRateLimiter()
-        limiter.update_from_headers({
-            "X-RateLimit-Remaining": "50",
-            "X-RateLimit-Limit": "5000",
-            "X-RateLimit-Reset": "1700000000",
-        })
+        limiter.update_from_headers(
+            {
+                "X-RateLimit-Remaining": "50",
+                "X-RateLimit-Limit": "5000",
+                "X-RateLimit-Reset": "1700000000",
+            }
+        )
         assert limiter.state.remaining == 50
         assert limiter.state.is_low
 
     def test_critical_state(self):
         limiter = AdaptiveRateLimiter()
-        limiter.update_from_headers({
-            "X-RateLimit-Remaining": "5",
-            "X-RateLimit-Limit": "5000",
-        })
+        limiter.update_from_headers(
+            {
+                "X-RateLimit-Remaining": "5",
+                "X-RateLimit-Limit": "5000",
+            }
+        )
         assert limiter.state.is_critical
 
     def test_wait_time_fast(self):

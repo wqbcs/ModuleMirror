@@ -22,6 +22,7 @@ _logger = get_module_logger("language_plugin")
 @dataclass
 class LanguageCapability:
     """语言能力描述"""
+
     language: str
     display_name: str
     extensions: List[str]
@@ -62,6 +63,7 @@ class LanguagePlugin(ABC):
 class PythonPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_python as tspython
+
         return Language(tspython.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -86,6 +88,7 @@ class PythonPlugin(LanguagePlugin):
 class JavaPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_java as tsjava
+
         return Language(tsjava.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -104,6 +107,7 @@ class JavaPlugin(LanguagePlugin):
 class JavaScriptPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_javascript as tsjavascript
+
         return Language(tsjavascript.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -123,9 +127,11 @@ class TypeScriptPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         try:
             import tree_sitter_typescript as tstypescript
+
             return Language(tstypescript.language_typescript())
         except ImportError:
             import tree_sitter_javascript as tsjavascript
+
             return Language(tsjavascript.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -145,6 +151,7 @@ class TypeScriptPlugin(LanguagePlugin):
 class GoPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_go as tsgo
+
         return Language(tsgo.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -160,6 +167,7 @@ class GoPlugin(LanguagePlugin):
 class RustPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_rust as tsrust
+
         return Language(tsrust.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -175,6 +183,7 @@ class RustPlugin(LanguagePlugin):
 class CPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_c as tsc
+
         return Language(tsc.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -190,6 +199,7 @@ class CPlugin(LanguagePlugin):
 class CppPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_cpp as tscpp
+
         return Language(tscpp.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -208,6 +218,7 @@ class CppPlugin(LanguagePlugin):
 class KotlinPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_kotlin as tskotlin
+
         return Language(tskotlin.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -226,6 +237,7 @@ class KotlinPlugin(LanguagePlugin):
 class ScalaPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_scala as tsscala
+
         return Language(tsscala.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -244,6 +256,7 @@ class ScalaPlugin(LanguagePlugin):
 class PhpPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_php as tsphp
+
         return Language(tsphp.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -262,6 +275,7 @@ class PhpPlugin(LanguagePlugin):
 class RubyPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_ruby as tsruby
+
         return Language(tsruby.language())
 
     def get_capabilities(self) -> LanguageCapability:
@@ -280,6 +294,7 @@ class RubyPlugin(LanguagePlugin):
 class SwiftPlugin(LanguagePlugin):
     def get_language(self) -> Language:
         import tree_sitter_swift as tsswift
+
         return Language(tsswift.language())
 
     def get_capabilities(self) -> LanguageCapability:

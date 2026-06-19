@@ -19,9 +19,7 @@ class TestMemorySnapshot:
         assert abs(snap.peak_mb - 20.0) < 0.01
 
     def test_zero_mb(self):
-        snap = MemorySnapshot(
-            timestamp=0.0, current_size=0, peak_size=0, block_count=0
-        )
+        snap = MemorySnapshot(timestamp=0.0, current_size=0, peak_size=0, block_count=0)
         assert snap.current_mb == 0.0
         assert snap.peak_mb == 0.0
 

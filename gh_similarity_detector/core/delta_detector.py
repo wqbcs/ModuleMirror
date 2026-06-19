@@ -19,6 +19,7 @@ _logger = get_module_logger("delta_detection")
 @dataclass
 class FileFingerprint:
     """文件内容指纹"""
+
     path: str
     content_hash: str
     size: int
@@ -28,6 +29,7 @@ class FileFingerprint:
 @dataclass
 class DeltaResult:
     """增量检测结果"""
+
     added: List[str] = field(default_factory=list)
     modified: List[str] = field(default_factory=list)
     deleted: List[str] = field(default_factory=list)
@@ -58,7 +60,7 @@ class DeltaDetector:
     @staticmethod
     def compute_file_hash(content: str) -> str:
         """计算文件内容的SHA256哈希"""
-        return hashlib.sha256(content.encode('utf-8')).hexdigest()
+        return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
     def record_file_hash(self, path: str, content_hash: str) -> None:
         """记录文件哈希"""

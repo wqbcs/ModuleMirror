@@ -4,7 +4,9 @@ import time
 import pytest
 
 from gh_similarity_detector.infrastructure.resilience.circuit_breaker import (
-    CircuitBreaker, CircuitState, CircuitBreakerOpenError,
+    CircuitBreaker,
+    CircuitState,
+    CircuitBreakerOpenError,
 )
 
 
@@ -44,7 +46,9 @@ class TestCircuitBreakerStates:
         assert cb.state == CircuitState.HALF_OPEN
 
     def test_closes_after_success_in_half_open(self):
-        cb = CircuitBreaker(name="test", failure_threshold=1, recovery_timeout=0.01, success_threshold=2)
+        cb = CircuitBreaker(
+            name="test", failure_threshold=1, recovery_timeout=0.01, success_threshold=2
+        )
         cb.record_failure()
         time.sleep(0.02)
         assert cb.state == CircuitState.HALF_OPEN

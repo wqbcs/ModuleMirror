@@ -9,10 +9,13 @@ def init_schema(conn: sqlite3.Connection) -> None:
 
     conn.execute(CREATE_META)
 
-    conn.execute('''
+    conn.execute(
+        """
         INSERT OR IGNORE INTO meta (key, value)
         VALUES ('schema_version', ?)
-    ''', (str(SCHEMA_VERSION),))
+    """,
+        (str(SCHEMA_VERSION),),
+    )
 
     run_migrations(conn)
 
@@ -25,9 +28,7 @@ def init_schema(conn: sqlite3.Connection) -> None:
 
 
 def run_migrations(conn: sqlite3.Connection) -> None:
-    row = conn.execute(
-        "SELECT value FROM meta WHERE key = 'schema_version'"
-    ).fetchone()
+    row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
     current_version = int(row[0]) if row else 0
 
     if current_version >= SCHEMA_VERSION:
@@ -39,19 +40,19 @@ def run_migrations(conn: sqlite3.Connection) -> None:
             logger.info(f"数据库迁移: v{current_version} → v{version}")
             for stmt in migration_sql:
                 conn.execute(stmt)
-            conn.execute(
-                "UPDATE meta SET value = ? WHERE key = 'schema_version'",
-                (str(version),)
-            )
+            conn.execute("UPDATE meta SET value = ? WHERE key = 'schema_version'", (str(version),))
             current_version = version
             logger.info(f"数据库迁移完成: v{version}")
 
 
 def get_migrations() -> list:
     return [
-        (2, [
-            "ALTER TABLE projects ADD COLUMN description TEXT DEFAULT ''",
-            "ALTER TABLE projects ADD COLUMN stars INTEGER DEFAULT 0",
-            "CREATE INDEX IF NOT EXISTS idx_project_name ON projects(name)",
-        ]),
+        (
+            2,
+            [
+                "ALTER TABLE projects ADD COLUMN description TEXT DEFAULT ''",
+                "ALTER TABLE projects ADD COLUMN stars INTEGER DEFAULT 0",
+                "CREATE INDEX IF NOT EXISTS idx_project_name ON projects(name)",
+            ],
+        ),
     ]

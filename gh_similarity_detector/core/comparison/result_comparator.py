@@ -17,6 +17,7 @@ from ...utils.logger import logger
 @dataclass
 class MatchDiff:
     """单条匹配差异"""
+
     source_module: str
     target_module: str
     old_similarity: Optional[float] = None
@@ -37,6 +38,7 @@ class MatchDiff:
 @dataclass
 class ResultComparison:
     """检测结果对比"""
+
     source_project: str
     target_project: str
     added_matches: List[MatchDiff] = field(default_factory=list)
@@ -76,14 +78,14 @@ class ResultComparator:
     @staticmethod
     def _match_key(result: Any) -> str:
         """生成匹配的唯一键"""
-        src = getattr(result, 'source_module', '') or getattr(result, 'module_a', '')
-        tgt = getattr(result, 'target_module', '') or getattr(result, 'module_b', '')
+        src = getattr(result, "source_module", "") or getattr(result, "module_a", "")
+        tgt = getattr(result, "target_module", "") or getattr(result, "module_b", "")
         return f"{src}|{tgt}"
 
     @staticmethod
     def _similarity(result: Any) -> float:
         """提取相似度"""
-        return getattr(result, 'similarity', 0.0) or getattr(result, 'score', 0.0) or 0.0
+        return getattr(result, "similarity", 0.0) or getattr(result, "score", 0.0) or 0.0
 
     def compare(
         self,
@@ -120,34 +122,40 @@ class ResultComparator:
 
         for key in new_keys - old_keys:
             parts = key.split("|", 1)
-            comparison.added_matches.append(MatchDiff(
-                source_module=parts[0],
-                target_module=parts[1] if len(parts) > 1 else "",
-                new_similarity=new_matches[key],
-                change_type="added",
-            ))
+            comparison.added_matches.append(
+                MatchDiff(
+                    source_module=parts[0],
+                    target_module=parts[1] if len(parts) > 1 else "",
+                    new_similarity=new_matches[key],
+                    change_type="added",
+                )
+            )
 
         for key in old_keys - new_keys:
             parts = key.split("|", 1)
-            comparison.removed_matches.append(MatchDiff(
-                source_module=parts[0],
-                target_module=parts[1] if len(parts) > 1 else "",
-                old_similarity=old_matches[key],
-                change_type="removed",
-            ))
+            comparison.removed_matches.append(
+                MatchDiff(
+                    source_module=parts[0],
+                    target_module=parts[1] if len(parts) > 1 else "",
+                    old_similarity=old_matches[key],
+                    change_type="removed",
+                )
+            )
 
         for key in old_keys & new_keys:
             old_sim = old_matches[key]
             new_sim = new_matches[key]
             parts = key.split("|", 1)
             if abs(new_sim - old_sim) >= 0.01:
-                comparison.changed_matches.append(MatchDiff(
-                    source_module=parts[0],
-                    target_module=parts[1] if len(parts) > 1 else "",
-                    old_similarity=old_sim,
-                    new_similarity=new_sim,
-                    change_type="changed",
-                ))
+                comparison.changed_matches.append(
+                    MatchDiff(
+                        source_module=parts[0],
+                        target_module=parts[1] if len(parts) > 1 else "",
+                        old_similarity=old_sim,
+                        new_similarity=new_sim,
+                        change_type="changed",
+                    )
+                )
             else:
                 comparison.unchanged_count += 1
 

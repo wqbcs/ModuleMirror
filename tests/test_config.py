@@ -9,7 +9,6 @@ from gh_similarity_detector.models.enums import ModuleType
 
 
 class TestDetectionConfig:
-
     def test_default_values(self):
         config = DetectionConfig()
         assert config.module_granularity == ModuleType.FUNCTION
@@ -69,17 +68,17 @@ class TestDetectionConfig:
 
 
 class TestLoadDotenv:
-
     def test_load_dotenv_missing_file(self):
         load_dotenv("/nonexistent/.env")
 
     def test_load_dotenv_creates_env_vars(self, tmp_path):
         env_path = str(tmp_path / ".env")
-        with open(env_path, 'w') as f:
+        with open(env_path, "w") as f:
             f.write("TEST_GH_SIM_VAR=hello\n# comment\nANOTHER_VAR=world\n")
 
         import os
         import gh_similarity_detector.config.config as config_mod
+
         config_mod._dotenv_loaded = False
         os.environ.pop("TEST_GH_SIM_VAR", None)
         os.environ.pop("ANOTHER_VAR", None)

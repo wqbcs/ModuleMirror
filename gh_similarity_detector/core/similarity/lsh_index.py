@@ -14,6 +14,7 @@ from typing import Dict, List, Set, Optional, Tuple
 
 try:
     from datasketch import MinHash, MinHashLSHForest
+
     HAS_DATASKETCH = True
 except ImportError:
     HAS_DATASKETCH = False
@@ -24,11 +25,11 @@ from ...utils.logger import logger
 
 class MinHashLSHIndex:
     """MinHash LSH Forest近似索引
-    
+
     与InvertedIndex(精确匹配)互补:
     - InvertedIndex: 精确匹配，精确率高但召回率受限
     - MinHashLSHIndex: 近似匹配，召回率高但可能有少量误报
-    
+
     使用方式:
     1. build()构建索引
     2. query()查询TopK近似候选
@@ -40,9 +41,7 @@ class MinHashLSHIndex:
 
     def __init__(self, num_perm: int = DEFAULT_NUM_PERM, l_param: int = DEFAULT_L):
         if not HAS_DATASKETCH:
-            raise ImportError(
-                "datasketch未安装，请运行: pip install datasketch"
-            )
+            raise ImportError("datasketch未安装，请运行: pip install datasketch")
         self._num_perm = num_perm
         self._l = l_param
         self._forest: Optional[MinHashLSHForest] = None
@@ -53,7 +52,7 @@ class MinHashLSHIndex:
     def _create_minhash(self, fingerprints: Set[int]) -> MinHash:
         mh = MinHash(num_perm=self._num_perm)
         for fp in fingerprints:
-            mh.update(str(fp).encode('utf8'))
+            mh.update(str(fp).encode("utf8"))
         return mh
 
     def build(self, fingerprints: Dict[str, FingerprintSet]) -> None:
@@ -73,8 +72,7 @@ class MinHashLSHIndex:
         self._forest.index()
         self._indexed = True
         logger.info(
-            f"MinHash LSH Forest构建完成，{len(self._minhashes)}个模块，"
-            f"num_perm={self._num_perm}"
+            f"MinHash LSH Forest构建完成，{len(self._minhashes)}个模块，num_perm={self._num_perm}"
         )
 
     def add_module(self, module_id: str, fingerprints: Set[int]) -> None:
@@ -190,6 +188,7 @@ class HybridIndex:
 
     def __init__(self, num_perm: int = 128, l_param: int = 64):
         from .calculator import InvertedIndex
+
         self._exact = InvertedIndex()
         self._approx: Optional[MinHashLSHIndex] = None
         self._num_perm = num_perm

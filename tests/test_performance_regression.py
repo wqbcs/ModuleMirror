@@ -67,7 +67,9 @@ class TestWinnowingRegression:
         baseline = _load_baseline()
         winnowing = Winnowing(kgram_size=5, window_size=4)
         code = _generate_code(500)
-        median_ms = _measure(lambda: winnowing.generate_fingerprints_from_code(code), iterations=10) * 1000
+        median_ms = (
+            _measure(lambda: winnowing.generate_fingerprints_from_code(code), iterations=10) * 1000
+        )
         key = "winnowing/medium/500lines"
         if key in baseline:
             baseline_ms = baseline[key]["mean_ms"]

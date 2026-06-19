@@ -27,7 +27,7 @@ _correlation_context = threading.local()
 
 def get_correlation_id() -> Optional[str]:
     """获取当前线程的correlation_id"""
-    return getattr(_correlation_context, 'correlation_id', None)
+    return getattr(_correlation_context, "correlation_id", None)
 
 
 def set_correlation_id(correlation_id: Optional[str] = None) -> str:
@@ -66,33 +66,33 @@ class JSONFormatter(logging.Formatter):
             JSON 格式的日志字符串
         """
         log_data: Dict[str, Any] = {
-            'timestamp': datetime.now().isoformat(),
-            'level': record.levelname,
-            'logger': record.name,
-            'message': record.getMessage(),
-            'module': record.module,
-            'function': record.funcName,
-            'line': record.lineno
+            "timestamp": datetime.now().isoformat(),
+            "level": record.levelname,
+            "logger": record.name,
+            "message": record.getMessage(),
+            "module": record.module,
+            "function": record.funcName,
+            "line": record.lineno,
         }
 
         correlation_id = get_correlation_id()
         if correlation_id:
-            log_data['correlation_id'] = correlation_id
+            log_data["correlation_id"] = correlation_id
 
-        if hasattr(record, 'task_id'):
-            log_data['task_id'] = record.task_id
+        if hasattr(record, "task_id"):
+            log_data["task_id"] = record.task_id
 
-        if hasattr(record, 'operation'):
-            log_data['operation'] = record.operation
+        if hasattr(record, "operation"):
+            log_data["operation"] = record.operation
 
-        if hasattr(record, 'component'):
-            log_data['component'] = record.component
+        if hasattr(record, "component"):
+            log_data["component"] = record.component
 
-        if hasattr(record, 'extra_fields'):
+        if hasattr(record, "extra_fields"):
             log_data.update(record.extra_fields)
 
         if record.exc_info:
-            log_data['exception'] = self.formatException(record.exc_info)
+            log_data["exception"] = self.formatException(record.exc_info)
 
         return json_dumps(log_data, ensure_ascii=False)
 
@@ -105,7 +105,7 @@ class StructuredLogger:
 
     def __init__(
         self,
-        name: str = 'gh_similarity_detector',
+        name: str = "gh_similarity_detector",
         level: int = logging.INFO,
         log_file: Optional[str] = None,
         use_json: bool = True,
@@ -130,7 +130,7 @@ class StructuredLogger:
             if log_file:
                 log_path = Path(log_file)
                 log_path.parent.mkdir(parents=True, exist_ok=True)
-                handler = logging.FileHandler(log_file, encoding='utf-8')
+                handler = logging.FileHandler(log_file, encoding="utf-8")
             else:
                 handler = logging.StreamHandler(sys.stdout)
 
@@ -138,8 +138,8 @@ class StructuredLogger:
                 formatter = JSONFormatter()
             else:
                 formatter = logging.Formatter(
-                    '%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    datefmt='%Y-%m-%d %H:%M:%S'
+                    "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+                    datefmt="%Y-%m-%d %H:%M:%S",
                 )
 
             handler.setFormatter(formatter)
@@ -150,7 +150,7 @@ class StructuredLogger:
         message: str,
         task_id: Optional[str] = None,
         operation: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """记录 INFO 级别日志"""
         extra = self._build_extra(task_id, operation, kwargs)
@@ -161,7 +161,7 @@ class StructuredLogger:
         message: str,
         task_id: Optional[str] = None,
         operation: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """记录 WARNING 级别日志"""
         extra = self._build_extra(task_id, operation, kwargs)
@@ -172,7 +172,7 @@ class StructuredLogger:
         message: str,
         task_id: Optional[str] = None,
         operation: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """记录 ERROR 级别日志"""
         extra = self._build_extra(task_id, operation, kwargs)
@@ -183,32 +183,29 @@ class StructuredLogger:
         message: str,
         task_id: Optional[str] = None,
         operation: Optional[str] = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> None:
         """记录 DEBUG 级别日志"""
         extra = self._build_extra(task_id, operation, kwargs)
         self.logger.debug(message, extra=extra)
 
     def _build_extra(
-        self,
-        task_id: Optional[str],
-        operation: Optional[str],
-        kwargs: Dict[str, Any]
+        self, task_id: Optional[str], operation: Optional[str], kwargs: Dict[str, Any]
     ) -> Dict[str, Any]:
         """构建 extra 字典"""
         extra: Dict[str, Any] = {}
 
         if task_id:
-            extra['task_id'] = task_id
+            extra["task_id"] = task_id
 
         if operation:
-            extra['operation'] = operation
+            extra["operation"] = operation
 
         if self.component:
-            extra['component'] = self.component
+            extra["component"] = self.component
 
         if kwargs:
-            extra['extra_fields'] = kwargs
+            extra["extra_fields"] = kwargs
 
         return extra
 
@@ -216,13 +213,13 @@ class StructuredLogger:
 def _get_log_level() -> int:
     """从环境变量 LOG_LEVEL 获取日志级别"""
     level_map = {
-        'DEBUG': logging.DEBUG,
-        'INFO': logging.INFO,
-        'WARNING': logging.WARNING,
-        'ERROR': logging.ERROR,
-        'CRITICAL': logging.CRITICAL,
+        "DEBUG": logging.DEBUG,
+        "INFO": logging.INFO,
+        "WARNING": logging.WARNING,
+        "ERROR": logging.ERROR,
+        "CRITICAL": logging.CRITICAL,
     }
-    env_level = os.getenv('MODULEMIRROR_LOG_LEVEL', 'INFO').upper()
+    env_level = os.getenv("MODULEMIRROR_LOG_LEVEL", "INFO").upper()
     return level_map.get(env_level, logging.INFO)
 
 
@@ -233,12 +230,12 @@ def _should_use_json() -> bool:
     MODULEMIRROR_LOG_FORMAT=TEXT 使用纯文本,
     默认JSON。
     """
-    fmt = os.getenv('MODULEMIRROR_LOG_FORMAT', 'JSON').upper()
-    return fmt != 'TEXT'
+    fmt = os.getenv("MODULEMIRROR_LOG_FORMAT", "JSON").upper()
+    return fmt != "TEXT"
 
 
 logger = StructuredLogger(
-    name='gh_similarity_detector',
+    name="gh_similarity_detector",
     level=_get_log_level(),
     use_json=_should_use_json(),
 )
@@ -255,17 +252,17 @@ def get_module_logger(component: str, **kwargs: Any) -> StructuredLogger:
         配置了component的StructuredLogger实例
     """
     return StructuredLogger(
-        name=f'gh_similarity_detector.{component}',
+        name=f"gh_similarity_detector.{component}",
         component=component,
         **kwargs,
     )
 
 
 def get_logger(
-    name: str = 'gh_similarity_detector',
+    name: str = "gh_similarity_detector",
     level: int = logging.INFO,
     log_file: Optional[str] = None,
-    use_json: bool = True
+    use_json: bool = True,
 ) -> StructuredLogger:
     """获取日志器实例
 

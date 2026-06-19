@@ -20,6 +20,7 @@ from ...utils.logger import logger
 @dataclass
 class MemorySnapshot:
     """内存快照"""
+
     timestamp: float
     current_size: int
     peak_size: int
@@ -38,6 +39,7 @@ class MemorySnapshot:
 @dataclass
 class MemoryLeak:
     """内存泄露检测结果"""
+
     traceback: str
     size_diff: int
     count_diff: int
@@ -94,12 +96,14 @@ class MemoryProfiler:
 
         top_allocs = []
         for stat in stats[:top_n]:
-            top_allocs.append({
-                "file": str(stat.traceback),
-                "size": stat.size,
-                "size_kb": round(stat.size / 1024, 2),
-                "count": stat.count,
-            })
+            top_allocs.append(
+                {
+                    "file": str(stat.traceback),
+                    "size": stat.size,
+                    "size_kb": round(stat.size / 1024, 2),
+                    "count": stat.count,
+                }
+            )
 
         snapshot = MemorySnapshot(
             timestamp=time.monotonic(),
@@ -146,11 +150,13 @@ class MemoryProfiler:
         leaks = []
         for stat in stats[:top_n]:
             if stat.size_diff > self._leak_threshold_bytes:
-                leaks.append(MemoryLeak(
-                    traceback=str(stat.traceback),
-                    size_diff=stat.size_diff,
-                    count_diff=stat.count_diff,
-                ))
+                leaks.append(
+                    MemoryLeak(
+                        traceback=str(stat.traceback),
+                        size_diff=stat.size_diff,
+                        count_diff=stat.count_diff,
+                    )
+                )
 
         return leaks
 
@@ -183,11 +189,13 @@ class MemoryProfiler:
         leaks = []
         for stat in stats[:top_n]:
             if stat.size_diff > threshold:
-                leaks.append(MemoryLeak(
-                    traceback=str(stat.traceback),
-                    size_diff=stat.size_diff,
-                    count_diff=stat.count_diff,
-                ))
+                leaks.append(
+                    MemoryLeak(
+                        traceback=str(stat.traceback),
+                        size_diff=stat.size_diff,
+                        count_diff=stat.count_diff,
+                    )
+                )
 
         if leaks:
             logger.warning(f"检测到 {len(leaks)} 个内存泄露点")
@@ -227,9 +235,7 @@ class MemoryProfiler:
 
             label_str = f" [{label}]" if label else ""
             logger.debug(
-                f"内存追踪{label_str}: "
-                f"Δ{diff / 1024:+.1f}KB, "
-                f"当前{size_after / 1024 / 1024:.1f}MB"
+                f"内存追踪{label_str}: Δ{diff / 1024:+.1f}KB, 当前{size_after / 1024 / 1024:.1f}MB"
             )
 
     @property

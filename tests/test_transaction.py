@@ -23,7 +23,9 @@ class TestTransactionGuard:
             c.execute("INSERT INTO items (name) VALUES (?)", (name,))
             return 1
 
-        result = guard.execute_atomic([lambda c: insert_item(c, "a"), lambda c: insert_item(c, "b")])
+        result = guard.execute_atomic(
+            [lambda c: insert_item(c, "a"), lambda c: insert_item(c, "b")]
+        )
         assert result.success is True
         assert result.affected_rows == 2
         rows = conn.execute("SELECT COUNT(*) FROM items").fetchone()
@@ -95,7 +97,9 @@ class TestTransactionGuard:
     def test_verify_foreign_keys_ok(self, tmp_path):
         conn = sqlite3.connect(str(tmp_path / "test.db"))
         conn.execute("CREATE TABLE parent (id INTEGER PRIMARY KEY)")
-        conn.execute("CREATE TABLE child (id INTEGER PRIMARY KEY, parent_id INTEGER REFERENCES parent(id))")
+        conn.execute(
+            "CREATE TABLE child (id INTEGER PRIMARY KEY, parent_id INTEGER REFERENCES parent(id))"
+        )
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("INSERT INTO parent (id) VALUES (1)")
         conn.execute("INSERT INTO child (id, parent_id) VALUES (1, 1)")
@@ -106,7 +110,9 @@ class TestTransactionGuard:
     def test_verify_foreign_keys_violation(self, tmp_path):
         conn = sqlite3.connect(str(tmp_path / "test.db"))
         conn.execute("CREATE TABLE parent (id INTEGER PRIMARY KEY)")
-        conn.execute("CREATE TABLE child (id INTEGER PRIMARY KEY, parent_id INTEGER REFERENCES parent(id))")
+        conn.execute(
+            "CREATE TABLE child (id INTEGER PRIMARY KEY, parent_id INTEGER REFERENCES parent(id))"
+        )
         conn.execute("PRAGMA foreign_keys = OFF")
         conn.execute("INSERT INTO child (id, parent_id) VALUES (1, 999)")
         guard = TransactionGuard(conn)

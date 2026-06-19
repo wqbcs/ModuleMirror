@@ -15,17 +15,31 @@ from gh_similarity_detector.core.similarity.semantic_diff import (
 
 class TestCodeEntity:
     def test_auto_hash(self):
-        e = CodeEntity(name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass")
+        e = CodeEntity(
+            name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass"
+        )
         assert e.body_hash != ""
 
     def test_hash_deterministic(self):
-        e1 = CodeEntity(name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass")
-        e2 = CodeEntity(name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass")
+        e1 = CodeEntity(
+            name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass"
+        )
+        e2 = CodeEntity(
+            name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass"
+        )
         assert e1.body_hash == e2.body_hash
 
     def test_hash_different_source(self):
-        e1 = CodeEntity(name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass")
-        e2 = CodeEntity(name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): return 1")
+        e1 = CodeEntity(
+            name="foo", entity_type="function", start_line=1, end_line=1, source="def foo(): pass"
+        )
+        e2 = CodeEntity(
+            name="foo",
+            entity_type="function",
+            start_line=1,
+            end_line=1,
+            source="def foo(): return 1",
+        )
         assert e1.body_hash != e2.body_hash
 
 
@@ -78,7 +92,9 @@ class TestSemanticDiffer:
         source = "def foo():\n    return 1\n\ndef bar():\n    return 2"
         target = "def foo():\n    return 1"
         changes = SemanticDiffer().diff(source, target, "python", "python")
-        removed = [c for c in changes if c.change_type == ChangeType.REMOVED and c.entity_name == "bar"]
+        removed = [
+            c for c in changes if c.change_type == ChangeType.REMOVED and c.entity_name == "bar"
+        ]
         assert len(removed) == 1
 
     def test_function_modified(self):

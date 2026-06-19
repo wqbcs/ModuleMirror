@@ -37,10 +37,12 @@ class TracingManager:
             logger.info("OpenTelemetry 追踪已禁用")
             return
 
-        resource = Resource.create({
-            "service.name": self.config.SERVICE_NAME,
-            "service.version": self.config.SERVICE_VERSION,
-        })
+        resource = Resource.create(
+            {
+                "service.name": self.config.SERVICE_NAME,
+                "service.version": self.config.SERVICE_VERSION,
+            }
+        )
 
         self._provider = TracerProvider(resource=resource)
         self._provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))

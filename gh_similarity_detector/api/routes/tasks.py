@@ -40,7 +40,7 @@ class TaskResponse(BaseModel):
 async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks):
     """创建异步检测任务"""
     task_id = str(uuid.uuid4())
-    candidates_str = ','.join(req.candidates)
+    candidates_str = ",".join(req.candidates)
 
     fp_db = FingerprintDB(DB_PATH)
     fp_db.create_task(task_id, req.target, candidates_str)
@@ -58,7 +58,7 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
 
     def _run_detection():
         pipeline = None
-        fp_db.update_task(task_id, status='running')
+        fp_db.update_task(task_id, status="running")
         try:
             pipeline = DetectionPipeline(config)
             results = pipeline.detect(req.target, req.candidates)
@@ -66,24 +66,26 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
             all_matches = []
             for r in results:
                 for m in r.matches:
-                    all_matches.append({
-                        "source_module": m.source_module_id,
-                        "target_module": m.target_module_id,
-                        "similarity": m.similarity,
-                        "reuse_suggestion": m.reuse_suggestion.value,
-                    })
+                    all_matches.append(
+                        {
+                            "source_module": m.source_module_id,
+                            "target_module": m.target_module_id,
+                            "similarity": m.similarity,
+                            "reuse_suggestion": m.reuse_suggestion.value,
+                        }
+                    )
 
             result_path = str(Path(f"./task_results/{task_id}.json"))
             Path(result_path).parent.mkdir(parents=True, exist_ok=True)
-            with open(result_path, 'w', encoding='utf-8') as f:
+            with open(result_path, "w", encoding="utf-8") as f:
                 json.dump(all_matches, f, ensure_ascii=False, indent=2)
 
-            fp_db.update_task(task_id, status='completed', progress=1.0, result_path=result_path)
+            fp_db.update_task(task_id, status="completed", progress=1.0, result_path=result_path)
         except Exception as e:
             logger.error(f"任务 {task_id} 失败: {e}")
-            fp_db.update_task(task_id, status='failed')
+            fp_db.update_task(task_id, status="failed")
         finally:
-            if pipeline and hasattr(pipeline, 'project_fetcher') and pipeline.project_fetcher:
+            if pipeline and hasattr(pipeline, "project_fetcher") and pipeline.project_fetcher:
                 try:
                     pipeline.project_fetcher.cleanup()
                 except Exception:
@@ -93,8 +95,10 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
     thread.start()
 
     return TaskResponse(
-        id=task_id, target_project=req.target,
-        status='pending', progress=0.0,
+        id=task_id,
+        target_project=req.target,
+        status="pending",
+        progress=0.0,
         created_at=None,
     )
 
@@ -110,9 +114,11 @@ async def list_tasks(
     tasks = fp_db.list_tasks(status=status)
     return [
         TaskResponse(
-            id=t['id'], target_project=t['target_project'],
-            status=t['status'], progress=t['progress'],
-            created_at=t.get('created_at'),
+            id=t["id"],
+            target_project=t["target_project"],
+            status=t["status"],
+            progress=t["progress"],
+            created_at=t.get("created_at"),
         )
         for t in tasks
     ]

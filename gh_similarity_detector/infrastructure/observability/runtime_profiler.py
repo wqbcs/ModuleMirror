@@ -180,6 +180,7 @@ class RuntimeProfiler:
     def _get_cpu_percent() -> float:
         try:
             import psutil
+
             return psutil.cpu_percent(interval=0)
         except ImportError:
             times = os.times()
@@ -190,6 +191,7 @@ class RuntimeProfiler:
     def _get_memory_info() -> tuple:
         try:
             import psutil
+
             process = psutil.Process(os.getpid())
             mem_info = process.memory_info()
             mem_mb = mem_info.rss / (1024 * 1024)
@@ -199,6 +201,7 @@ class RuntimeProfiler:
         except ImportError:
             try:
                 import resource
+
                 usage = resource.getrusage(resource.RUSAGE_SELF)
                 mem_mb = usage.ru_maxrss / 1024
                 return mem_mb, 0.0
@@ -209,6 +212,7 @@ class RuntimeProfiler:
     def _get_fd_count() -> int:
         try:
             import psutil
+
             return psutil.Process(os.getpid()).num_fds()
         except (ImportError, AttributeError):
             try:

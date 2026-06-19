@@ -6,7 +6,6 @@ from gh_similarity_detector.infrastructure.engines.jscpd_adapter import JscpdAda
 
 
 class TestJscpdAdapterInit:
-
     def test_default_params(self):
         adapter = JscpdAdapter()
         assert adapter.min_lines == 5
@@ -19,7 +18,6 @@ class TestJscpdAdapterInit:
 
 
 class TestJscpdAdapterConvertResults:
-
     def test_convert_empty_data(self):
         adapter = JscpdAdapter()
         results = adapter._convert_results({}, "/src", "/tgt")
@@ -114,7 +112,6 @@ class TestJscpdAdapterConvertResults:
 
 
 class TestJscpdAdapterDetectUnavailable:
-
     def test_detect_when_unavailable(self):
         adapter = JscpdAdapter()
         adapter._available = False

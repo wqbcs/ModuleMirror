@@ -40,7 +40,7 @@ class TestFeatureFlagProvider:
         provider = FeatureFlagProvider()
         flag = FeatureFlag(key="test", default_value=True)
         provider.register_flag(flag)
-        
+
         assert provider.evaluate("test") is True
 
     def test_evaluate_nonexistent(self):
@@ -61,10 +61,10 @@ class TestFeatureFlagProvider:
             ],
         )
         provider.register_flag(flag)
-        
+
         ctx_admin = EvaluationContext(attributes={"role": "admin"})
         assert provider.evaluate("targeted_flag", context=ctx_admin) is True
-        
+
         ctx_user = EvaluationContext(attributes={"role": "user"})
         assert provider.evaluate("targeted_flag", context=ctx_user) is False
 
@@ -86,10 +86,10 @@ class TestFeatureFlagProvider:
             ],
         )
         provider.register_flag(flag)
-        
+
         ctx_a = EvaluationContext(attributes={"group": "a"})
         assert provider.evaluate_variant("variant_flag", "default", ctx_a) == "a"
-        
+
         ctx_b = EvaluationContext(attributes={"group": "b"})
         assert provider.evaluate_variant("variant_flag", "default", ctx_b) == "b"
 
@@ -100,7 +100,7 @@ class TestFeatureFlagProvider:
             "flag2": {"default": False, "description": "开关2"},
         }
         provider.register_flags_from_dict(flags_data)
-        
+
         assert provider.evaluate("flag1") is True
         assert provider.evaluate("flag2") is False
 
@@ -108,19 +108,21 @@ class TestFeatureFlagProvider:
         provider = FeatureFlagProvider()
         provider.register_flag(FeatureFlag(key="a", default_value=True))
         provider.register_flag(FeatureFlag(key="b", default_value=False))
-        
+
         flags = provider.list_flags()
         assert "a" in flags
         assert "b" in flags
 
     def test_get_flag_metadata(self):
         provider = FeatureFlagProvider()
-        provider.register_flag(FeatureFlag(
-            key="test",
-            default_value=True,
-            description="测试",
-        ))
-        
+        provider.register_flag(
+            FeatureFlag(
+                key="test",
+                default_value=True,
+                description="测试",
+            )
+        )
+
         meta = provider.get_flag_metadata("test")
         assert meta["key"] == "test"
         assert meta["default_value"] is True
@@ -131,18 +133,20 @@ class TestFeatureFlags:
         FeatureFlags.initialize()
         provider = FeatureFlags.get_provider()
         provider.register_flag(FeatureFlag(key="test", default_value=True))
-        
+
         assert FeatureFlags.enabled("test") is True
 
     def test_variant(self):
         FeatureFlags.initialize()
         provider = FeatureFlags.get_provider()
-        provider.register_flag(FeatureFlag(
-            key="variant_test",
-            default_value=False,
-            variants={"v1": True},
-        ))
-        
+        provider.register_flag(
+            FeatureFlag(
+                key="variant_test",
+                default_value=False,
+                variants={"v1": True},
+            )
+        )
+
         variant = FeatureFlags.variant("variant_test", "default")
         assert variant == "default"
 
@@ -151,7 +155,7 @@ class TestCreateDefaultFeatureFlags:
     def test_create(self):
         provider = create_default_feature_flags()
         flags = provider.list_flags()
-        
+
         assert "use_simd_batch" in flags
         assert "enable_ast_vectorization" in flags
         assert "use_process_pool" in flags

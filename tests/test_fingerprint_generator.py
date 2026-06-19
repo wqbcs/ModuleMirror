@@ -11,8 +11,14 @@ from gh_similarity_detector.models.entities import Module
 
 def _make_module(id="test.py", code="def hello(): return 1", language="python"):
     return Module(
-        id=id, name=id, file_path=id, source_code=code,
-        module_type="function", start_line=1, end_line=1, language=language,
+        id=id,
+        name=id,
+        file_path=id,
+        source_code=code,
+        module_type="function",
+        start_line=1,
+        end_line=1,
+        language=language,
     )
 
 

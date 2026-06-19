@@ -48,26 +48,41 @@ class TestGateCondition:
 
 class TestQualityGate:
     def test_all_passed(self):
-        gate = QualityGate(name="test", conditions=[
-            GateCondition(metric="max_similarity", threshold=80.0, operator=ConditionOperator.LT),
-        ])
+        gate = QualityGate(
+            name="test",
+            conditions=[
+                GateCondition(
+                    metric="max_similarity", threshold=80.0, operator=ConditionOperator.LT
+                ),
+            ],
+        )
         result = gate.evaluate({"max_similarity": 70.0})
         assert result.status == GateStatus.PASSED
         assert result.passed
 
     def test_failed(self):
-        gate = QualityGate(name="test", conditions=[
-            GateCondition(metric="max_similarity", threshold=80.0, operator=ConditionOperator.LT),
-        ])
+        gate = QualityGate(
+            name="test",
+            conditions=[
+                GateCondition(
+                    metric="max_similarity", threshold=80.0, operator=ConditionOperator.LT
+                ),
+            ],
+        )
         result = gate.evaluate({"max_similarity": 90.0})
         assert result.status == GateStatus.FAILED
         assert not result.passed
 
     def test_warning_on_missing_metric(self):
-        gate = QualityGate(name="test", conditions=[
-            GateCondition(metric="max_similarity", threshold=80.0, operator=ConditionOperator.LT),
-            GateCondition(metric="unknown_metric", threshold=1.0),
-        ])
+        gate = QualityGate(
+            name="test",
+            conditions=[
+                GateCondition(
+                    metric="max_similarity", threshold=80.0, operator=ConditionOperator.LT
+                ),
+                GateCondition(metric="unknown_metric", threshold=1.0),
+            ],
+        )
         result = gate.evaluate({"max_similarity": 70.0})
         assert result.status == GateStatus.WARNING
 
@@ -82,9 +97,12 @@ class TestQualityGate:
         assert result.status == GateStatus.PASSED
 
     def test_to_dict(self):
-        gate = QualityGate(name="test", conditions=[
-            GateCondition(metric="sim", threshold=80.0),
-        ])
+        gate = QualityGate(
+            name="test",
+            conditions=[
+                GateCondition(metric="sim", threshold=80.0),
+            ],
+        )
         d = gate.to_dict()
         assert d["name"] == "test"
         assert len(d["conditions"]) == 1
@@ -122,18 +140,22 @@ class TestPresetGates:
 
     def test_default_passes_low_similarity(self):
         gate = create_default_gate()
-        result = gate.evaluate({
-            "max_similarity": 70.0,
-            "high_similarity_count": 2.0,
-            "avg_similarity": 40.0,
-        })
+        result = gate.evaluate(
+            {
+                "max_similarity": 70.0,
+                "high_similarity_count": 2.0,
+                "avg_similarity": 40.0,
+            }
+        )
         assert result.passed
 
     def test_strict_fails_medium_similarity(self):
         gate = create_strict_gate()
-        result = gate.evaluate({
-            "max_similarity": 70.0,
-            "high_similarity_count": 1.0,
-            "avg_similarity": 40.0,
-        })
+        result = gate.evaluate(
+            {
+                "max_similarity": 70.0,
+                "high_similarity_count": 1.0,
+                "avg_similarity": 40.0,
+            }
+        )
         assert not result.passed

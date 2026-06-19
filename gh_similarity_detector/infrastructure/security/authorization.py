@@ -88,9 +88,7 @@ class ProjectAuthorization:
             AuthorizationError: 权限不足
         """
         if not self.check_permission(user_id, project_id, required):
-            raise AuthorizationError(
-                f"用户 {user_id} 对项目 {project_id} 无 {required.value} 权限"
-            )
+            raise AuthorizationError(f"用户 {user_id} 对项目 {project_id} 无 {required.value} 权限")
 
     def get_user_projects(self, user_id: str) -> Set[str]:
         """获取用户有权限的所有项目"""

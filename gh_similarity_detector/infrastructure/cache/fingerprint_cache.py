@@ -37,7 +37,7 @@ class FingerprintCache:
     def _load(self) -> None:
         if self._cache_file.exists():
             try:
-                with open(self._cache_file, 'r', encoding='utf-8') as f:
+                with open(self._cache_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 if isinstance(data, dict):
                     for k, v in data.items():
@@ -52,8 +52,8 @@ class FingerprintCache:
 
     def _save(self) -> None:
         try:
-            tmp_file = self._cache_file.with_suffix('.tmp')
-            with open(tmp_file, 'w', encoding='utf-8') as f:
+            tmp_file = self._cache_file.with_suffix(".tmp")
+            with open(tmp_file, "w", encoding="utf-8") as f:
                 json.dump(dict(self._cache), f)
             tmp_file.replace(self._cache_file)
         except (IOError, OSError) as e:
@@ -66,33 +66,30 @@ class FingerprintCache:
 
     @staticmethod
     def compute_content_hash(source_code: str) -> str:
-        return hashlib.sha256(source_code.encode('utf-8')).hexdigest()
+        return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
-    def get(
-        self,
-        module: Module
-    ) -> Optional[FingerprintSet]:
+    def get(self, module: Module) -> Optional[FingerprintSet]:
         cache_key = module.id
         content_hash = self.compute_content_hash(module.source_code)
 
         entry = self._cache.get(cache_key)
-        if entry and entry.get('content_hash') == content_hash:
+        if entry and entry.get("content_hash") == content_hash:
             self._cache.move_to_end(cache_key)
             return FingerprintSet(
                 module_id=module.id,
-                winnowing_fingerprints=set(entry['winnowing_fps']),
-                ast_fingerprints=set(entry.get('ast_fps', [])),
-                token_count=entry.get('token_count', 0)
+                winnowing_fingerprints=set(entry["winnowing_fps"]),
+                ast_fingerprints=set(entry.get("ast_fps", [])),
+                token_count=entry.get("token_count", 0),
             )
         return None
 
     def put(self, module: Module, fp_set: FingerprintSet) -> None:
         content_hash = self.compute_content_hash(module.source_code)
         self._cache[module.id] = {
-            'content_hash': content_hash,
-            'winnowing_fps': list(fp_set.winnowing_fingerprints),
-            'ast_fps': list(fp_set.ast_fingerprints),
-            'token_count': fp_set.token_count,
+            "content_hash": content_hash,
+            "winnowing_fps": list(fp_set.winnowing_fingerprints),
+            "ast_fps": list(fp_set.ast_fingerprints),
+            "token_count": fp_set.token_count,
         }
         self._cache.move_to_end(module.id)
         self._evict()

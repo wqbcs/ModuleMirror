@@ -95,24 +95,52 @@ class TestWinnowingEdgeCases:
         self.winnowing = Winnowing(window_size=4, kgram_size=5)
 
     def test_very_short_code(self):
-        m = Module(name="t", file_path="t.py", module_type=ModuleType.FUNCTION,
-                   source_code="x", start_line=1, end_line=1, language="python")
+        m = Module(
+            name="t",
+            file_path="t.py",
+            module_type=ModuleType.FUNCTION,
+            source_code="x",
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
         fp = self.winnowing.generate_fingerprints(m)
         assert fp.module_id == m.id
         assert fp.token_count <= 1
 
     def test_empty_code(self):
-        m = Module(name="t", file_path="t.py", module_type=ModuleType.FUNCTION,
-                   source_code="", start_line=1, end_line=1, language="python")
+        m = Module(
+            name="t",
+            file_path="t.py",
+            module_type=ModuleType.FUNCTION,
+            source_code="",
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
         fp = self.winnowing.generate_fingerprints(m)
         assert len(fp.winnowing_fingerprints) == 0
 
     def test_identical_code_same_fingerprint(self):
         code = "def hello(): return 42"
-        m1 = Module(name="a", file_path="a.py", module_type=ModuleType.FUNCTION,
-                     source_code=code, start_line=1, end_line=1, language="python")
-        m2 = Module(name="b", file_path="b.py", module_type=ModuleType.FUNCTION,
-                     source_code=code, start_line=1, end_line=1, language="python")
+        m1 = Module(
+            name="a",
+            file_path="a.py",
+            module_type=ModuleType.FUNCTION,
+            source_code=code,
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
+        m2 = Module(
+            name="b",
+            file_path="b.py",
+            module_type=ModuleType.FUNCTION,
+            source_code=code,
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
         fp1 = self.winnowing.generate_fingerprints(m1)
         fp2 = self.winnowing.generate_fingerprints(m2)
         assert fp1.winnowing_fingerprints == fp2.winnowing_fingerprints
@@ -120,10 +148,24 @@ class TestWinnowingEdgeCases:
     def test_renamed_variables_different_fingerprint(self):
         code1 = "def foo(x, y): return x + y"
         code2 = "def foo(a, b): return a + b"
-        m1 = Module(name="a", file_path="a.py", module_type=ModuleType.FUNCTION,
-                     source_code=code1, start_line=1, end_line=1, language="python")
-        m2 = Module(name="b", file_path="b.py", module_type=ModuleType.FUNCTION,
-                     source_code=code2, start_line=1, end_line=1, language="python")
+        m1 = Module(
+            name="a",
+            file_path="a.py",
+            module_type=ModuleType.FUNCTION,
+            source_code=code1,
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
+        m2 = Module(
+            name="b",
+            file_path="b.py",
+            module_type=ModuleType.FUNCTION,
+            source_code=code2,
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
         fp1 = self.winnowing.generate_fingerprints(m1)
         fp2 = self.winnowing.generate_fingerprints(m2)
         assert fp1.winnowing_fingerprints == fp2.winnowing_fingerprints

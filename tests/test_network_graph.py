@@ -81,7 +81,8 @@ class TestGenerateNetworkGraph:
         with tempfile.TemporaryDirectory() as tmpdir:
             output = os.path.join(tmpdir, "network.html")
             result = generate_network_graph(
-                results, output_path=output,
+                results,
+                output_path=output,
                 project_names=["project_a", "project_b"],
             )
             assert result is not None
@@ -110,7 +111,9 @@ class TestGenerateNetworkGraph:
         with tempfile.TemporaryDirectory() as tmpdir:
             output = os.path.join(tmpdir, "network.html")
             result = generate_network_graph(
-                results, output_path=output, min_similarity=80,
+                results,
+                output_path=output,
+                min_similarity=80,
             )
             assert result is not None
 
@@ -118,7 +121,7 @@ class TestGenerateNetworkGraph:
         results = [
             {
                 "source_project": f"proj_{i}",
-                "target_project": f"proj_{i+1}",
+                "target_project": f"proj_{i + 1}",
                 "statistics": {"avg_similarity": 70 + i * 5},
                 "matches": [],
             }

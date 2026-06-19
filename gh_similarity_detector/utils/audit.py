@@ -50,10 +50,11 @@ class AuditLogger:
             record["user"] = user
 
         try:
-            with open(self.log_path, 'a', encoding='utf-8') as f:
-                f.write(json.dumps(record, ensure_ascii=False) + '\n')
+            with open(self.log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
         except (IOError, OSError) as e:
             from .logger import logger
+
             logger.error(f"审计日志写入失败: {e}")
 
     def log_detect(

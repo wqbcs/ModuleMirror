@@ -23,12 +23,14 @@ from .embedding import (
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 try:
     import faiss
+
     HAS_FAISS = True
 except ImportError:
     HAS_FAISS = False
@@ -89,14 +91,16 @@ class EmbeddingIndex:
 
             sim = query.cosine_similarity(emb)
             if sim >= min_similarity:
-                results.append(RetrievalResult(
-                    query_id=query.code_id,
-                    candidate_id=code_id,
-                    similarity=sim,
-                    model_name=query.model_name,
-                    query_language=self._languages.get(query.code_id, ""),
-                    candidate_language=self._languages.get(code_id, ""),
-                ))
+                results.append(
+                    RetrievalResult(
+                        query_id=query.code_id,
+                        candidate_id=code_id,
+                        similarity=sim,
+                        model_name=query.model_name,
+                        query_language=self._languages.get(query.code_id, ""),
+                        candidate_language=self._languages.get(code_id, ""),
+                    )
+                )
 
         results.sort(key=lambda r: r.similarity, reverse=True)
         return results[:top_k]
@@ -186,7 +190,7 @@ class FaissEmbeddingIndex:
         vecs = np.array(vectors, dtype=np.float32)
         faiss.normalize_L2(vecs)
 
-        if hasattr(self._index, 'is_trained') and not self._index.is_trained:
+        if hasattr(self._index, "is_trained") and not self._index.is_trained:
             self._index.train(vecs)
             self._trained = True
 
@@ -243,14 +247,16 @@ class FaissEmbeddingIndex:
             cand_id = self._idx_to_id.get(idx)
             if cand_id is None or cand_id in exclude:
                 continue
-            results.append(RetrievalResult(
-                query_id=query.code_id,
-                candidate_id=cand_id,
-                similarity=sim,
-                model_name=query.model_name,
-                query_language=self._languages.get(query.code_id, ""),
-                candidate_language=self._languages.get(cand_id, ""),
-            ))
+            results.append(
+                RetrievalResult(
+                    query_id=query.code_id,
+                    candidate_id=cand_id,
+                    similarity=sim,
+                    model_name=query.model_name,
+                    query_language=self._languages.get(query.code_id, ""),
+                    candidate_language=self._languages.get(cand_id, ""),
+                )
+            )
 
         return results[:top_k]
 
@@ -327,11 +333,15 @@ class CrossLanguageRetrievalPipeline:
         query_emb = self._engine.embed(query_code, "query")
         if target_language:
             return self._index.search_cross_language(
-                query_emb, target_language=target_language,
-                top_k=self._top_k, min_similarity=self._min_similarity,
+                query_emb,
+                target_language=target_language,
+                top_k=self._top_k,
+                min_similarity=self._min_similarity,
             )
         return self._index.search(
-            query_emb, top_k=self._top_k, min_similarity=self._min_similarity,
+            query_emb,
+            top_k=self._top_k,
+            min_similarity=self._min_similarity,
         )
 
     def get_stats(self) -> Dict[str, Any]:

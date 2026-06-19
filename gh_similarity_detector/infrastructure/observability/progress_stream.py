@@ -114,7 +114,11 @@ class ProgressBroadcaster:
             for q in dead_queues:
                 subscribers.discard(q)
 
-        if event.event_type in (ProgressEventType.COMPLETED, ProgressEventType.ERROR, ProgressEventType.CANCELLED):
+        if event.event_type in (
+            ProgressEventType.COMPLETED,
+            ProgressEventType.ERROR,
+            ProgressEventType.CANCELLED,
+        ):
             self._cleanup_task(event.task_id)
 
         return delivered
@@ -160,9 +164,13 @@ async def sse_stream(task_id: str) -> AsyncIterator[str]:
             try:
                 event = await asyncio.wait_for(queue.get(), timeout=30.0)
                 yield event.to_sse()
-                if event.event_type in (ProgressEventType.COMPLETED, ProgressEventType.ERROR, ProgressEventType.CANCELLED):
+                if event.event_type in (
+                    ProgressEventType.COMPLETED,
+                    ProgressEventType.ERROR,
+                    ProgressEventType.CANCELLED,
+                ):
                     break
             except asyncio.TimeoutError:
-                yield f"event: heartbeat\ndata: {{\"task_id\": \"{task_id}\", \"ts\": {time.time()}}}\n\n"
+                yield f'event: heartbeat\ndata: {{"task_id": "{task_id}", "ts": {time.time()}}}\n\n'
     finally:
         broadcaster.unsubscribe_sse(task_id, queue)

@@ -27,13 +27,13 @@ class MutationResult:
     survived: int
     timeout: int
     suspicious: int
-    
+
     @property
     def mutation_score(self) -> float:
         if self.total_mutations == 0:
             return 0.0
         return (self.killed / self.total_mutations) * 100
-    
+
     @property
     def is_adequate(self) -> bool:
         return self.mutation_score >= 80.0
@@ -42,7 +42,7 @@ class MutationResult:
 class MutationTestRunner:
     def __init__(self, project_dir: str = "."):
         self.project_dir = Path(project_dir)
-    
+
     def run(
         self,
         paths: List[str],
@@ -50,12 +50,18 @@ class MutationTestRunner:
         workers: int = 4,
     ) -> MutationResult:
         cmd = [
-            sys.executable, "-m", "mutmut", "run",
-            "--paths-to-mutate", ",".join(paths),
-            "--timeout", str(timeout),
-            "--workers", str(workers),
+            sys.executable,
+            "-m",
+            "mutmut",
+            "run",
+            "--paths-to-mutate",
+            ",".join(paths),
+            "--timeout",
+            str(timeout),
+            "--workers",
+            str(workers),
         ]
-        
+
         logger.info(f"Mutation testing: {paths}")
         result = subprocess.run(
             cmd,
@@ -64,9 +70,9 @@ class MutationTestRunner:
             cwd=self.project_dir,
             timeout=timeout + 60,
         )
-        
+
         return self._parse_output(result.stdout + result.stderr)
-    
+
     def _parse_output(self, output: str) -> MutationResult:
         total = killed = survived = timeout = suspicious = 0
         for line in output.splitlines():
@@ -74,11 +80,11 @@ class MutationTestRunner:
                 parts = line.split()
                 for i, part in enumerate(parts):
                     if part.isdigit():
-                        if i > 0 and "killed" in parts[i-1].lower():
+                        if i > 0 and "killed" in parts[i - 1].lower():
                             killed = int(part)
-                        elif i > 0 and "survived" in parts[i-1].lower():
+                        elif i > 0 and "survived" in parts[i - 1].lower():
                             survived = int(part)
-                        elif i > 0 and "timeout" in parts[i-1].lower():
+                        elif i > 0 and "timeout" in parts[i - 1].lower():
                             timeout = int(part)
         total = killed + survived + timeout + suspicious
         return MutationResult(
@@ -88,7 +94,7 @@ class MutationTestRunner:
             timeout=timeout,
             suspicious=suspicious,
         )
-    
+
     def get_results(self) -> Optional[str]:
         try:
             result = subprocess.run(
@@ -101,7 +107,7 @@ class MutationTestRunner:
             return result.stdout
         except Exception:
             return None
-    
+
     def show_surviving(self) -> List[str]:
         try:
             result = subprocess.run(
@@ -126,19 +132,19 @@ def run_mutation_test(
 ) -> Tuple[bool, MutationResult]:
     if paths is None:
         paths = ["gh_similarity_detector/core/fingerprint/winnowing.py"]
-    
+
     runner = MutationTestRunner()
     result = runner.run(paths)
-    
+
     logger.info(
         f"Mutation score: {result.mutation_score:.1f}% "
         f"({result.killed}/{result.total_mutations} killed)"
     )
-    
+
     passed = result.mutation_score >= threshold
     if not passed:
         logger.warning(
             f"Mutation score below threshold: {result.mutation_score:.1f}% < {threshold}%"
         )
-    
+
     return passed, result

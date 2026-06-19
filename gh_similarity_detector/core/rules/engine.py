@@ -102,12 +102,16 @@ class DetectionRule:
                 if target_language != value:
                     return False
             elif key == "cross_language":
-                is_cross = source_language != target_language if source_language and target_language else False
+                is_cross = (
+                    source_language != target_language
+                    if source_language and target_language
+                    else False
+                )
                 if bool(value) != is_cross:
                     return False
             elif key == "min_lines":
-                src_lines = source_code.count('\n') + 1 if source_code else 0
-                tgt_lines = target_code.count('\n') + 1 if target_code else 0
+                src_lines = source_code.count("\n") + 1 if source_code else 0
+                tgt_lines = target_code.count("\n") + 1 if target_code else 0
                 if src_lines < value and tgt_lines < value:
                     return False
             elif key == "metadata":
@@ -179,6 +183,7 @@ class RuleEngine:
 
     def load_from_file(self, file_path: str) -> int:
         from pathlib import Path
+
         path = Path(file_path)
         if not path.exists():
             logger.warning(f"规则文件不存在: {file_path}")
@@ -239,14 +244,16 @@ class RuleEngine:
                 target_language=target_language,
                 metadata=metadata,
             ):
-                results.append(RuleMatchResult(
-                    rule_id=rule.id,
-                    rule_name=rule.name,
-                    action=rule.action,
-                    severity=rule.severity,
-                    description=rule.description,
-                    tags=rule.tags,
-                ))
+                results.append(
+                    RuleMatchResult(
+                        rule_id=rule.id,
+                        rule_name=rule.name,
+                        action=rule.action,
+                        severity=rule.severity,
+                        description=rule.description,
+                        tags=rule.tags,
+                    )
+                )
         return results
 
     def filter_results(
@@ -280,7 +287,11 @@ class RuleEngine:
             flags = [rr for rr in rule_results if rr.action == RuleAction.FLAG]
             if flags:
                 r["flags"] = [
-                    {"rule_id": f.rule_id, "severity": f.severity.value, "description": f.description}
+                    {
+                        "rule_id": f.rule_id,
+                        "severity": f.severity.value,
+                        "description": f.description,
+                    }
                     for f in flags
                 ]
 

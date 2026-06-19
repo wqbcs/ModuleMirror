@@ -18,10 +18,7 @@ class TestOrjsonPerformance:
         assert result is not None
 
     def test_large_dict(self):
-        data = {
-            f"key_{i}": f"value_{i}" * 10
-            for i in range(1000)
-        }
+        data = {f"key_{i}": f"value_{i}" * 10 for i in range(1000)}
         data["numbers"] = list(range(1000))
         result = orjson_dumps(data)
         assert result is not None
@@ -33,9 +30,8 @@ class TestOrjsonPerformance:
                     "name": f"module_{i}",
                     "similarity": 0.85,
                     "matches": [
-                        {"source": f"file_{j}.py", "target": f"file_{j+1}.py"}
-                        for j in range(10)
-                    ]
+                        {"source": f"file_{j}.py", "target": f"file_{j + 1}.py"} for j in range(10)
+                    ],
                 }
                 for i in range(50)
             ]

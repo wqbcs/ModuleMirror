@@ -45,7 +45,9 @@ class TestWinnowingBenchmark:
         winnowing = Winnowing(kgram_size=5, window_size=4)
         code = _generate_code(50)
         runner = BenchmarkRunner(warmup=2, iterations=50)
-        result = runner.bench("winnowing/small/50lines", lambda: winnowing.generate_fingerprints_from_code(code))
+        result = runner.bench(
+            "winnowing/small/50lines", lambda: winnowing.generate_fingerprints_from_code(code)
+        )
         assert result.mean > 0
         assert result.ops_per_sec > 0
 
@@ -55,7 +57,9 @@ class TestWinnowingBenchmark:
         winnowing = Winnowing(kgram_size=5, window_size=4)
         code = _generate_code(500)
         runner = BenchmarkRunner(warmup=2, iterations=30)
-        result = runner.bench("winnowing/medium/500lines", lambda: winnowing.generate_fingerprints_from_code(code))
+        result = runner.bench(
+            "winnowing/medium/500lines", lambda: winnowing.generate_fingerprints_from_code(code)
+        )
         assert result.mean > 0
 
     def test_winnowing_large(self):
@@ -64,7 +68,9 @@ class TestWinnowingBenchmark:
         winnowing = Winnowing(kgram_size=5, window_size=4)
         code = _generate_code(5000)
         runner = BenchmarkRunner(warmup=1, iterations=10)
-        result = runner.bench("winnowing/large/5000lines", lambda: winnowing.generate_fingerprints_from_code(code))
+        result = runner.bench(
+            "winnowing/large/5000lines", lambda: winnowing.generate_fingerprints_from_code(code)
+        )
         assert result.mean > 0
 
     def test_winnowing_scaling(self):
@@ -190,7 +196,12 @@ class TestFingerprintDBBenchmark:
         def add_proj():
             idx = counter[0]
             counter[0] += 1
-            project = Project(id=f"bench_proj_{idx}", name=f"Benchmark_{idx}", url="https://github.com/test/bench", source="github")
+            project = Project(
+                id=f"bench_proj_{idx}",
+                name=f"Benchmark_{idx}",
+                url="https://github.com/test/bench",
+                source="github",
+            )
             db.add_project(project, modules={}, fingerprints={})
 
         runner = BenchmarkRunner(warmup=2, iterations=50)
@@ -217,7 +228,9 @@ class TestRegressionCheck:
         winnowing = Winnowing(kgram_size=5, window_size=4)
         code = _generate_code(500)
         runner = BenchmarkRunner(warmup=2, iterations=30)
-        runner.bench("winnowing/regression/500lines", lambda: winnowing.generate_fingerprints_from_code(code))
+        runner.bench(
+            "winnowing/regression/500lines", lambda: winnowing.generate_fingerprints_from_code(code)
+        )
 
         set_a = set(range(1000))
         set_b = set(range(500, 1500))
@@ -225,4 +238,6 @@ class TestRegressionCheck:
 
         regressions = runner.check_regression(threshold=1.5)
         if regressions:
-            pytest.skip(f"Performance regression detected (baseline may need update): {regressions}")
+            pytest.skip(
+                f"Performance regression detected (baseline may need update): {regressions}"
+            )

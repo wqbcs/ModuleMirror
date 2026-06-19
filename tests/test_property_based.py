@@ -8,7 +8,9 @@ from hypothesis import given, settings, HealthCheck
 from hypothesis.strategies import text, integers, lists, sets
 
 from gh_similarity_detector.core.fingerprint.winnowing import (
-    CodeTokenizer, Winnowing, RollingHash,
+    CodeTokenizer,
+    Winnowing,
+    RollingHash,
 )
 from gh_similarity_detector.utils.math_utils import jaccard_similarity
 
@@ -29,7 +31,9 @@ class TestRollingHashProperties:
         assert isinstance(result, int)
 
     @given(data=lists(text(min_size=1, max_size=5, alphabet="abc"), min_size=2, max_size=20))
-    @settings(max_examples=50, suppress_health_check=[HealthCheck.too_slow, HealthCheck.filter_too_much])
+    @settings(
+        max_examples=50, suppress_health_check=[HealthCheck.too_slow, HealthCheck.filter_too_much]
+    )
     def test_order_sensitivity(self, data):
         h = RollingHash()
         reversed_data = list(reversed(data))

@@ -17,7 +17,6 @@ from gh_similarity_detector.utils.sanitizer import (
 
 
 class TestSanitizePath:
-
     def test_valid_relative_path(self):
         assert sanitize_path("src/main.py") == "src/main.py"
 
@@ -66,12 +65,13 @@ class TestSanitizePath:
 
 
 class TestSanitizeCommandInput:
-
     def test_valid_input(self):
         assert sanitize_command_input("user_repo") == "user_repo"
 
     def test_valid_url(self):
-        assert sanitize_command_input("https://github.com/user/repo") == "https://github.com/user/repo"
+        assert (
+            sanitize_command_input("https://github.com/user/repo") == "https://github.com/user/repo"
+        )
 
     def test_semicolon_injection(self):
         with pytest.raises(CommandInjectionError):
@@ -107,7 +107,6 @@ class TestSanitizeCommandInput:
 
 
 class TestSanitizeUrl:
-
     def test_valid_github_https(self):
         result = sanitize_url("https://github.com/user/repo")
         assert result == "https://github.com/user/repo"
@@ -138,7 +137,6 @@ class TestSanitizeUrl:
 
 
 class TestCheckRegexSafety:
-
     def test_safe_regex(self):
         assert check_regex_safety(r"^\d+$") == r"^\d+$"
 
@@ -167,7 +165,6 @@ class TestCheckRegexSafety:
 
 
 class TestSanitizeString:
-
     def test_normal_string(self):
         assert sanitize_string("hello world") == "hello world"
 

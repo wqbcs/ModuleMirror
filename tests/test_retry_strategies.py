@@ -16,7 +16,6 @@ from gh_similarity_detector.infrastructure.resilience.retry_strategies import (
 
 
 class TestRetryStats:
-
     def test_record_success_no_retry(self):
         stats = RetryStats()
         stats.record_attempt(0, True)
@@ -50,7 +49,6 @@ class TestRetryStats:
 
 
 class TestGithubApiRetry:
-
     def test_success_no_retry(self):
         call_count = 0
 
@@ -102,7 +100,6 @@ class TestGithubApiRetry:
 
 
 class TestDbQueryRetry:
-
     def test_success_no_retry(self):
         @db_query_retry(max_attempts=3)
         def query():
@@ -126,7 +123,6 @@ class TestDbQueryRetry:
 
 
 class TestFileReadRetry:
-
     def test_success_no_retry(self):
         @file_read_retry()
         def read():
@@ -149,7 +145,6 @@ class TestFileReadRetry:
 
 
 class TestNetworkRetry:
-
     def test_success_no_retry(self):
         @network_retry(max_attempts=3)
         def fetch():
@@ -172,7 +167,6 @@ class TestNetworkRetry:
 
 
 class TestCustomRetry:
-
     def test_exponential_wait(self):
         call_count = 0
 
@@ -245,7 +239,6 @@ class TestCustomRetry:
 
 
 class TestWithRetryStats:
-
     def test_success_recorded(self):
         @with_retry_stats
         def successful():

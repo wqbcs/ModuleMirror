@@ -6,7 +6,6 @@ from gh_similarity_detector.infrastructure.parser.parser_manager import ParserMa
 
 
 class TestParserManagerInit:
-
     def test_default_init(self):
         pm = ParserManager()
         assert len(pm.parsers) > 0
@@ -23,7 +22,6 @@ class TestParserManagerInit:
 
 
 class TestParserManagerMethods:
-
     def test_get_parser_python(self):
         pm = ParserManager(languages=["python"])
         parser = pm.get_parser("python")
@@ -75,7 +73,6 @@ class TestParserManagerMethods:
 
 
 class TestParserManagerParseErrors:
-
     def test_parse_invalid_bytes(self):
         pm = ParserManager(languages=["python"])
         tree = pm.parse(b"\xff\xfe", "python")

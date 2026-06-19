@@ -16,7 +16,6 @@ from gh_similarity_detector.infrastructure.resilience.timeout import (
 
 
 class TestTimeoutConfig:
-
     def test_default_values(self):
         config = TimeoutConfig()
         assert config.connect == 5.0
@@ -65,7 +64,6 @@ class TestTimeoutConfig:
 
 
 class TestPredefinedTimeouts:
-
     def test_github_api(self):
         assert GITHUB_API_TIMEOUT.connect == 5.0
         assert GITHUB_API_TIMEOUT.read == 30.0
@@ -85,7 +83,6 @@ class TestPredefinedTimeouts:
 
 
 class TestTimeoutManager:
-
     def test_get_github_api(self):
         config = timeout_manager.get("github_api")
         assert config.connect == 5.0

@@ -84,9 +84,14 @@ class TestCompositeSink:
 
     def test_error_isolation(self):
         class FailingSink(ResultSink):
-            def write(self, result): raise RuntimeError("fail")
-            def write_batch(self, results): raise RuntimeError("fail")
-            def flush(self): raise RuntimeError("fail")
+            def write(self, result):
+                raise RuntimeError("fail")
+
+            def write_batch(self, results):
+                raise RuntimeError("fail")
+
+            def flush(self):
+                raise RuntimeError("fail")
 
         ok_sink = InMemorySink()
         composite = CompositeSink([FailingSink(), ok_sink])

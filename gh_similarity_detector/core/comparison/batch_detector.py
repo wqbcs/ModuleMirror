@@ -20,6 +20,7 @@ from ...utils.logger import logger
 @dataclass
 class BatchTask:
     """单个批量检测任务"""
+
     target: str
     candidates: List[str] = field(default_factory=list)
 
@@ -27,6 +28,7 @@ class BatchTask:
 @dataclass
 class BatchResult:
     """批量检测结果"""
+
     total_tasks: int = 0
     completed: int = 0
     failed: int = 0
@@ -140,31 +142,35 @@ class BatchDetector:
         for i, task in enumerate(tasks):
             candidates = task.candidates or default_candidates or []
             if not candidates:
-                result.errors.append({
-                    "task": task.target,
-                    "error": "无候选项目",
-                    "index": i,
-                })
+                result.errors.append(
+                    {
+                        "task": task.target,
+                        "error": "无候选项目",
+                        "index": i,
+                    }
+                )
                 result.failed += 1
                 continue
 
             try:
                 self._pipeline.detect(
-                    task.target, candidates,
+                    task.target,
+                    candidates,
                     update_db=update_db,
                 )
                 result.completed += 1
             except Exception as e:
-                result.errors.append({
-                    "task": task.target,
-                    "error": str(e),
-                    "index": i,
-                })
+                result.errors.append(
+                    {
+                        "task": task.target,
+                        "error": str(e),
+                        "index": i,
+                    }
+                )
                 result.failed += 1
                 logger.error(f"批量检测任务失败 [{task.target}]: {e}")
 
         logger.info(
-            f"批量检测完成: {result.completed}/{result.total_tasks} 成功, "
-            f"{result.failed} 失败"
+            f"批量检测完成: {result.completed}/{result.total_tasks} 成功, {result.failed} 失败"
         )
         return result

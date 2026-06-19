@@ -236,9 +236,7 @@ class TestCrossLanguageRetrievalPipeline:
         assert "language_stats" in stats
 
     def test_min_similarity_filter(self):
-        pipe = CrossLanguageRetrievalPipeline(
-            engine_type="dummy", min_similarity=0.99
-        )
+        pipe = CrossLanguageRetrievalPipeline(engine_type="dummy", min_similarity=0.99)
         pipe.index_code("c1", "completely different code here", "python")
         results = pipe.search("def foo(): pass", query_language="python")
         assert len(results) == 0 or all(r.similarity >= 0.99 for r in results)

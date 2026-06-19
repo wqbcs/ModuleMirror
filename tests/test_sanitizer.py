@@ -42,7 +42,7 @@ class TestReportSanitizerExtended:
         assert "mysql://root:pwd@localhost/mydb" not in result
 
     def test_rsa_private_key_block_redacted(self):
-        text = '-----BEGIN RSA PRIVATE KEY-----\nMIIEvgIBADANBgkq\n-----END RSA PRIVATE KEY-----'
+        text = "-----BEGIN RSA PRIVATE KEY-----\nMIIEvgIBADANBgkq\n-----END RSA PRIVATE KEY-----"
         result = self.sanitizer.sanitize(text)
         assert "MIIEvgIBADANBgkq" not in result
         assert "***REDACTED PRIVATE KEY***" in result

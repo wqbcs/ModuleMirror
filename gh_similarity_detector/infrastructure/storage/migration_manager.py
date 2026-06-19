@@ -52,19 +52,14 @@ class MigrationManager:
         """)
 
     def get_current_version(self) -> int:
-        row = self.conn.execute(
-            "SELECT value FROM meta WHERE key = 'schema_version'"
-        ).fetchone()
+        row = self.conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
         return int(row[0]) if row else 0
 
     def get_applied_migrations(self) -> List[Dict]:
         rows = self.conn.execute(
             "SELECT version, name, checksum, applied_at FROM _migration_history ORDER BY version"
         ).fetchall()
-        return [
-            {"version": r[0], "name": r[1], "checksum": r[2], "applied_at": r[3]}
-            for r in rows
-        ]
+        return [{"version": r[0], "name": r[1], "checksum": r[2], "applied_at": r[3]} for r in rows]
 
     def validate_checksums(self, migrations: List[Migration]) -> List[str]:
         applied = {r["version"]: r["checksum"] for r in self.get_applied_migrations()}
@@ -102,7 +97,13 @@ class MigrationManager:
 
                 self.conn.execute(
                     "INSERT INTO _migration_history (version, name, checksum, applied_at, rollback_sql) VALUES (?, ?, ?, ?, ?)",
-                    (migration.version, migration.name, migration.checksum, time.time(), rollback_sql),
+                    (
+                        migration.version,
+                        migration.name,
+                        migration.checksum,
+                        time.time(),
+                        rollback_sql,
+                    ),
                 )
                 self.conn.execute(
                     "INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', ?)",

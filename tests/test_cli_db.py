@@ -12,9 +12,14 @@ def _seed_db(db_path: str) -> str:
     db = FingerprintDB(db_path)
     proj = Project(name="test/project", source="test", language="python")
     mod = Module(
-        name="foo", file_path="foo.py", module_type=ModuleType.FUNCTION,
-        source_code="def foo(): pass", start_line=1, end_line=1,
-        language="python", project_id=proj.id,
+        name="foo",
+        file_path="foo.py",
+        module_type=ModuleType.FUNCTION,
+        source_code="def foo(): pass",
+        start_line=1,
+        end_line=1,
+        language="python",
+        project_id=proj.id,
     )
     fp = FingerprintSet(module_id=mod.id, winnowing_fingerprints={1, 2, 3})
     db.add_project(proj, {"foo.py": [mod]}, {mod.id: fp})
@@ -38,7 +43,9 @@ class TestDbAdd:
         mock_pipeline = MagicMock()
         mock_pipeline.add_to_db.return_value = True
         mock_pipeline.fingerprint_db.get_stats.return_value = {
-            "project_count": 1, "module_count": 2, "fingerprint_count": 10,
+            "project_count": 1,
+            "module_count": 2,
+            "fingerprint_count": 10,
         }
         MockPipeline.return_value = mock_pipeline
 
@@ -96,6 +103,7 @@ class TestDbStats:
     def test_db_stats_empty(self, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(db_path)
         runner = CliRunner()
         result = runner.invoke(main, ["db", "stats", "--db", db_path])
@@ -123,6 +131,7 @@ class TestDbList:
     def test_db_list_empty(self, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(db_path)
         runner = CliRunner()
         result = runner.invoke(main, ["db", "list", "--db", db_path])
@@ -155,7 +164,9 @@ class TestDbDelete:
         FingerprintDB(db_path)
 
         runner = CliRunner()
-        result = runner.invoke(main, ["db", "delete", "-p", "nonexistent", "--db", db_path, "--force"])
+        result = runner.invoke(
+            main, ["db", "delete", "-p", "nonexistent", "--db", db_path, "--force"]
+        )
         assert result.exit_code == 0
         assert "项目不存在" in result.output
 
@@ -164,7 +175,9 @@ class TestDbDelete:
         project_id = _seed_db(db_path)
 
         runner = CliRunner()
-        result = runner.invoke(main, ["db", "delete", "-p", project_id, "--db", db_path], input="y\n")
+        result = runner.invoke(
+            main, ["db", "delete", "-p", project_id, "--db", db_path], input="y\n"
+        )
         assert result.exit_code == 0
         assert "项目已删除" in result.output
 
@@ -173,7 +186,9 @@ class TestDbDelete:
         project_id = _seed_db(db_path)
 
         runner = CliRunner()
-        result = runner.invoke(main, ["db", "delete", "-p", project_id, "--db", db_path], input="n\n")
+        result = runner.invoke(
+            main, ["db", "delete", "-p", project_id, "--db", db_path], input="n\n"
+        )
         assert result.exit_code == 0
 
 
@@ -182,16 +197,26 @@ class TestDbImport:
     def test_db_import_success(self, MockPipeline, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         import_file = tmp_path / "projects.txt"
-        import_file.write_text("https://github.com/user/repo1\nhttps://github.com/user/repo2\n", encoding="utf-8")
+        import_file.write_text(
+            "https://github.com/user/repo1\nhttps://github.com/user/repo2\n", encoding="utf-8"
+        )
 
         mock_pipeline = MagicMock()
         mock_pipeline.add_to_db.return_value = True
         MockPipeline.return_value = mock_pipeline
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            "db", "import", "-f", str(import_file), "--db", db_path,
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "db",
+                "import",
+                "-f",
+                str(import_file),
+                "--db",
+                db_path,
+            ],
+        )
         assert result.exit_code == 0
         assert "批量导入" in result.output
         assert "成功" in result.output
@@ -206,9 +231,17 @@ class TestDbImport:
         MockPipeline.return_value = mock_pipeline
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            "db", "import", "-f", str(import_file), "--db", db_path,
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "db",
+                "import",
+                "-f",
+                str(import_file),
+                "--db",
+                db_path,
+            ],
+        )
         assert result.exit_code == 0
         assert "项目列表为空" in result.output
 
@@ -223,9 +256,17 @@ class TestDbImport:
         MockPipeline.return_value = mock_pipeline
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            "db", "import", "-f", str(import_file), "--db", db_path,
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "db",
+                "import",
+                "-f",
+                str(import_file),
+                "--db",
+                db_path,
+            ],
+        )
         assert result.exit_code == 0
         assert "失败" in result.output
 
@@ -243,8 +284,16 @@ class TestDbImport:
         MockPipeline.return_value = mock_pipeline
 
         runner = CliRunner()
-        result = runner.invoke(main, [
-            "db", "import", "-f", str(import_file), "--db", db_path,
-        ])
+        result = runner.invoke(
+            main,
+            [
+                "db",
+                "import",
+                "-f",
+                str(import_file),
+                "--db",
+                db_path,
+            ],
+        )
         assert result.exit_code == 0
         assert "异常" in result.output

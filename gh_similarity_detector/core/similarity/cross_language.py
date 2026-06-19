@@ -111,7 +111,7 @@ class ASTNormalizer:
         if tree_node is None:
             return IRNode(node_type=IRNodeType.BLOCK)
 
-        if hasattr(tree_node, 'type'):
+        if hasattr(tree_node, "type"):
             node_type_str = tree_node.type
         elif isinstance(tree_node, dict):
             node_type_str = tree_node.get("type", "block")
@@ -125,7 +125,7 @@ class ASTNormalizer:
             label = self._extract_name(tree_node)
 
         children = []
-        if hasattr(tree_node, 'children'):
+        if hasattr(tree_node, "children"):
             for child in tree_node.children:
                 children.append(self.normalize(child, language))
         elif isinstance(tree_node, dict) and "children" in tree_node:
@@ -141,7 +141,7 @@ class ASTNormalizer:
 
     def normalize_code_structure(self, code: str, language: str) -> IRNode:
         functions = []
-        lines = code.strip().split('\n')
+        lines = code.strip().split("\n")
         current_func = None
         current_body = []
 
@@ -156,19 +156,26 @@ class ASTNormalizer:
             if language == "python" and stripped.startswith("def "):
                 is_func_start = True
                 func_name = stripped[4:].split("(")[0].strip()
-            elif language in ("java", "kotlin", "scala") and any(stripped.startswith(kw) for kw in ("public ", "private ", "protected ", "static ", "fun ", "def ")):
+            elif language in ("java", "kotlin", "scala") and any(
+                stripped.startswith(kw)
+                for kw in ("public ", "private ", "protected ", "static ", "fun ", "def ")
+            ):
                 for kw in ["public ", "private ", "protected ", "static "]:
                     stripped = stripped.replace(kw, "")
                 if stripped.startswith("fun ") or stripped.startswith("def "):
                     is_func_start = True
                     func_name = stripped.split("(")[0].split()[-1].strip()
-            elif language in ("javascript", "typescript") and ("function " in stripped or "=>" in stripped):
+            elif language in ("javascript", "typescript") and (
+                "function " in stripped or "=>" in stripped
+            ):
                 is_func_start = True
                 if "function " in stripped:
                     func_name = stripped.split("function ")[1].split("(")[0].strip()
                 else:
                     func_name = "arrow"
-            elif language in ("go", "rust", "c", "cpp") and "func " in stripped or "fn " in stripped:
+            elif (
+                language in ("go", "rust", "c", "cpp") and "func " in stripped or "fn " in stripped
+            ):
                 is_func_start = True
                 if "func " in stripped:
                     func_name = stripped.split("func ")[1].split("(")[0].strip()
@@ -196,10 +203,10 @@ class ASTNormalizer:
         )
 
     def _extract_name(self, node: Any) -> str:
-        if hasattr(node, 'child_by_field_name'):
-            name_node = node.child_by_field_name('name')
+        if hasattr(node, "child_by_field_name"):
+            name_node = node.child_by_field_name("name")
             if name_node:
-                return name_node.text.decode() if hasattr(name_node, 'text') else str(name_node)
+                return name_node.text.decode() if hasattr(name_node, "text") else str(name_node)
         return ""
 
     def _build_func_ir(self, name: str, body_lines: List[str]) -> IRNode:

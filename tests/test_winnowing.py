@@ -34,7 +34,7 @@ class TestCodeTokenizer:
         assert tokens == ["ID", "ID", "ID"]
 
     def test_strings_normalized(self, tokenizer):
-        tokens = tokenizer.tokenize('"hello" \'world\'', "python")
+        tokens = tokenizer.tokenize("\"hello\" 'world'", "python")
         assert tokens == ["STR", "STR"]
 
     def test_numbers_normalized(self, tokenizer):
@@ -94,7 +94,7 @@ class TestWinnowing:
             start_line=1,
             end_line=1,
             language="python",
-            token_count=10
+            token_count=10,
         )
         fp = winnowing.generate_fingerprints(module)
         assert isinstance(fp, FingerprintSet)

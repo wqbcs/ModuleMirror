@@ -16,7 +16,6 @@ from gh_similarity_detector.infrastructure.github_client.client import (
 
 
 class TestGitHubClientURLParsing:
-
     def test_parse_https_url(self):
         result = GitHubClient.parse_github_url("https://github.com/user/repo")
         assert result == ("user", "repo")
@@ -49,7 +48,6 @@ class TestGitHubClientURLParsing:
 
 
 class TestGitHubClientInit:
-
     def test_init_without_token(self):
         client = GitHubClient()
         assert "Authorization" not in client.headers
@@ -66,14 +64,11 @@ class TestGitHubClientInit:
 
 
 class TestGitHubClientHTTPError:
-
     def test_handle_404_error(self):
         client = GitHubClient()
         response = MagicMock()
         response.status_code = 404
-        error = httpx.HTTPStatusError(
-            "404", request=MagicMock(), response=response
-        )
+        error = httpx.HTTPStatusError("404", request=MagicMock(), response=response)
         with pytest.raises(NotFoundError):
             client._handle_http_error(error, "test op")
 
@@ -82,9 +77,7 @@ class TestGitHubClientHTTPError:
         response = MagicMock()
         response.status_code = 403
         response.headers = {"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "12345"}
-        error = httpx.HTTPStatusError(
-            "403", request=MagicMock(), response=response
-        )
+        error = httpx.HTTPStatusError("403", request=MagicMock(), response=response)
         with pytest.raises(RateLimitError) as exc_info:
             client._handle_http_error(error, "test op")
         assert exc_info.value.retry_after == 12345
@@ -94,9 +87,7 @@ class TestGitHubClientHTTPError:
         response = MagicMock()
         response.status_code = 403
         response.headers = {"X-RateLimit-Remaining": "100"}
-        error = httpx.HTTPStatusError(
-            "403", request=MagicMock(), response=response
-        )
+        error = httpx.HTTPStatusError("403", request=MagicMock(), response=response)
         with pytest.raises(GitHubPermissionError):
             client._handle_http_error(error, "test op")
 
@@ -104,9 +95,7 @@ class TestGitHubClientHTTPError:
         client = GitHubClient()
         response = MagicMock()
         response.status_code = 422
-        error = httpx.HTTPStatusError(
-            "422", request=MagicMock(), response=response
-        )
+        error = httpx.HTTPStatusError("422", request=MagicMock(), response=response)
         with pytest.raises(GitHubAPIError):
             client._handle_http_error(error, "test op")
 
@@ -114,9 +103,7 @@ class TestGitHubClientHTTPError:
         client = GitHubClient()
         response = MagicMock()
         response.status_code = 500
-        error = httpx.HTTPStatusError(
-            "500", request=MagicMock(), response=response
-        )
+        error = httpx.HTTPStatusError("500", request=MagicMock(), response=response)
         with pytest.raises(GitHubAPIError):
             client._handle_http_error(error, "test op")
 
@@ -124,16 +111,13 @@ class TestGitHubClientHTTPError:
         client = GitHubClient()
         response = MagicMock()
         response.status_code = 418
-        error = httpx.HTTPStatusError(
-            "418", request=MagicMock(), response=response
-        )
+        error = httpx.HTTPStatusError("418", request=MagicMock(), response=response)
         with pytest.raises(GitHubAPIError):
             client._handle_http_error(error, "test op")
 
 
 @pytest.mark.asyncio
 class TestGitHubClientAPIMethods:
-
     async def test_close(self):
         client = GitHubClient()
         client._client = AsyncMock()

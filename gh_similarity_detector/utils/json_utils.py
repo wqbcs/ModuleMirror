@@ -8,6 +8,7 @@ Author: ModuleMirror
 
 try:
     import orjson
+
     HAS_ORJSON = True
 except ImportError:
     orjson = None

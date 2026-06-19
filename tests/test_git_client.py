@@ -9,7 +9,6 @@ from gh_similarity_detector.infrastructure.git_client.client import GitClient
 
 
 class TestGitClient:
-
     def test_init_default_timeout(self):
         client = GitClient()
         assert client.timeout == 300
@@ -70,10 +69,7 @@ class TestGitClient:
 
     @patch("subprocess.run")
     def test_get_first_commit_date_success(self, mock_run):
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="2023-01-15 10:30:00 +0800\n"
-        )
+        mock_run.return_value = MagicMock(returncode=0, stdout="2023-01-15 10:30:00 +0800\n")
         client = GitClient()
         result = client.get_first_commit_date("/tmp/repo")
         assert result is not None
@@ -96,6 +92,7 @@ class TestGitClient:
 
     def test_create_temp_repo_dir(self):
         import os
+
         path = GitClient.create_temp_repo_dir(prefix="test_")
         assert os.path.isdir(path)
         os.rmdir(path)
@@ -103,6 +100,7 @@ class TestGitClient:
     def test_cleanup_repo_dir(self):
         import os
         import tempfile
+
         path = tempfile.mkdtemp(prefix="test_cleanup_")
         GitClient.cleanup_repo_dir(path)
         assert not os.path.exists(path)

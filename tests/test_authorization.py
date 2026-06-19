@@ -12,7 +12,6 @@ from gh_similarity_detector.infrastructure.security.authorization import (
 
 
 class TestProjectAuthorization:
-
     def test_grant_and_check_read(self):
         auth = ProjectAuthorization()
         auth.grant("user1", "proj1", Permission.READ)

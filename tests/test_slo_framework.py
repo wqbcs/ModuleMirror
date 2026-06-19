@@ -49,11 +49,11 @@ class TestSLICollector:
     def test_record_and_compute(self):
         sli = SLIDefinition(name="test", description="测试")
         collector = SLICollector(sli)
-        
+
         collector.record(10.0, is_good=True)
         collector.record(20.0, is_good=True)
         collector.record(30.0, is_good=False)
-        
+
         sli_value = collector.compute_sli()
         assert abs(sli_value - 66.66666666666666) < 0.01
 
@@ -65,23 +65,23 @@ class TestSLICollector:
     def test_get_percentile(self):
         sli = SLIDefinition(name="test", description="测试")
         collector = SLICollector(sli)
-        
+
         for i in range(100):
             collector.record(float(i), is_good=True)
-        
+
         p50 = collector.get_percentile(50)
         p99 = collector.get_percentile(99)
-        
+
         assert 49 <= p50 <= 51
         assert 98 <= p99 <= 100
 
     def test_get_stats(self):
         sli = SLIDefinition(name="test", description="测试")
         collector = SLICollector(sli)
-        
+
         for i in range(10):
             collector.record(float(i), is_good=True)
-        
+
         stats = collector.get_stats()
         assert stats["count"] == 10
         assert "sli" in stats
@@ -101,20 +101,20 @@ class TestSLOMonitor:
         monitor = SLOMonitor()
         sli = SLIDefinition(name="latency", description="延迟")
         monitor.register_sli(sli)
-        
+
         slo = SLOTarget(sli_name="latency", target_percentage=95.0, warning_threshold=97.0)
         monitor.register_slo(slo)
-        
+
         assert "latency" in monitor._slo_targets
 
     def test_record(self):
         monitor = SLOMonitor()
         sli = SLIDefinition(name="latency", description="延迟")
         monitor.register_sli(sli)
-        
+
         monitor.record("latency", 10.0, is_good=True)
         monitor.record("latency", 20.0, is_good=True)
-        
+
         report = monitor.get_slo_report()
         assert "latency" in report["slis"]
 
@@ -122,13 +122,13 @@ class TestSLOMonitor:
         monitor = SLOMonitor()
         sli = SLIDefinition(name="latency", description="延迟")
         monitor.register_sli(sli)
-        
+
         slo = SLOTarget(sli_name="latency", target_percentage=95.0, warning_threshold=97.0)
         monitor.register_slo(slo)
-        
+
         for i in range(100):
             monitor.record("latency", float(i), is_good=(i < 97))
-        
+
         report = monitor.get_slo_report()
         assert "timestamp" in report
         assert "slis" in report
@@ -138,10 +138,10 @@ class TestSLOMonitor:
     def test_add_alert_handler(self):
         monitor = SLOMonitor()
         alerts = []
-        
+
         def handler(alert):
             alerts.append(alert)
-        
+
         monitor.add_alert_handler(handler)
         assert len(monitor._alert_handlers) == 1
 
@@ -150,7 +150,7 @@ class TestCreateDefaultSLOMonitor:
     def test_create(self):
         monitor = create_default_slo_monitor()
         report = monitor.get_slo_report()
-        
+
         assert "latency_p99" in report["slis"]
         assert "availability" in report["slis"]
         assert "error_rate" in report["slis"]

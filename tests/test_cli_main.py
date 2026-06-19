@@ -4,12 +4,21 @@ from unittest.mock import patch, MagicMock, AsyncMock
 from click.testing import CliRunner
 
 from gh_similarity_detector.cli.main import (
-    main, _check_api_rate_limit, _make_progress_callback,
+    main,
+    _check_api_rate_limit,
+    _make_progress_callback,
 )
-from gh_similarity_detector.models.results import DetectionResult, SimilarityResult, PlagiarismResult
+from gh_similarity_detector.models.results import (
+    DetectionResult,
+    SimilarityResult,
+    PlagiarismResult,
+)
 from gh_similarity_detector.models.enums import ReuseSuggestion, TimeRelation
 from gh_similarity_detector.infrastructure.github_client.client import (
-    RateLimitError, NotFoundError, GitHubAPIError, GitHubPermissionError,
+    RateLimitError,
+    NotFoundError,
+    GitHubAPIError,
+    GitHubPermissionError,
 )
 
 
@@ -70,7 +79,12 @@ class TestDetectCommand:
 
     @patch("gh_similarity_detector.cli.main.DetectionPipeline")
     def test_detect_with_matches_output(self, MockPipeline):
-        snippet = {"source_file": "a.py", "source_lines": "1-5", "target_file": "b.py", "target_lines": "1-5"}
+        snippet = {
+            "source_file": "a.py",
+            "source_lines": "1-5",
+            "target_file": "b.py",
+            "target_lines": "1-5",
+        }
         result = _make_result(snippet=snippet)
         mock_pipeline = MagicMock()
         mock_pipeline.detect.return_value = [result]
@@ -84,8 +98,10 @@ class TestDetectCommand:
     @patch("gh_similarity_detector.cli.main.DetectionPipeline")
     def test_detect_no_matches(self, MockPipeline):
         result = DetectionResult(
-            source_project="proj_a", target_project="proj_b",
-            matches=[], statistics={"avg_similarity": 0, "max_similarity": 0},
+            source_project="proj_a",
+            target_project="proj_b",
+            matches=[],
+            statistics={"avg_similarity": 0, "max_similarity": 0},
         )
         mock_pipeline = MagicMock()
         mock_pipeline.detect.return_value = [result]
@@ -106,10 +122,18 @@ class TestDetectCommand:
         MockPipeline.return_value = mock_pipeline
 
         runner = CliRunner()
-        res = runner.invoke(main, [
-            "detect", "-t", "repo1", "-c", "repo2",
-            "-f", str(candidates_file),
-        ])
+        res = runner.invoke(
+            main,
+            [
+                "detect",
+                "-t",
+                "repo1",
+                "-c",
+                "repo2",
+                "-f",
+                str(candidates_file),
+            ],
+        )
         assert res.exit_code == 0
 
     @patch("gh_similarity_detector.cli.main.DetectionPipeline")
@@ -195,6 +219,7 @@ class TestPlagiarismCommand:
     def test_plagiarism_with_results(self, MockPipeline, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(db_path)
 
         match = _make_match()
@@ -223,6 +248,7 @@ class TestPlagiarismCommand:
     def test_plagiarism_no_results(self, MockPipeline, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(db_path)
 
         mock_pipeline = MagicMock()
@@ -238,6 +264,7 @@ class TestPlagiarismCommand:
     def test_plagiarism_with_update_db(self, MockPipeline, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(db_path)
 
         mock_pipeline = MagicMock()
@@ -254,6 +281,7 @@ class TestPlagiarismCommand:
     def test_plagiarism_update_db_failure(self, MockPipeline, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(db_path)
 
         mock_pipeline = MagicMock()
@@ -270,6 +298,7 @@ class TestPlagiarismCommand:
     def test_plagiarism_error(self, MockPipeline, tmp_path):
         db_path = str(tmp_path / "test.sqlite")
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(db_path)
 
         mock_pipeline = MagicMock()
@@ -285,11 +314,23 @@ class TestSearchCommand:
     @patch("gh_similarity_detector.cli.main.GitHubClient")
     def test_search_success(self, MockGHClient):
         mock_client = MagicMock()
-        mock_client.search_repositories = AsyncMock(return_value=[
-            {"name": "repo1", "full_name": "user/repo1", "url": "https://github.com/user/repo1",
-             "description": "A test repo", "stars": 100, "language": "python", "forks": 10, "updated_at": "2024-01-01"},
-        ])
-        mock_client.check_rate_limit = AsyncMock(return_value={"resources": {"core": {"remaining": 50, "limit": 60}}})
+        mock_client.search_repositories = AsyncMock(
+            return_value=[
+                {
+                    "name": "repo1",
+                    "full_name": "user/repo1",
+                    "url": "https://github.com/user/repo1",
+                    "description": "A test repo",
+                    "stars": 100,
+                    "language": "python",
+                    "forks": 10,
+                    "updated_at": "2024-01-01",
+                },
+            ]
+        )
+        mock_client.check_rate_limit = AsyncMock(
+            return_value={"resources": {"core": {"remaining": 50, "limit": 60}}}
+        )
         MockGHClient.return_value = mock_client
 
         runner = CliRunner()
@@ -311,7 +352,9 @@ class TestSearchCommand:
     @patch("gh_similarity_detector.cli.main.GitHubClient")
     def test_search_rate_limit_error(self, MockGHClient):
         mock_client = MagicMock()
-        mock_client.search_repositories = AsyncMock(side_effect=RateLimitError(403, "rate limited", retry_after=60))
+        mock_client.search_repositories = AsyncMock(
+            side_effect=RateLimitError(403, "rate limited", retry_after=60)
+        )
         MockGHClient.return_value = mock_client
 
         runner = CliRunner()
@@ -387,6 +430,7 @@ class TestConfigCommand:
 
     def test_config_validate(self, tmp_path):
         from gh_similarity_detector.config.config import DetectionConfig
+
         config_file = str(tmp_path / "gh-sim.yaml")
         cfg = DetectionConfig()
         cfg.to_yaml(config_file)
@@ -401,9 +445,9 @@ class TestCheckApiRateLimit:
     @patch("gh_similarity_detector.cli.main.GitHubClient")
     def test_check_rate_limit_low(self, MockGHClient):
         mock_client = MagicMock()
-        mock_client.check_rate_limit = AsyncMock(return_value={
-            "resources": {"core": {"remaining": 5, "limit": 60}}
-        })
+        mock_client.check_rate_limit = AsyncMock(
+            return_value={"resources": {"core": {"remaining": 5, "limit": 60}}}
+        )
         MockGHClient.return_value = mock_client
 
         _check_api_rate_limit("fake_token")
@@ -411,9 +455,9 @@ class TestCheckApiRateLimit:
     @patch("gh_similarity_detector.cli.main.GitHubClient")
     def test_check_rate_limit_ok(self, MockGHClient):
         mock_client = MagicMock()
-        mock_client.check_rate_limit = AsyncMock(return_value={
-            "resources": {"core": {"remaining": 50, "limit": 60}}
-        })
+        mock_client.check_rate_limit = AsyncMock(
+            return_value={"resources": {"core": {"remaining": 50, "limit": 60}}}
+        )
         MockGHClient.return_value = mock_client
 
         _check_api_rate_limit("fake_token")

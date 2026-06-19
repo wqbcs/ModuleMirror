@@ -111,14 +111,18 @@ class TestProgressBroadcaster:
         b = ProgressBroadcaster()
         b.subscribe_sse("task_1")
         b.subscribe_sse("task_1")
-        event = ProgressEvent(task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=10.0)
+        event = ProgressEvent(
+            task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=10.0
+        )
         delivered = await b.broadcast(event)
         assert delivered == 2
 
     @pytest.mark.asyncio
     async def test_broadcast_stores_last_progress(self):
         b = ProgressBroadcaster()
-        event = ProgressEvent(task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=75.0)
+        event = ProgressEvent(
+            task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=75.0
+        )
         await b.broadcast(event)
         stored = b.get_progress("task_1")
         assert stored is not None
@@ -128,7 +132,9 @@ class TestProgressBroadcaster:
     async def test_completed_cleans_up_subscribers(self):
         b = ProgressBroadcaster()
         b.subscribe_sse("task_1")
-        event = ProgressEvent(task_id="task_1", event_type=ProgressEventType.COMPLETED, progress=100.0)
+        event = ProgressEvent(
+            task_id="task_1", event_type=ProgressEventType.COMPLETED, progress=100.0
+        )
         await b.broadcast(event)
         assert "task_1" not in b._sse_subscribers
 
@@ -143,14 +149,18 @@ class TestProgressBroadcaster:
     @pytest.mark.asyncio
     async def test_active_tasks(self):
         b = ProgressBroadcaster()
-        event = ProgressEvent(task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=10.0)
+        event = ProgressEvent(
+            task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=10.0
+        )
         await b.broadcast(event)
         assert "task_1" in b.active_tasks
 
     @pytest.mark.asyncio
     async def test_subscribe_gets_last_event(self):
         b = ProgressBroadcaster()
-        event = ProgressEvent(task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=30.0)
+        event = ProgressEvent(
+            task_id="task_1", event_type=ProgressEventType.PROGRESS, progress=30.0
+        )
         await b.broadcast(event)
         queue = b.subscribe_sse("task_1")
         last = queue.get_nowait()

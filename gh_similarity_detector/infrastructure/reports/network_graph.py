@@ -13,6 +13,7 @@ from typing import Dict, List, Any, Optional
 
 try:
     from pyvis.network import Network
+
     HAS_PYVIS = True
 except ImportError:
     HAS_PYVIS = False
@@ -179,7 +180,7 @@ def _get_project_group(name: str, project_idx: Dict[str, int]) -> int:
 def _truncate_label(label: str, max_len: int = 30) -> str:
     if len(label) <= max_len:
         return label
-    return label[:max_len - 3] + "..."
+    return label[: max_len - 3] + "..."
 
 
 def _similarity_to_color(similarity: float) -> str:

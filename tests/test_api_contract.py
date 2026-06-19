@@ -119,6 +119,7 @@ class TestContractAgainstApp:
     @pytest.fixture
     def app(self):
         from gh_similarity_detector.api.app import app
+
         return app
 
     def test_app_has_openapi_schema(self, app):

@@ -65,6 +65,7 @@ class TestApiKeyAuth:
 class TestNcdMemoryLimit:
     def test_max_total_bytes_constant(self):
         from gh_similarity_detector.infrastructure.engines.ncd import NCD
+
         assert NCD.MAX_TOTAL_BYTES == 50 * 1024 * 1024
 
 

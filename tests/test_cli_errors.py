@@ -1,7 +1,10 @@
 import pytest
 from gh_similarity_detector.cli.main import _handle_cli_error
 from gh_similarity_detector.infrastructure.github_client.client import (
-    RateLimitError, NotFoundError, GitHubPermissionError, GitHubAPIError,
+    RateLimitError,
+    NotFoundError,
+    GitHubPermissionError,
+    GitHubAPIError,
 )
 
 

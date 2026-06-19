@@ -22,81 +22,81 @@ from prometheus_client import (
 registry = CollectorRegistry()
 
 DETECTION_DURATION = Histogram(
-    'ghsim_detection_duration_seconds',
-    '检测耗时(秒)',
-    ['preset', 'language'],
+    "ghsim_detection_duration_seconds",
+    "检测耗时(秒)",
+    ["preset", "language"],
     registry=registry,
 )
 
 FINGERPRINT_GENERATION_TOTAL = Counter(
-    'ghsim_fingerprint_generation_total',
-    '指纹生成次数',
-    ['language'],
+    "ghsim_fingerprint_generation_total",
+    "指纹生成次数",
+    ["language"],
     registry=registry,
 )
 
 FINGERPRINT_HIT_TOTAL = Counter(
-    'ghsim_fingerprint_hit_total',
-    '指纹命中次数(在指纹库中找到匹配)',
-    ['fp_type'],
+    "ghsim_fingerprint_hit_total",
+    "指纹命中次数(在指纹库中找到匹配)",
+    ["fp_type"],
     registry=registry,
 )
 
 FINGERPRINT_MISS_TOTAL = Counter(
-    'ghsim_fingerprint_miss_total',
-    '指纹未命中次数',
-    ['fp_type'],
+    "ghsim_fingerprint_miss_total",
+    "指纹未命中次数",
+    ["fp_type"],
     registry=registry,
 )
 
 DB_QUERY_DURATION = Histogram(
-    'ghsim_db_query_duration_seconds',
-    '数据库查询耗时(秒)',
-    ['operation'],
+    "ghsim_db_query_duration_seconds",
+    "数据库查询耗时(秒)",
+    ["operation"],
     registry=registry,
 )
 
 DB_QUERY_TOTAL = Counter(
-    'ghsim_db_query_total',
-    '数据库查询次数',
-    ['operation'],
+    "ghsim_db_query_total",
+    "数据库查询次数",
+    ["operation"],
     registry=registry,
 )
 
 API_REQUEST_TOTAL = Counter(
-    'ghsim_api_request_total',
-    'API请求次数',
-    ['method', 'endpoint', 'status'],
+    "ghsim_api_request_total",
+    "API请求次数",
+    ["method", "endpoint", "status"],
     registry=registry,
 )
 
 API_REQUEST_DURATION = Histogram(
-    'ghsim_api_request_duration_seconds',
-    'API请求耗时(秒)',
-    ['method', 'endpoint'],
+    "ghsim_api_request_duration_seconds",
+    "API请求耗时(秒)",
+    ["method", "endpoint"],
     registry=registry,
 )
 
 ACTIVE_DETECTIONS = Gauge(
-    'ghsim_active_detections',
-    '当前正在进行的检测数量',
+    "ghsim_active_detections",
+    "当前正在进行的检测数量",
     registry=registry,
 )
 
 CIRCUIT_BREAKER_STATE = Gauge(
-    'ghsim_circuit_breaker_state',
-    'Circuit Breaker状态(0=CLOSED,1=OPEN,2=HALF_OPEN)',
-    ['name'],
+    "ghsim_circuit_breaker_state",
+    "Circuit Breaker状态(0=CLOSED,1=OPEN,2=HALF_OPEN)",
+    ["name"],
     registry=registry,
 )
 
 PROJECT_INFO = Info(
-    'ghsim_project',
-    'ModuleMirror项目信息',
+    "ghsim_project",
+    "ModuleMirror项目信息",
     registry=registry,
 )
 
-PROJECT_INFO.info({'version': '0.1.0', 'language': 'python'})
+PROJECT_INFO.info({"version": "0.1.0", "language": "python"})
 
 
 def get_metrics() -> bytes:
@@ -113,7 +113,9 @@ class MetricsCollector:
     """指标收集器 - 便捷方法"""
 
     @staticmethod
-    def record_detection(duration: float, preset: str = "balanced", language: str = "python") -> None:
+    def record_detection(
+        duration: float, preset: str = "balanced", language: str = "python"
+    ) -> None:
         DETECTION_DURATION.labels(preset=preset, language=language).observe(duration)
 
     @staticmethod
@@ -134,7 +136,9 @@ class MetricsCollector:
         DB_QUERY_DURATION.labels(operation=operation).observe(duration)
 
     @staticmethod
-    def record_api_request(duration: float, method: str = "GET", endpoint: str = "/", status: int = 200) -> None:
+    def record_api_request(
+        duration: float, method: str = "GET", endpoint: str = "/", status: int = 200
+    ) -> None:
         API_REQUEST_TOTAL.labels(method=method, endpoint=endpoint, status=str(status)).inc()
         API_REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration)
 

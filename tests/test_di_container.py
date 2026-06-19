@@ -21,11 +21,11 @@ class TestDIContainer:
     def test_singleton_returns_same_instance(self):
         c = DIContainer()
         call_count = [0]
-        
+
         def factory():
             call_count[0] += 1
             return object()
-        
+
         c.register_singleton(object, factory=factory)
         instance1 = c.resolve(object)
         instance2 = c.resolve(object)

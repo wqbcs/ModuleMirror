@@ -34,6 +34,7 @@ class AlertState(Enum):
 @dataclass
 class AlertRule:
     """告警规则"""
+
     name: str
     description: str
     severity: AlertSeverity
@@ -83,6 +84,7 @@ class AlertRule:
 @dataclass
 class AlertEvent:
     """告警事件"""
+
     rule_name: str
     severity: AlertSeverity
     message: str
@@ -107,7 +109,9 @@ class AlertManager:
     def add_rule(self, rule: AlertRule) -> None:
         """添加告警规则"""
         self._rules[rule.name] = rule
-        logger.info(f"告警规则已添加: {rule.name} ({rule.metric_name} {rule.comparison} {rule.threshold})")
+        logger.info(
+            f"告警规则已添加: {rule.name} ({rule.metric_name} {rule.comparison} {rule.threshold})"
+        )
 
     def remove_rule(self, name: str) -> None:
         """移除告警规则"""
@@ -162,7 +166,7 @@ class AlertManager:
                 fired_events.append(event)
                 self._history.append(event)
                 if len(self._history) > self._max_history:
-                    self._history = self._history[-self._max_history:]
+                    self._history = self._history[-self._max_history :]
 
                 logger.warning(f"告警触发: {event.message}")
                 for listener in self._listeners:
@@ -214,52 +218,62 @@ class AlertManager:
 
 alert_manager = AlertManager()
 
-alert_manager.add_rule(AlertRule(
-    name="detection_duration_high",
-    description="检测耗时过高",
-    severity=AlertSeverity.WARNING,
-    metric_name="detection_duration_seconds",
-    threshold=300.0,
-    comparison="gt",
-    cooldown_seconds=120.0,
-))
+alert_manager.add_rule(
+    AlertRule(
+        name="detection_duration_high",
+        description="检测耗时过高",
+        severity=AlertSeverity.WARNING,
+        metric_name="detection_duration_seconds",
+        threshold=300.0,
+        comparison="gt",
+        cooldown_seconds=120.0,
+    )
+)
 
-alert_manager.add_rule(AlertRule(
-    name="fingerprint_db_bloat",
-    description="指纹库膨胀",
-    severity=AlertSeverity.WARNING,
-    metric_name="fingerprint_db_size",
-    threshold=100000,
-    comparison="gt",
-    cooldown_seconds=600.0,
-))
+alert_manager.add_rule(
+    AlertRule(
+        name="fingerprint_db_bloat",
+        description="指纹库膨胀",
+        severity=AlertSeverity.WARNING,
+        metric_name="fingerprint_db_size",
+        threshold=100000,
+        comparison="gt",
+        cooldown_seconds=600.0,
+    )
+)
 
-alert_manager.add_rule(AlertRule(
-    name="api_error_rate_high",
-    description="API错误率过高",
-    severity=AlertSeverity.CRITICAL,
-    metric_name="api_error_rate",
-    threshold=0.1,
-    comparison="gt",
-    cooldown_seconds=60.0,
-))
+alert_manager.add_rule(
+    AlertRule(
+        name="api_error_rate_high",
+        description="API错误率过高",
+        severity=AlertSeverity.CRITICAL,
+        metric_name="api_error_rate",
+        threshold=0.1,
+        comparison="gt",
+        cooldown_seconds=60.0,
+    )
+)
 
-alert_manager.add_rule(AlertRule(
-    name="circuit_breaker_open",
-    description="电路断开",
-    severity=AlertSeverity.CRITICAL,
-    metric_name="circuit_breaker_open_count",
-    threshold=0.5,
-    comparison="gt",
-    cooldown_seconds=30.0,
-))
+alert_manager.add_rule(
+    AlertRule(
+        name="circuit_breaker_open",
+        description="电路断开",
+        severity=AlertSeverity.CRITICAL,
+        metric_name="circuit_breaker_open_count",
+        threshold=0.5,
+        comparison="gt",
+        cooldown_seconds=30.0,
+    )
+)
 
-alert_manager.add_rule(AlertRule(
-    name="memory_usage_high",
-    description="内存使用过高",
-    severity=AlertSeverity.WARNING,
-    metric_name="memory_usage_mb",
-    threshold=512.0,
-    comparison="gt",
-    cooldown_seconds=300.0,
-))
+alert_manager.add_rule(
+    AlertRule(
+        name="memory_usage_high",
+        description="内存使用过高",
+        severity=AlertSeverity.WARNING,
+        metric_name="memory_usage_mb",
+        threshold=512.0,
+        comparison="gt",
+        cooldown_seconds=300.0,
+    )
+)

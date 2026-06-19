@@ -31,8 +31,7 @@ class JscpdAdapter:
     def _check_available(self) -> bool:
         try:
             result = subprocess.run(
-                ['jscpd', '--version'],
-                capture_output=True, text=True, timeout=5
+                ["jscpd", "--version"], capture_output=True, text=True, timeout=5
             )
             if result.returncode == 0:
                 logger.info(f"jscpd 可用，版本: {result.stdout.strip()}")
@@ -49,10 +48,7 @@ class JscpdAdapter:
         return self._available
 
     def detect(
-        self,
-        source_path: str,
-        target_path: str,
-        languages: Optional[List[str]] = None
+        self, source_path: str, target_path: str, languages: Optional[List[str]] = None
     ) -> List[SimilarityResult]:
         """使用 jscpd 检测两个目录间的代码克隆
 
@@ -69,26 +65,30 @@ class JscpdAdapter:
             return []
 
         cmd = [
-            'jscpd', source_path, target_path,
-            '--min-lines', str(self.min_lines),
-            '--min-tokens', str(self.min_tokens),
-            '--reporters', 'json',
-            '--format', ','.join(languages) if languages else 'python,javascript,java',
+            "jscpd",
+            source_path,
+            target_path,
+            "--min-lines",
+            str(self.min_lines),
+            "--min-tokens",
+            str(self.min_tokens),
+            "--reporters",
+            "json",
+            "--format",
+            ",".join(languages) if languages else "python,javascript,java",
         ]
 
         try:
-            with tempfile.TemporaryDirectory(prefix='jscpd_') as tmp_dir:
-                cmd.extend(['--output', tmp_dir])
-                subprocess.run(
-                    cmd, capture_output=True, text=True, timeout=120
-                )
+            with tempfile.TemporaryDirectory(prefix="jscpd_") as tmp_dir:
+                cmd.extend(["--output", tmp_dir])
+                subprocess.run(cmd, capture_output=True, text=True, timeout=120)
 
                 result_path = Path(tmp_dir) / "jscpd-report.json"
                 if not result_path.exists():
                     logger.warning("jscpd 未生成报告文件")
                     return []
 
-                with open(result_path, 'r', encoding='utf-8') as f:
+                with open(result_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
             return self._convert_results(data, source_path, target_path)
@@ -101,17 +101,14 @@ class JscpdAdapter:
             return []
 
     def _convert_results(
-        self,
-        data: Dict,
-        source_path: str,
-        target_path: str
+        self, data: Dict, source_path: str, target_path: str
     ) -> List[SimilarityResult]:
         """将 jscpd 结果转换为 SimilarityResult"""
         results = []
-        duplicates = data.get('duplicates', [])
+        duplicates = data.get("duplicates", [])
 
         for dup in duplicates:
-            fragments = dup.get('files', [])
+            fragments = dup.get("files", [])
             if len(fragments) < 2:
                 continue
 
@@ -120,18 +117,27 @@ class JscpdAdapter:
                     f1 = fragments[i]
                     f2 = fragments[j]
 
-                    source_file = f1.get('name', '')
-                    target_file = f2.get('name', '')
+                    source_file = f1.get("name", "")
+                    target_file = f2.get("name", "")
 
-                    if not (source_file.startswith(source_path) or target_file.startswith(target_path)):
-                        if not (source_file.startswith(target_path) or target_file.startswith(source_path)):
+                    if not (
+                        source_file.startswith(source_path) or target_file.startswith(target_path)
+                    ):
+                        if not (
+                            source_file.startswith(target_path)
+                            or target_file.startswith(source_path)
+                        ):
                             continue
 
-                    lines = dup.get('lines', 0)
-                    tokens = dup.get('tokens', 0)
+                    lines = dup.get("lines", 0)
+                    tokens = dup.get("tokens", 0)
 
-                    fraction = dup.get('fraction', 0)
-                    similarity = min(100.0, fraction * 100) if fraction > 0 else min(100.0, (tokens / max(self.min_tokens, 1)) * 50)
+                    fraction = dup.get("fraction", 0)
+                    similarity = (
+                        min(100.0, fraction * 100)
+                        if fraction > 0
+                        else min(100.0, (tokens / max(self.min_tokens, 1)) * 50)
+                    )
 
                     result = SimilarityResult(
                         source_module_id=f"{source_file}:{f1.get('start', 0)}-{f1.get('end', 0)}",
@@ -144,7 +150,7 @@ class JscpdAdapter:
                             "target_lines": f"{f2.get('start', 0)}-{f2.get('end', 0)}",
                             "duplicated_lines": lines,
                             "duplicated_tokens": tokens,
-                        }
+                        },
                     )
                     results.append(result)
 

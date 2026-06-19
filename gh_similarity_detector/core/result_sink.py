@@ -17,16 +17,13 @@ from ..utils.logger import logger
 
 class ResultSink(ABC):
     @abstractmethod
-    def write(self, result: Any) -> None:
-        ...
+    def write(self, result: Any) -> None: ...
 
     @abstractmethod
-    def write_batch(self, results: List[Any]) -> None:
-        ...
+    def write_batch(self, results: List[Any]) -> None: ...
 
     @abstractmethod
-    def flush(self) -> None:
-        ...
+    def flush(self) -> None: ...
 
 
 class JsonFileSink(ResultSink):
@@ -56,7 +53,7 @@ class InMemorySink(ResultSink):
     def write(self, result: Any) -> None:
         self.results.append(result)
         if len(self.results) > self.max_size:
-            self.results = self.results[-self.max_size:]
+            self.results = self.results[-self.max_size :]
 
     def write_batch(self, results: List[Any]) -> None:
         self.results.extend(results)

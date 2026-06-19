@@ -15,6 +15,7 @@ _logger = get_module_logger("bulkhead")
 
 class BulkheadFullError(Exception):
     """Bulkhead已满，拒绝新请求"""
+
     pass
 
 

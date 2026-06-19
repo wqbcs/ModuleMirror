@@ -14,6 +14,7 @@ try:
     from pyecharts import options as opts
     from pyecharts.charts import HeatMap, Graph, Bar, Pie, Line, Grid
     from pyecharts.commons.utils import JsCode
+
     HAS_PYECHARTS = True
 except ImportError:
     HAS_PYECHARTS = False
@@ -171,9 +172,10 @@ def generate_similarity_histogram(
         return None
 
     import numpy as np
+
     counts, edges = np.histogram(similarities, bins=bins, range=(0, 100))
 
-    x_data = [f"{edges[i]:.0f}-{edges[i+1]:.0f}%" for i in range(len(edges) - 1)]
+    x_data = [f"{edges[i]:.0f}-{edges[i + 1]:.0f}%" for i in range(len(edges) - 1)]
 
     bar = (
         Bar()
@@ -223,9 +225,7 @@ def generate_similarity_pie(
         .set_global_opts(
             title_opts=opts.TitleOpts(title=title),
             legend_opts=opts.LegendOpts(orient="vertical", pos_left="2%", pos_top="20%"),
-            tooltip_opts=opts.TooltipOpts(
-                trigger="item", formatter="{b}: {c} ({d}%)"
-            ),
+            tooltip_opts=opts.TooltipOpts(trigger="item", formatter="{b}: {c} ({d}%)"),
         )
         .set_series_opts(label_opts=opts.LabelOpts(formatter="{b}: {c}"))
     )

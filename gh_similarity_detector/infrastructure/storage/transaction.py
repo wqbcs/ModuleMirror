@@ -50,7 +50,7 @@ class TransactionGuard:
             for i, op in enumerate(operations):
                 affected = op(self.conn)
                 total_affected += affected
-                logger.debug(f"事务步骤 {i+1}/{len(operations)}: {affected} 行受影响")
+                logger.debug(f"事务步骤 {i + 1}/{len(operations)}: {affected} 行受影响")
             self.conn.commit()
             logger.info(f"事务完成: {label}, 共 {total_affected} 行受影响")
             return TransactionResult(success=True, affected_rows=total_affected)
@@ -74,11 +74,11 @@ class TransactionGuard:
                 self.conn.execute(f"RELEASE {sp_name}")
             except Exception as e:
                 self.conn.execute(f"ROLLBACK TO {sp_name}")
-                logger.warning(f"步骤 {i+1} 失败已回滚(savepoint): {e}")
+                logger.warning(f"步骤 {i + 1} 失败已回滚(savepoint): {e}")
                 return TransactionResult(
                     success=False,
                     affected_rows=total_affected,
-                    error=f"Step {i+1} failed: {e}",
+                    error=f"Step {i + 1} failed: {e}",
                 )
         self.conn.commit()
         logger.info(f"Savepoint事务完成: {label}, 共 {total_affected} 行受影响")
@@ -101,7 +101,9 @@ class TransactionGuard:
             self.conn.execute("PRAGMA foreign_keys = ON")
             rows = self.conn.execute("PRAGMA foreign_key_check").fetchall()
             for row in rows:
-                violations.append(f"Table:{row[0]}, RowID:{row[1]}, RefTable:{row[2]}, FKIndex:{row[3]}")
+                violations.append(
+                    f"Table:{row[0]}, RowID:{row[1]}, RefTable:{row[2]}, FKIndex:{row[3]}"
+                )
             if violations:
                 logger.warning(f"外键约束违反: {len(violations)} 处")
         except Exception as e:

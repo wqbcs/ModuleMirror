@@ -53,7 +53,11 @@ class ChaosResult:
 
     @property
     def injection_rate(self) -> float:
-        return self.injections_triggered / self.injections_attempted if self.injections_attempted > 0 else 0.0
+        return (
+            self.injections_triggered / self.injections_attempted
+            if self.injections_attempted > 0
+            else 0.0
+        )
 
 
 class ChaosMonkey:

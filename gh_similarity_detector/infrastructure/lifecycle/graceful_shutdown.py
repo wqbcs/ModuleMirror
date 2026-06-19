@@ -30,6 +30,7 @@ class ShutdownState(Enum):
 @dataclass
 class ShutdownHook:
     """关闭钩子"""
+
     name: str
     callback: Callable
     priority: int = 100
@@ -151,10 +152,7 @@ class GracefulShutdown:
                     f"剩余 {self._active_requests} 个活跃请求, 强制关闭"
                 )
                 break
-            logger.info(
-                f"等待请求排空: {self._active_requests} 个活跃, "
-                f"已等待 {elapsed:.1f}s"
-            )
+            logger.info(f"等待请求排空: {self._active_requests} 个活跃, 已等待 {elapsed:.1f}s")
             await asyncio.sleep(0.5)
 
         logger.info("请求排空完成，执行关闭钩子...")
@@ -164,9 +162,7 @@ class GracefulShutdown:
             try:
                 start = time.monotonic()
                 if asyncio.iscoroutinefunction(hook.callback):
-                    await asyncio.wait_for(
-                        hook.callback(), timeout=hook.timeout
-                    )
+                    await asyncio.wait_for(hook.callback(), timeout=hook.timeout)
                 else:
                     hook.callback()
 

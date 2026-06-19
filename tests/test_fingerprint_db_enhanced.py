@@ -15,16 +15,18 @@ def _make_project(name: str = "test/project") -> Project:
 
 def _make_module(name: str, project_id: str = "test/project") -> Module:
     return Module(
-        name=name, file_path=f"test/{name}.py",
+        name=name,
+        file_path=f"test/{name}.py",
         module_type=ModuleType.FUNCTION,
         source_code=f"def {name}(): pass",
-        start_line=1, end_line=1, language="python",
+        start_line=1,
+        end_line=1,
+        language="python",
         project_id=project_id,
     )
 
 
 class TestFingerprintDBModules:
-
     def test_get_module(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         project = _make_project()
@@ -47,12 +49,12 @@ class TestFingerprintDBModules:
         module = _make_module("foo", project.id)
         fp_set = FingerprintSet(module_id=module.id, winnowing_fingerprints={10, 20, 30})
         db.add_project(project, {"test.py": [module]}, {module.id: fp_set})
-        fps = db.get_module_fingerprints(module.id, fp_type='winnowing')
+        fps = db.get_module_fingerprints(module.id, fp_type="winnowing")
         assert fps == {10, 20, 30}
 
     def test_get_module_fingerprints_empty(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
-        fps = db.get_module_fingerprints("nonexistent", fp_type='winnowing')
+        fps = db.get_module_fingerprints("nonexistent", fp_type="winnowing")
         assert fps == set()
 
     def test_find_modules_by_fingerprint(self, tmp_path):
@@ -61,17 +63,16 @@ class TestFingerprintDBModules:
         module = _make_module("foo", project.id)
         fp_set = FingerprintSet(module_id=module.id, winnowing_fingerprints={42})
         db.add_project(project, {"test.py": [module]}, {module.id: fp_set})
-        result = db.find_modules_by_fingerprint(42, fp_type='winnowing')
+        result = db.find_modules_by_fingerprint(42, fp_type="winnowing")
         assert module.id in result
 
     def test_find_modules_by_fingerprint_not_found(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
-        result = db.find_modules_by_fingerprint(999, fp_type='winnowing')
+        result = db.find_modules_by_fingerprint(999, fp_type="winnowing")
         assert result == []
 
 
 class TestFingerprintDBSimilarityCache:
-
     def test_put_and_get_similarity_cache(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         db.put_similarity_cache("m1", "m2", 85.5, winnowing_overlap=10, ast_similarity=0.7)
@@ -116,7 +117,6 @@ class TestFingerprintDBSimilarityCache:
 
 
 class TestFingerprintDBTasks:
-
     def test_create_and_get_task(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         db.create_task("task1", "user/repo", "candidate1,candidate2")
@@ -168,7 +168,6 @@ class TestFingerprintDBTasks:
 
 
 class TestFingerprintDBExportImport:
-
     def test_export_to_json(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         project = _make_project()
@@ -202,14 +201,13 @@ class TestFingerprintDBExportImport:
 
 
 class TestFingerprintDBAllProjectFingerprints:
-
     def test_get_all_project_fingerprints(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         project = _make_project()
         module = _make_module("foo", project.id)
         fp_set = FingerprintSet(module_id=module.id, winnowing_fingerprints={10, 20})
         db.add_project(project, {"test.py": [module]}, {module.id: fp_set})
-        result = db.get_all_project_fingerprints(fp_type='winnowing')
+        result = db.get_all_project_fingerprints(fp_type="winnowing")
         assert module.id in result
         assert result[module.id] == {10, 20}
 
@@ -225,28 +223,28 @@ class TestFingerprintDBAllProjectFingerprints:
         fp_set2 = FingerprintSet(module_id=module2.id, winnowing_fingerprints={20})
         db.add_project(project2, {"b.py": [module2]}, {module2.id: fp_set2})
 
-        result = db.get_all_project_fingerprints(exclude_project_id=project1.id, fp_type='winnowing')
+        result = db.get_all_project_fingerprints(
+            exclude_project_id=project1.id, fp_type="winnowing"
+        )
         assert module1.id not in result
         assert module2.id in result
 
 
 class TestFingerprintDBClose:
-
     def test_close(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         db.close()
 
 
 class TestFingerprintDBLookupCandidatesEmpty:
-
     def test_lookup_candidates_empty_fingerprints(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
-        result = db.lookup_candidates(set(), fp_type='winnowing')
+        result = db.lookup_candidates(set(), fp_type="winnowing")
         assert result == []
 
     def test_lookup_candidates_no_match(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
-        result = db.lookup_candidates({999}, fp_type='winnowing')
+        result = db.lookup_candidates({999}, fp_type="winnowing")
         assert result == []
 
     def test_delete_project_not_found(self, tmp_path):

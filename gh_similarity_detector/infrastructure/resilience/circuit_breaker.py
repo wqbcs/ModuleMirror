@@ -131,6 +131,7 @@ class CircuitBreaker:
             except Exception:
                 self.record_failure()
                 raise
+
         return wrapper
 
     @property

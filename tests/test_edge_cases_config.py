@@ -10,11 +10,7 @@ from gh_similarity_detector.models.entities import Module, ModuleType
 class TestConfigEdgeCases:
     def test_from_yaml_ignores_unknown_fields(self, tmp_path):
         yaml_file = tmp_path / "config.yaml"
-        yaml_file.write_text(
-            "similarity_threshold: 85\n"
-            "unknown_field: 42\n"
-            "another_unknown: true\n"
-        )
+        yaml_file.write_text("similarity_threshold: 85\nunknown_field: 42\nanother_unknown: true\n")
         config = DetectionConfig.from_yaml(str(yaml_file))
         assert config.similarity_threshold == 85
         assert not hasattr(config, "unknown_field")
@@ -76,16 +72,31 @@ class TestFingerprintCacheEdgeCases:
         cache_json = cache_dir / "fingerprint_cache.json"
         cache_json.write_text("{bad json")
         cache = FingerprintCache(str(cache_dir))
-        m = Module(name="t", file_path="t.py", module_type=ModuleType.FUNCTION,
-                   source_code="x", start_line=1, end_line=1, language="python")
+        m = Module(
+            name="t",
+            file_path="t.py",
+            module_type=ModuleType.FUNCTION,
+            source_code="x",
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
         assert cache.get(m) is None
 
     def test_atomic_write(self, tmp_path):
         cache_dir = tmp_path / "fp_cache2"
         cache = FingerprintCache(str(cache_dir))
-        m = Module(name="t", file_path="t.py", module_type=ModuleType.FUNCTION,
-                   source_code="def foo(): pass", start_line=1, end_line=1, language="python")
+        m = Module(
+            name="t",
+            file_path="t.py",
+            module_type=ModuleType.FUNCTION,
+            source_code="def foo(): pass",
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
         from gh_similarity_detector.models.entities import FingerprintSet
+
         fp_set = FingerprintSet(module_id=m.id, winnowing_fingerprints={1, 2, 3}, token_count=5)
         cache.put(m, fp_set)
         cache._save()
@@ -112,15 +123,18 @@ class TestProjectFetcherEdgeCases:
 class TestModuleIdConflict:
     def test_project_id_prefers_url(self):
         from gh_similarity_detector.models.entities import Project
+
         p = Project(name="repo", source="github", url="https://github.com/org/repo")
         assert p.id == "https://github.com/org/repo"
 
     def test_project_id_falls_back_to_name(self):
         from gh_similarity_detector.models.entities import Project
+
         p = Project(name="repo", source="local")
         assert p.id == "repo"
 
     def test_project_id_explicit(self):
         from gh_similarity_detector.models.entities import Project
+
         p = Project(id="custom-id", name="repo", source="github", url="https://github.com/org/repo")
         assert p.id == "custom-id"

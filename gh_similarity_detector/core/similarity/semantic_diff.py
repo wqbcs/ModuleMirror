@@ -43,7 +43,7 @@ class CodeEntity:
             self.body_hash = self._compute_hash()
 
     def _compute_hash(self) -> str:
-        normalized = re.sub(r'\s+', '', self.source)
+        normalized = re.sub(r"\s+", "", self.source)
         return hex(hash(normalized) & 0xFFFFFFFF)[2:]
 
 
@@ -77,7 +77,7 @@ class CodeEntityExtractor:
 
     def _extract_python(self, code: str) -> List[CodeEntity]:
         entities = []
-        lines = code.split('\n')
+        lines = code.split("\n")
         i = 0
 
         while i < len(lines):
@@ -85,28 +85,32 @@ class CodeEntityExtractor:
 
             if line.startswith("def "):
                 name, params, end_line = self._parse_function(lines, i)
-                source = '\n'.join(lines[i:end_line])
-                entities.append(CodeEntity(
-                    name=name,
-                    entity_type="function",
-                    start_line=i + 1,
-                    end_line=end_line,
-                    source=source,
-                    params=params,
-                ))
+                source = "\n".join(lines[i:end_line])
+                entities.append(
+                    CodeEntity(
+                        name=name,
+                        entity_type="function",
+                        start_line=i + 1,
+                        end_line=end_line,
+                        source=source,
+                        params=params,
+                    )
+                )
                 i = end_line
                 continue
 
             if line.startswith("class "):
                 name, end_line = self._parse_class(lines, i)
-                source = '\n'.join(lines[i:end_line])
-                entities.append(CodeEntity(
-                    name=name,
-                    entity_type="class",
-                    start_line=i + 1,
-                    end_line=end_line,
-                    source=source,
-                ))
+                source = "\n".join(lines[i:end_line])
+                entities.append(
+                    CodeEntity(
+                        name=name,
+                        entity_type="class",
+                        start_line=i + 1,
+                        end_line=end_line,
+                        source=source,
+                    )
+                )
                 i = end_line
                 continue
 
@@ -116,20 +120,25 @@ class CodeEntityExtractor:
 
     def _extract_generic(self, code: str) -> List[CodeEntity]:
         entities = []
-        lines = code.split('\n')
+        lines = code.split("\n")
 
         func_patterns = [
-            (re.compile(r'^\s*(?:public|private|protected)?\s*(?:static\s+)?(?:\w+\s+)+(\w+)\s*\(([^)]*)\)\s*\{?'), "function"),
-            (re.compile(r'^\s*func\s+(\w+)\s*\(([^)]*)\)'), "function"),
-            (re.compile(r'^\s*fn\s+(\w+)\s*\(([^)]*)\)'), "function"),
-            (re.compile(r'^\s*function\s+(\w+)\s*\(([^)]*)\)'), "function"),
+            (
+                re.compile(
+                    r"^\s*(?:public|private|protected)?\s*(?:static\s+)?(?:\w+\s+)+(\w+)\s*\(([^)]*)\)\s*\{?"
+                ),
+                "function",
+            ),
+            (re.compile(r"^\s*func\s+(\w+)\s*\(([^)]*)\)"), "function"),
+            (re.compile(r"^\s*fn\s+(\w+)\s*\(([^)]*)\)"), "function"),
+            (re.compile(r"^\s*function\s+(\w+)\s*\(([^)]*)\)"), "function"),
         ]
 
         class_patterns = [
-            (re.compile(r'^\s*(?:public\s+)?class\s+(\w+)'), "class"),
-            (re.compile(r'^\s*struct\s+(\w+)'), "class"),
-            (re.compile(r'^\s*interface\s+(\w+)'), "class"),
-            (re.compile(r'^\s*type\s+(\w+)\s+struct'), "class"),
+            (re.compile(r"^\s*(?:public\s+)?class\s+(\w+)"), "class"),
+            (re.compile(r"^\s*struct\s+(\w+)"), "class"),
+            (re.compile(r"^\s*interface\s+(\w+)"), "class"),
+            (re.compile(r"^\s*type\s+(\w+)\s+struct"), "class"),
         ]
 
         for i, line in enumerate(lines):
@@ -141,49 +150,59 @@ class CodeEntityExtractor:
                 m = pattern.match(stripped)
                 if m:
                     name = m.group(1)
-                    params = [p.strip() for p in m.group(2).split(',') if p.strip()] if m.lastindex >= 2 else []
-                    entities.append(CodeEntity(
-                        name=name,
-                        entity_type=etype,
-                        start_line=i + 1,
-                        end_line=i + 1,
-                        source=stripped,
-                        params=params,
-                    ))
+                    params = (
+                        [p.strip() for p in m.group(2).split(",") if p.strip()]
+                        if m.lastindex >= 2
+                        else []
+                    )
+                    entities.append(
+                        CodeEntity(
+                            name=name,
+                            entity_type=etype,
+                            start_line=i + 1,
+                            end_line=i + 1,
+                            source=stripped,
+                            params=params,
+                        )
+                    )
                     break
 
             for pattern, etype in class_patterns:
                 m = pattern.match(stripped)
                 if m:
-                    entities.append(CodeEntity(
-                        name=m.group(1),
-                        entity_type=etype,
-                        start_line=i + 1,
-                        end_line=i + 1,
-                        source=stripped,
-                    ))
+                    entities.append(
+                        CodeEntity(
+                            name=m.group(1),
+                            entity_type=etype,
+                            start_line=i + 1,
+                            end_line=i + 1,
+                            source=stripped,
+                        )
+                    )
                     break
 
         return entities
 
     def _parse_function(self, lines: List[str], start: int) -> Tuple[str, List[str], int]:
         header = lines[start].strip()
-        name_match = re.search(r'def\s+(\w+)', header)
+        name_match = re.search(r"def\s+(\w+)", header)
         name = name_match.group(1) if name_match else f"func_{start}"
 
-        params_match = re.search(r'\(([^)]*)\)', header)
+        params_match = re.search(r"\(([^)]*)\)", header)
         params = []
         if params_match:
             raw = params_match.group(1)
-            params = [p.strip().split(':')[0].split('=')[0].strip() for p in raw.split(',') if p.strip()]
-            params = [p for p in params if p and p != 'self']
+            params = [
+                p.strip().split(":")[0].split("=")[0].strip() for p in raw.split(",") if p.strip()
+            ]
+            params = [p for p in params if p and p != "self"]
 
         end = self._find_block_end(lines, start)
         return name, params, end
 
     def _parse_class(self, lines: List[str], start: int) -> Tuple[str, int]:
         header = lines[start].strip()
-        name_match = re.search(r'class\s+(\w+)', header)
+        name_match = re.search(r"class\s+(\w+)", header)
         name = name_match.group(1) if name_match else f"class_{start}"
         end = self._find_block_end(lines, start)
         return name, end
@@ -197,7 +216,7 @@ class CodeEntityExtractor:
 
         end = start + 1
         while end < len(lines):
-            if lines[end].strip() == '':
+            if lines[end].strip() == "":
                 end += 1
                 continue
             current_indent = len(lines[end]) - len(lines[end].lstrip())
@@ -205,7 +224,7 @@ class CodeEntityExtractor:
                 break
             end += 1
 
-        while end > start + 1 and lines[end - 1].strip() == '':
+        while end > start + 1 and lines[end - 1].strip() == "":
             end -= 1
 
         return end
@@ -235,37 +254,50 @@ class SemanticDiffer:
 
         for name in source_names - target_names:
             se = source_map[name]
-            renamed = self._find_renamed(se, target_map, source_names - target_names, existing_source_names=source_names & target_names)
+            renamed = self._find_renamed(
+                se,
+                target_map,
+                source_names - target_names,
+                existing_source_names=source_names & target_names,
+            )
             if renamed:
                 te = target_map[renamed]
-                changes.append(SemanticChange(
-                    entity_name=f"{name} → {renamed}",
-                    entity_type=se.entity_type,
-                    change_type=ChangeType.RENAMED,
-                    source_range=(se.start_line, se.end_line),
-                    target_range=(te.start_line, te.end_line),
-                    description=f"{se.entity_type} '{name}' renamed to '{renamed}'",
-                    details={"original_name": name, "new_name": renamed},
-                ))
+                changes.append(
+                    SemanticChange(
+                        entity_name=f"{name} → {renamed}",
+                        entity_type=se.entity_type,
+                        change_type=ChangeType.RENAMED,
+                        source_range=(se.start_line, se.end_line),
+                        target_range=(te.start_line, te.end_line),
+                        description=f"{se.entity_type} '{name}' renamed to '{renamed}'",
+                        details={"original_name": name, "new_name": renamed},
+                    )
+                )
             else:
-                changes.append(SemanticChange(
-                    entity_name=name,
-                    entity_type=se.entity_type,
-                    change_type=ChangeType.REMOVED,
-                    source_range=(se.start_line, se.end_line),
-                    description=f"{se.entity_type} '{name}' removed",
-                ))
+                changes.append(
+                    SemanticChange(
+                        entity_name=name,
+                        entity_type=se.entity_type,
+                        change_type=ChangeType.REMOVED,
+                        source_range=(se.start_line, se.end_line),
+                        description=f"{se.entity_type} '{name}' removed",
+                    )
+                )
 
         for name in target_names - source_names:
             te = target_map[name]
-            if not any(c.change_type == ChangeType.RENAMED and name in c.entity_name for c in changes):
-                changes.append(SemanticChange(
-                    entity_name=name,
-                    entity_type=te.entity_type,
-                    change_type=ChangeType.ADDED,
-                    target_range=(te.start_line, te.end_line),
-                    description=f"{te.entity_type} '{name}' added",
-                ))
+            if not any(
+                c.change_type == ChangeType.RENAMED and name in c.entity_name for c in changes
+            ):
+                changes.append(
+                    SemanticChange(
+                        entity_name=name,
+                        entity_type=te.entity_type,
+                        change_type=ChangeType.ADDED,
+                        target_range=(te.start_line, te.end_line),
+                        description=f"{te.entity_type} '{name}' added",
+                    )
+                )
 
         for name in source_names & target_names:
             se = source_map[name]
@@ -273,29 +305,33 @@ class SemanticDiffer:
 
             if se.body_hash == te.body_hash:
                 if se.start_line != te.start_line:
-                    changes.append(SemanticChange(
-                        entity_name=name,
-                        entity_type=se.entity_type,
-                        change_type=ChangeType.MOVED,
-                        source_range=(se.start_line, se.end_line),
-                        target_range=(te.start_line, te.end_line),
-                        description=f"{se.entity_type} '{name}' moved from line {se.start_line} to {te.start_line}",
-                    ))
+                    changes.append(
+                        SemanticChange(
+                            entity_name=name,
+                            entity_type=se.entity_type,
+                            change_type=ChangeType.MOVED,
+                            source_range=(se.start_line, se.end_line),
+                            target_range=(te.start_line, te.end_line),
+                            description=f"{se.entity_type} '{name}' moved from line {se.start_line} to {te.start_line}",
+                        )
+                    )
                 continue
 
             details = {}
             if se.params != te.params:
                 details["param_changes"] = self._diff_params(se.params, te.params)
 
-            changes.append(SemanticChange(
-                entity_name=name,
-                entity_type=se.entity_type,
-                change_type=ChangeType.MODIFIED,
-                source_range=(se.start_line, se.end_line),
-                target_range=(te.start_line, te.end_line),
-                description=f"{se.entity_type} '{name}' modified",
-                details=details,
-            ))
+            changes.append(
+                SemanticChange(
+                    entity_name=name,
+                    entity_type=se.entity_type,
+                    change_type=ChangeType.MODIFIED,
+                    source_range=(se.start_line, se.end_line),
+                    target_range=(te.start_line, te.end_line),
+                    description=f"{se.entity_type} '{name}' modified",
+                    details=details,
+                )
+            )
 
         return changes
 
@@ -359,4 +395,4 @@ class SemanticDiffer:
             icon = change_icons.get(c.change_type, "?")
             lines.append(f"  {icon} {c.description}")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)

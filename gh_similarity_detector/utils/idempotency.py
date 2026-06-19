@@ -26,6 +26,7 @@ class DeterministicContext:
     封装所有影响检测结果的非确定性因素，
     确保相同上下文 + 相同输入 = 相同输出。
     """
+
     hash_seed: int = 42
     parallelism: int = 1
     sort_modules: bool = True
@@ -40,19 +41,19 @@ class DeterministicContext:
         """
         prev = {}
         if self.freeze_hash_seed:
-            prev['PYTHONHASHSEED'] = os.environ.get('PYTHONHASHSEED')
-            os.environ['PYTHONHASHSEED'] = str(self.hash_seed)
+            prev["PYTHONHASHSEED"] = os.environ.get("PYTHONHASHSEED")
+            os.environ["PYTHONHASHSEED"] = str(self.hash_seed)
         return prev
 
     @staticmethod
     def restore(prev: Dict[str, Any]) -> None:
         """恢复之前的设置"""
-        if 'PYTHONHASHSEED' in prev:
-            val = prev['PYTHONHASHSEED']
+        if "PYTHONHASHSEED" in prev:
+            val = prev["PYTHONHASHSEED"]
             if val is None:
-                os.environ.pop('PYTHONHASHSEED', None)
+                os.environ.pop("PYTHONHASHSEED", None)
             else:
-                os.environ['PYTHONHASHSEED'] = val
+                os.environ["PYTHONHASHSEED"] = val
 
 
 def compute_result_hash(
@@ -77,10 +78,10 @@ def compute_result_hash(
     """
     match_data = []
     for m in matches:
-        if hasattr(m, '__dict__'):
+        if hasattr(m, "__dict__"):
             d = {}
             for k, v in sorted(m.__dict__.items()):
-                if k.startswith('_'):
+                if k.startswith("_"):
                     continue
                 d[k] = _normalize_value(v)
             match_data.append(d)
@@ -205,9 +206,7 @@ class IdempotencyGuard:
             "verify_pass": self._verify_pass,
             "verify_fail": self._verify_fail,
             "pass_rate": (
-                self._verify_pass / self._verify_count
-                if self._verify_count > 0
-                else 1.0
+                self._verify_pass / self._verify_count if self._verify_count > 0 else 1.0
             ),
         }
 
@@ -217,7 +216,7 @@ def compute_config_hash(config: Any) -> str:
 
     仅包含影响检测结果的字段。
     """
-    if hasattr(config, '__dataclass_fields__'):
+    if hasattr(config, "__dataclass_fields__"):
         data = {}
         for f_name in sorted(config.__dataclass_fields__):
             val = getattr(config, f_name)

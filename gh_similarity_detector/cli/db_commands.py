@@ -36,7 +36,8 @@ def register_db_commands(main):
 
         click.echo(f"添加项目: {project}")
 
-        with click.progressbar(length=100, label='处理中') as bar:
+        with click.progressbar(length=100, label="处理中") as bar:
+
             def progress(p):
                 bar.update(int(p * 100) - bar.pos)
 
@@ -62,7 +63,8 @@ def register_db_commands(main):
 
         click.echo(f"检查更新: {project}")
 
-        with click.progressbar(length=100, label='处理中') as bar:
+        with click.progressbar(length=100, label="处理中") as bar:
+
             def progress(p):
                 bar.update(int(p * 100) - bar.pos)
 
@@ -115,7 +117,9 @@ def register_db_commands(main):
         click.echo()
         for p in projects:
             click.echo(f"  {p['name']}")
-            click.echo(f"    语言: {p['language']} | 模块数: {p['module_count']} | 更新: {p['updated_at']}")
+            click.echo(
+                f"    语言: {p['language']} | 模块数: {p['module_count']} | 更新: {p['updated_at']}"
+            )
 
     @db.command("delete")
     @click.option("--project-id", "-p", required=True, help="项目 ID")
@@ -135,14 +139,23 @@ def register_db_commands(main):
             click.echo(f"项目不存在: {project_id}", err=True)
 
     @db.command("import")
-    @click.option("--file", "-f", "import_file", required=True, type=click.Path(exists=True),
-                  help="项目列表文件（每行一个 URL）")
+    @click.option(
+        "--file",
+        "-f",
+        "import_file",
+        required=True,
+        type=click.Path(exists=True),
+        help="项目列表文件（每行一个 URL）",
+    )
     @click.option("--db", "db_path", default="./fingerprint_db.sqlite", help="数据库路径")
     @click.option("--language", "-l", multiple=True, default=["python"], help="编程语言")
     @click.option("--min-tokens", type=int, default=50, help="最小 token 长度")
-    @click.option("--continue-on-error", is_flag=True, default=True,
-                  help="单个项目失败时继续（默认开启）")
-    def db_import(import_file: str, db_path: str, language: tuple, min_tokens: int, continue_on_error: bool):
+    @click.option(
+        "--continue-on-error", is_flag=True, default=True, help="单个项目失败时继续（默认开启）"
+    )
+    def db_import(
+        import_file: str, db_path: str, language: tuple, min_tokens: int, continue_on_error: bool
+    ):
         """从文件批量导入项目到指纹库
 
         每行一个项目 URL 或路径，支持 # 开头注释行和空行。
@@ -150,8 +163,10 @@ def register_db_commands(main):
         config = DetectionConfig(supported_languages=list(language), min_token_length=min_tokens)
         pipeline = DetectionPipeline(config, db_path=db_path)
 
-        with open(import_file, 'r', encoding='utf-8') as f:
-            lines = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+        with open(import_file, "r", encoding="utf-8") as f:
+            lines = [
+                line.strip() for line in f if line.strip() and not line.strip().startswith("#")
+            ]
 
         if not lines:
             click.echo("项目列表为空。")
@@ -166,7 +181,8 @@ def register_db_commands(main):
             click.echo(f"\n[{i}/{len(lines)}] {project_source}")
 
             try:
-                with click.progressbar(length=100, label='处理中') as bar:
+                with click.progressbar(length=100, label="处理中") as bar:
+
                     def progress(p):
                         bar.update(int(p * 100) - bar.pos)
 

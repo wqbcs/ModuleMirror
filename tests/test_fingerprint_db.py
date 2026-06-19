@@ -13,16 +13,18 @@ def _make_project(name: str = "test/project") -> Project:
 
 def _make_module(name: str, project_id: str = "test/project") -> Module:
     return Module(
-        name=name, file_path=f"test/{name}.py",
+        name=name,
+        file_path=f"test/{name}.py",
         module_type=ModuleType.FUNCTION,
         source_code=f"def {name}(): pass",
-        start_line=1, end_line=1, language="python",
+        start_line=1,
+        end_line=1,
+        language="python",
         project_id=project_id,
     )
 
 
 class TestFingerprintDB:
-
     def test_init_creates_db(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         stats = db.get_stats()
@@ -61,7 +63,7 @@ class TestFingerprintDB:
 
         db.add_project(project, {"test.py": [module]}, {module.id: fp_set})
 
-        candidates = db.lookup_candidates({100, 200}, fp_type='winnowing', top_k=5)
+        candidates = db.lookup_candidates({100, 200}, fp_type="winnowing", top_k=5)
         assert len(candidates) > 0
         assert candidates[0][0] == module.id
 
@@ -87,9 +89,7 @@ class TestFingerprintDB:
     def test_schema_version(self, tmp_path):
         db = FingerprintDB(str(tmp_path / "test.sqlite"))
         with db._get_conn() as conn:
-            row = conn.execute(
-                "SELECT value FROM meta WHERE key = 'schema_version'"
-            ).fetchone()
+            row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
             assert int(row[0]) >= 2
 
     def test_detection_tasks_table_exists(self, tmp_path):

@@ -81,10 +81,7 @@ class NCD:
         return similarity
 
     def compute_project_similarity(
-        self,
-        source_dir: str,
-        target_dir: str,
-        extensions: Optional[list] = None
+        self, source_dir: str, target_dir: str, extensions: Optional[list] = None
     ) -> float:
         """计算两个项目目录的整体相似度
 
@@ -105,44 +102,44 @@ class NCD:
 
         sim = self.compute_similarity(source_data, target_data)
         logger.info(
-            f"NCD 项目相似度: {sim:.2f}% "
-            f"({Path(source_dir).name} ↔ {Path(target_dir).name})"
+            f"NCD 项目相似度: {sim:.2f}% ({Path(source_dir).name} ↔ {Path(target_dir).name})"
         )
         return sim
 
-    def _read_project(
-        self,
-        directory: str,
-        extensions: Optional[list] = None
-    ) -> bytes:
+    def _read_project(self, directory: str, extensions: Optional[list] = None) -> bytes:
         """读取项目中所有代码文件并拼接，受 MAX_TOTAL_BYTES 限制"""
         dir_path = Path(directory)
         if not dir_path.exists():
-            return b''
+            return b""
 
         chunks = []
         total_size = 0
-        default_exts = {'.py', '.js', '.ts', '.java', '.go', '.rs', '.c', '.cpp', '.h'}
+        default_exts = {".py", ".js", ".ts", ".java", ".go", ".rs", ".c", ".cpp", ".h"}
         valid_exts = set(extensions) if extensions else default_exts
 
-        for file_path in sorted(dir_path.rglob('*')):
+        for file_path in sorted(dir_path.rglob("*")):
             if not file_path.is_file():
                 continue
             if file_path.suffix not in valid_exts:
                 continue
-            if any(p in file_path.parts for p in ('node_modules', '.git', '__pycache__', 'venv', 'vendor')):
+            if any(
+                p in file_path.parts
+                for p in ("node_modules", ".git", "__pycache__", "venv", "vendor")
+            ):
                 continue
             try:
                 content = file_path.read_bytes()
                 total_size += len(content)
                 if total_size > self.MAX_TOTAL_BYTES:
-                    logger.warning(f"NCD 输入超过 {self.MAX_TOTAL_BYTES // 1024 // 1024}MB 限制，截断")
+                    logger.warning(
+                        f"NCD 输入超过 {self.MAX_TOTAL_BYTES // 1024 // 1024}MB 限制，截断"
+                    )
                     break
                 chunks.append(content)
             except Exception:
                 continue
 
-        return b'\n'.join(chunks)
+        return b"\n".join(chunks)
 
     def compute_distance_parallel(
         self,

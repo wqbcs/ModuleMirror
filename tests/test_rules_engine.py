@@ -16,7 +16,8 @@ from gh_similarity_detector.core.rules.engine import (
 class TestDetectionRule:
     def test_similarity_gte(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"similarity": ">=90"},
         )
         assert rule.matches(similarity=95) is True
@@ -24,7 +25,8 @@ class TestDetectionRule:
 
     def test_similarity_lte(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"similarity": "<=50"},
         )
         assert rule.matches(similarity=30) is True
@@ -32,7 +34,8 @@ class TestDetectionRule:
 
     def test_similarity_gt(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"similarity": ">80"},
         )
         assert rule.matches(similarity=90) is True
@@ -40,14 +43,16 @@ class TestDetectionRule:
 
     def test_similarity_exact(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"similarity": "100"},
         )
         assert rule.matches(similarity=100) is True
 
     def test_contains_pattern(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"contains_pattern": "SELECT.*FROM"},
         )
         assert rule.matches(source_code="SELECT * FROM users") is True
@@ -55,7 +60,8 @@ class TestDetectionRule:
 
     def test_file_pattern(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"file_pattern": "test_"},
         )
         assert rule.matches(source_file="test_foo.py") is True
@@ -63,7 +69,8 @@ class TestDetectionRule:
 
     def test_cross_language(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"cross_language": True},
         )
         assert rule.matches(source_language="python", target_language="java") is True
@@ -71,16 +78,18 @@ class TestDetectionRule:
 
     def test_min_lines(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"min_lines": 10},
         )
-        code = '\n'.join(['x'] * 15)
+        code = "\n".join(["x"] * 15)
         assert rule.matches(source_code=code) is True
         assert rule.matches(source_code="short") is False
 
     def test_disabled_rule(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"similarity": ">=90"},
             enabled=False,
         )
@@ -88,7 +97,8 @@ class TestDetectionRule:
 
     def test_metadata_condition(self):
         rule = DetectionRule(
-            id="test", name="test",
+            id="test",
+            name="test",
             condition={"metadata": {"project": "core"}},
         )
         assert rule.matches(metadata={"project": "core"}) is True
@@ -98,21 +108,27 @@ class TestDetectionRule:
 class TestRuleEngine:
     def test_add_and_evaluate(self):
         engine = RuleEngine()
-        engine.add_rule(DetectionRule(
-            id="r1", name="high sim",
-            condition={"similarity": ">=90"},
-            action=RuleAction.FLAG,
-        ))
+        engine.add_rule(
+            DetectionRule(
+                id="r1",
+                name="high sim",
+                condition={"similarity": ">=90"},
+                action=RuleAction.FLAG,
+            )
+        )
         results = engine.evaluate(similarity=95)
         assert len(results) == 1
         assert results[0].rule_id == "r1"
 
     def test_evaluate_no_match(self):
         engine = RuleEngine()
-        engine.add_rule(DetectionRule(
-            id="r1", name="high sim",
-            condition={"similarity": ">=90"},
-        ))
+        engine.add_rule(
+            DetectionRule(
+                id="r1",
+                name="high sim",
+                condition={"similarity": ">=90"},
+            )
+        )
         results = engine.evaluate(similarity=50)
         assert len(results) == 0
 
@@ -149,12 +165,14 @@ rules:
 
     def test_filter_results_exclude(self):
         engine = RuleEngine()
-        engine.add_rule(DetectionRule(
-            id="exclude-tests",
-            name="Exclude tests",
-            condition={"file_pattern": "test_"},
-            action=RuleAction.EXCLUDE,
-        ))
+        engine.add_rule(
+            DetectionRule(
+                id="exclude-tests",
+                name="Exclude tests",
+                condition={"file_pattern": "test_"},
+                action=RuleAction.EXCLUDE,
+            )
+        )
         results = [
             {"similarity": 90, "source_file": "test_foo.py"},
             {"similarity": 80, "source_file": "main.py"},
@@ -165,13 +183,15 @@ rules:
 
     def test_filter_results_flag(self):
         engine = RuleEngine()
-        engine.add_rule(DetectionRule(
-            id="flag-critical",
-            name="Critical",
-            condition={"similarity": ">=90"},
-            action=RuleAction.FLAG,
-            severity=RuleSeverity.CRITICAL,
-        ))
+        engine.add_rule(
+            DetectionRule(
+                id="flag-critical",
+                name="Critical",
+                condition={"similarity": ">=90"},
+                action=RuleAction.FLAG,
+                severity=RuleSeverity.CRITICAL,
+            )
+        )
         results = [
             {"similarity": 95, "source_file": "a.py"},
             {"similarity": 70, "source_file": "b.py"},
@@ -198,12 +218,15 @@ rules:
 
     def test_rule_with_tags(self):
         engine = RuleEngine()
-        engine.add_rule(DetectionRule(
-            id="r1", name="Tagged",
-            condition={"similarity": ">=80"},
-            action=RuleAction.TAG,
-            tags=["clone", "security"],
-        ))
+        engine.add_rule(
+            DetectionRule(
+                id="r1",
+                name="Tagged",
+                condition={"similarity": ">=80"},
+                action=RuleAction.TAG,
+                tags=["clone", "security"],
+            )
+        )
         results = [{"similarity": 90, "source_file": "a.py"}]
         filtered = engine.filter_results(results)
         assert "rule_tags" in filtered[0]

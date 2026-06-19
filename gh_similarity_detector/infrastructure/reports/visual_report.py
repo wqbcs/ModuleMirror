@@ -93,11 +93,13 @@ def _build_dependency_graph(results: List[Dict], modules: List[str]) -> Dict[str
             key = (min(si, ti), max(si, ti))
             if key not in link_set:
                 link_set.add(key)
-                links.append({
-                    "source": si,
-                    "target": ti,
-                    "value": float(sim),
-                })
+                links.append(
+                    {
+                        "source": si,
+                        "target": ti,
+                        "value": float(sim),
+                    }
+                )
 
     return {"nodes": nodes, "links": links}
 
@@ -127,7 +129,7 @@ def _render_html(data: Dict[str, Any]) -> str:
       <span class="text-lg font-semibold">ModuleMirror</span>
       <span class="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">可视化报告</span>
     </div>
-    <span class="text-xs text-gray-400">生成于 {data['metadata']['generated_at']}</span>
+    <span class="text-xs text-gray-400">生成于 {data["metadata"]["generated_at"]}</span>
   </div>
 </nav>
 

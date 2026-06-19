@@ -15,7 +15,6 @@ PROJECT_ROOT = str(Path(__file__).parent.parent)
 
 
 class TestEndToEndDetection:
-
     def test_self_detection_produces_results(self):
         config = DetectionConfig(
             supported_languages=["python"],
@@ -38,6 +37,7 @@ class TestEndToEndDetection:
     def test_module_extraction_on_self(self):
         config = DetectionConfig(supported_languages=["python"])
         from gh_similarity_detector.core.project.fetcher import ProjectFetcher
+
         fetcher = ProjectFetcher(config)
         project = fetcher.fetch_project(PROJECT_ROOT)
         fetcher.cleanup()
@@ -53,6 +53,7 @@ class TestEndToEndDetection:
     def test_fingerprint_generation_on_self(self):
         config = DetectionConfig(supported_languages=["python"])
         from gh_similarity_detector.core.project.fetcher import ProjectFetcher
+
         fetcher = ProjectFetcher(config)
         project = fetcher.fetch_project(PROJECT_ROOT)
         fetcher.cleanup()
@@ -100,12 +101,27 @@ class TestEndToEndDetection:
         from gh_similarity_detector.models.entities import Module
         from gh_similarity_detector.models.enums import ModuleType
 
-        m1 = Module(name="foo", file_path="a.py", module_type=ModuleType.FUNCTION,
-                     source_code="def foo(x): return x * 2", start_line=1, end_line=1, language="python")
-        m2 = Module(name="foo", file_path="b.py", module_type=ModuleType.FUNCTION,
-                     source_code="def foo(x): return x * 2", start_line=1, end_line=1, language="python")
+        m1 = Module(
+            name="foo",
+            file_path="a.py",
+            module_type=ModuleType.FUNCTION,
+            source_code="def foo(x): return x * 2",
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
+        m2 = Module(
+            name="foo",
+            file_path="b.py",
+            module_type=ModuleType.FUNCTION,
+            source_code="def foo(x): return x * 2",
+            start_line=1,
+            end_line=1,
+            language="python",
+        )
 
         from gh_similarity_detector.core.fingerprint.winnowing import Winnowing
+
         winnowing = Winnowing()
         fp1 = winnowing.generate_fingerprints(m1)
         fp2 = winnowing.generate_fingerprints(m2)
@@ -115,6 +131,8 @@ class TestEndToEndDetection:
         source_fps = {m1.id: fp1}
         target_fps = {m2.id: fp2}
 
-        results = calc.calculate_similarities(source_modules, target_modules, source_fps, target_fps)
+        results = calc.calculate_similarities(
+            source_modules, target_modules, source_fps, target_fps
+        )
         assert len(results) >= 1
         assert results[0].similarity == 100.0

@@ -34,7 +34,12 @@ def _make_match(src="mod_a", tgt="mod_b", sim=85.0):
         target_module_id=tgt,
         similarity=sim,
         reuse_suggestion=ReuseSuggestion.REFERENCE_ADAPT,
-        matched_code_snippet={"source_file": "a.py", "source_lines": "1-5", "target_file": "b.py", "target_lines": "1-5"},
+        matched_code_snippet={
+            "source_file": "a.py",
+            "source_lines": "1-5",
+            "target_file": "b.py",
+            "target_lines": "1-5",
+        },
     )
 
 
@@ -65,13 +70,16 @@ class TestDetectEndpoint:
         mock_pipeline.detect.return_value = [result]
         MockPipeline.return_value = mock_pipeline
 
-        resp = client.post("/detect", json={
-            "target": "https://github.com/user/repo1",
-            "candidates": ["https://github.com/user/repo2"],
-            "language": ["python"],
-            "threshold": 70.0,
-            "granularity": "function",
-        })
+        resp = client.post(
+            "/detect",
+            json={
+                "target": "https://github.com/user/repo1",
+                "candidates": ["https://github.com/user/repo2"],
+                "language": ["python"],
+                "threshold": 70.0,
+                "granularity": "function",
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["total_matches"] == 1
@@ -84,9 +92,13 @@ class TestDetectEndpoint:
         mock_pipeline.detect.side_effect = ValueError("bad config")
         MockPipeline.return_value = mock_pipeline
 
-        resp = client.post("/detect", json={
-            "target": "repo1", "candidates": ["repo2"],
-        })
+        resp = client.post(
+            "/detect",
+            json={
+                "target": "repo1",
+                "candidates": ["repo2"],
+            },
+        )
         assert resp.status_code == 400
         assert "bad config" in resp.json()["detail"]
 
@@ -96,9 +108,13 @@ class TestDetectEndpoint:
         mock_pipeline.detect.side_effect = RuntimeError("pipeline failed")
         MockPipeline.return_value = mock_pipeline
 
-        resp = client.post("/detect", json={
-            "target": "repo1", "candidates": ["repo2"],
-        })
+        resp = client.post(
+            "/detect",
+            json={
+                "target": "repo1",
+                "candidates": ["repo2"],
+            },
+        )
         assert resp.status_code == 500
 
     @patch("gh_similarity_detector.api.routes.detect.DetectionPipeline")
@@ -108,10 +124,14 @@ class TestDetectEndpoint:
         mock_pipeline.detect.return_value = [result]
         MockPipeline.return_value = mock_pipeline
 
-        resp = client.post("/detect", json={
-            "target": "repo1", "candidates": ["repo2"],
-            "granularity": "class",
-        })
+        resp = client.post(
+            "/detect",
+            json={
+                "target": "repo1",
+                "candidates": ["repo2"],
+                "granularity": "class",
+            },
+        )
         assert resp.status_code == 200
 
     @patch("gh_similarity_detector.api.routes.detect.DetectionPipeline")
@@ -121,10 +141,14 @@ class TestDetectEndpoint:
         mock_pipeline.detect.return_value = [result]
         MockPipeline.return_value = mock_pipeline
 
-        resp = client.post("/detect", json={
-            "target": "repo1", "candidates": ["repo2"],
-            "granularity": "file",
-        })
+        resp = client.post(
+            "/detect",
+            json={
+                "target": "repo1",
+                "candidates": ["repo2"],
+                "granularity": "file",
+            },
+        )
         assert resp.status_code == 200
 
 
@@ -140,19 +164,25 @@ class TestNcdEndpoint:
         source_dir.mkdir()
         target_dir.mkdir()
 
-        resp = client.post("/ncd", json={
-            "source_dir": str(source_dir),
-            "target_dir": str(target_dir),
-        })
+        resp = client.post(
+            "/ncd",
+            json={
+                "source_dir": str(source_dir),
+                "target_dir": str(target_dir),
+            },
+        )
         assert resp.status_code == 200
         data = resp.json()
         assert data["similarity"] == 75.5
 
     def test_ncd_dir_not_exist(self, client):
-        resp = client.post("/ncd", json={
-            "source_dir": "/nonexistent/path/a",
-            "target_dir": "/nonexistent/path/b",
-        })
+        resp = client.post(
+            "/ncd",
+            json={
+                "source_dir": "/nonexistent/path/a",
+                "target_dir": "/nonexistent/path/b",
+            },
+        )
         assert resp.status_code == 400
 
 
@@ -164,6 +194,7 @@ class TestDbStatsEndpoint:
 
     def test_db_stats_success(self, client, tmp_db):
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         db = FingerprintDB(tmp_db)
         db.get_stats()
 
@@ -182,6 +213,7 @@ class TestDbProjectsEndpoint:
 
     def test_db_projects_success(self, client, tmp_db):
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         FingerprintDB(tmp_db)
         with patch("gh_similarity_detector.api.routes.db.DB_PATH", tmp_db):
             resp = client.get("/db/projects")
@@ -195,14 +227,19 @@ class TestDbAddEndpoint:
         mock_pipeline = MagicMock()
         mock_pipeline.add_to_db.return_value = True
         mock_pipeline.fingerprint_db.get_stats.return_value = {
-            "project_count": 1, "module_count": 2, "fingerprint_count": 10,
+            "project_count": 1,
+            "module_count": 2,
+            "fingerprint_count": 10,
         }
         MockPipeline.return_value = mock_pipeline
 
         with patch("gh_similarity_detector.api.routes.db.DB_PATH", tmp_db):
-            resp = client.post("/db/add", json={
-                "project": "https://github.com/user/repo",
-            })
+            resp = client.post(
+                "/db/add",
+                json={
+                    "project": "https://github.com/user/repo",
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "added"
@@ -214,9 +251,12 @@ class TestDbAddEndpoint:
         MockPipeline.return_value = mock_pipeline
 
         with patch("gh_similarity_detector.api.routes.db.DB_PATH", tmp_db):
-            resp = client.post("/db/add", json={
-                "project": "https://github.com/user/repo",
-            })
+            resp = client.post(
+                "/db/add",
+                json={
+                    "project": "https://github.com/user/repo",
+                },
+            )
         assert resp.status_code == 400
 
     @patch("gh_similarity_detector.api.routes.db.DetectionPipeline")
@@ -226,9 +266,12 @@ class TestDbAddEndpoint:
         MockPipeline.return_value = mock_pipeline
 
         with patch("gh_similarity_detector.api.routes.db.DB_PATH", tmp_db):
-            resp = client.post("/db/add", json={
-                "project": "https://github.com/user/repo",
-            })
+            resp = client.post(
+                "/db/add",
+                json={
+                    "project": "https://github.com/user/repo",
+                },
+            )
         assert resp.status_code == 500
 
 
@@ -250,8 +293,16 @@ class TestDbDeleteEndpoint:
 
         db = FingerprintDB(tmp_db)
         proj = Project(name="test_proj", source="test", language="python")
-        mod = Module(name="foo", file_path="foo.py", module_type=ModuleType.FUNCTION,
-                     source_code="pass", start_line=1, end_line=1, language="python", project_id=proj.id)
+        mod = Module(
+            name="foo",
+            file_path="foo.py",
+            module_type=ModuleType.FUNCTION,
+            source_code="pass",
+            start_line=1,
+            end_line=1,
+            language="python",
+            project_id=proj.id,
+        )
         fp = FingerprintSet(module_id=mod.id, winnowing_fingerprints={1, 2})
         db.add_project(proj, {"foo.py": [mod]}, {mod.id: fp})
 
@@ -265,10 +316,20 @@ class TestSearchEndpoint:
     @patch("gh_similarity_detector.api.routes.system.GitHubClient")
     def test_search_success(self, MockGHClient, client):
         mock_client = MagicMock()
-        mock_client.search_repositories = AsyncMock(return_value=[
-            {"name": "repo1", "full_name": "user/repo1", "url": "https://github.com/user/repo1",
-             "description": "test", "stars": 10, "language": "python", "forks": 2, "updated_at": "2024-01-01"},
-        ])
+        mock_client.search_repositories = AsyncMock(
+            return_value=[
+                {
+                    "name": "repo1",
+                    "full_name": "user/repo1",
+                    "url": "https://github.com/user/repo1",
+                    "description": "test",
+                    "stars": 10,
+                    "language": "python",
+                    "forks": 2,
+                    "updated_at": "2024-01-01",
+                },
+            ]
+        )
         MockGHClient.return_value = mock_client
 
         resp = client.post("/search", json={"query": "python"})
@@ -279,8 +340,11 @@ class TestSearchEndpoint:
     @patch("gh_similarity_detector.api.routes.system.GitHubClient")
     def test_search_rate_limit(self, MockGHClient, client):
         from gh_similarity_detector.infrastructure.github_client.client import RateLimitError
+
         mock_client = MagicMock()
-        mock_client.search_repositories = AsyncMock(side_effect=RateLimitError(403, "rate limited", retry_after=3600))
+        mock_client.search_repositories = AsyncMock(
+            side_effect=RateLimitError(403, "rate limited", retry_after=3600)
+        )
         MockGHClient.return_value = mock_client
 
         resp = client.post("/search", json={"query": "python"})
@@ -298,12 +362,17 @@ class TestSearchEndpoint:
 
 class TestTasksEndpoints:
     def test_create_task(self, client, tmp_db):
-        with patch("gh_similarity_detector.api.routes.tasks.DB_PATH", tmp_db), \
-             patch("gh_similarity_detector.api.routes.tasks.DetectionPipeline"):
-            resp = client.post("/tasks", json={
-                "target": "repo1",
-                "candidates": ["repo2"],
-            })
+        with (
+            patch("gh_similarity_detector.api.routes.tasks.DB_PATH", tmp_db),
+            patch("gh_similarity_detector.api.routes.tasks.DetectionPipeline"),
+        ):
+            resp = client.post(
+                "/tasks",
+                json={
+                    "target": "repo1",
+                    "candidates": ["repo2"],
+                },
+            )
         assert resp.status_code == 200
         data = resp.json()
         assert data["status"] == "pending"
@@ -316,6 +385,7 @@ class TestTasksEndpoints:
 
     def test_list_tasks_success(self, client, tmp_db):
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         db = FingerprintDB(tmp_db)
         db.create_task("t1", "proj1", "cand1")
 
@@ -328,6 +398,7 @@ class TestTasksEndpoints:
 
     def test_list_tasks_filter_status(self, client, tmp_db):
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         db = FingerprintDB(tmp_db)
         db.create_task("t1", "proj1", "cand1")
         db.create_task("t2", "proj2", "cand2")
@@ -347,6 +418,7 @@ class TestTasksEndpoints:
 
     def test_get_task_success(self, client, tmp_db):
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         db = FingerprintDB(tmp_db)
         db.create_task("t1", "proj1", "cand1")
 
@@ -357,6 +429,7 @@ class TestTasksEndpoints:
 
     def test_delete_task_success(self, client, tmp_db):
         from gh_similarity_detector.infrastructure.storage.fingerprint_db import FingerprintDB
+
         db = FingerprintDB(tmp_db)
         db.create_task("t1", "proj1", "cand1")
 

@@ -10,7 +10,6 @@ from gh_similarity_detector.infrastructure.observability.metrics import (
 
 
 class TestMetricsCollector:
-
     def test_record_detection(self):
         MetricsCollector.record_detection(1.5, preset="strict", language="python")
 
@@ -38,7 +37,6 @@ class TestMetricsCollector:
 
 
 class TestGetMetrics:
-
     def test_get_metrics_returns_bytes(self):
         result = get_metrics()
         assert isinstance(result, bytes)
@@ -46,17 +44,16 @@ class TestGetMetrics:
 
     def test_metrics_contain_detection_histogram(self):
         MetricsCollector.record_detection(0.5)
-        result = get_metrics().decode('utf-8')
+        result = get_metrics().decode("utf-8")
         assert "ghsim_detection_duration" in result
 
     def test_metrics_contain_fingerprint_counter(self):
         MetricsCollector.record_fingerprint_generation("python")
-        result = get_metrics().decode('utf-8')
+        result = get_metrics().decode("utf-8")
         assert "ghsim_fingerprint_generation" in result
 
 
 class TestGetContentType:
-
     def test_content_type(self):
         ct = get_content_type()
         assert "text/plain" in ct or "openmetrics" in ct

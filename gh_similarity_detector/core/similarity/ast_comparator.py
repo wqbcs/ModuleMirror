@@ -45,7 +45,7 @@ class ASTDeepComparator:
         source_module: Module,
         target_module: Module,
         fingerprint_similarity: float,
-        threshold: float = 80.0
+        threshold: float = 80.0,
     ) -> ASTDiffResult:
         if fingerprint_similarity < threshold:
             return ASTDiffResult(
@@ -55,7 +55,7 @@ class ASTDeepComparator:
                 source_node_count=0,
                 target_node_count=0,
                 matched_nodes=0,
-                mismatch_reason="相似度低于验证阈值，无需深度比对"
+                mismatch_reason="相似度低于验证阈值，无需深度比对",
             )
 
         source_tree = self._parse(source_module)
@@ -69,7 +69,7 @@ class ASTDeepComparator:
                 source_node_count=0,
                 target_node_count=0,
                 matched_nodes=0,
-                mismatch_reason="无法解析 AST"
+                mismatch_reason="无法解析 AST",
             )
 
         source_nodes = self._flatten_tree(source_tree.root_node)
@@ -88,7 +88,9 @@ class ASTDeepComparator:
             source_node_count=len(source_nodes),
             target_node_count=len(target_nodes),
             matched_nodes=int(min(len(source_nodes), len(target_nodes)) * min_sim / 100),
-            mismatch_reason=None if verified else f"深度比对相似度 {min_sim:.1f}% 低于阈值 {threshold - self.VERIFY_TOLERANCE:.1f}%"
+            mismatch_reason=None
+            if verified
+            else f"深度比对相似度 {min_sim:.1f}% 低于阈值 {threshold - self.VERIFY_TOLERANCE:.1f}%",
         )
 
     def _parse(self, module: Module):
@@ -96,7 +98,7 @@ class ASTDeepComparator:
         if parser is None:
             return None
         try:
-            return parser.parse(bytes(module.source_code, 'utf-8'))
+            return parser.parse(bytes(module.source_code, "utf-8"))
         except Exception as e:
             logger.error(f"AST 解析失败: {e}")
             return None
@@ -114,8 +116,7 @@ class ASTDeepComparator:
 
     @staticmethod
     def _compute_node_similarity(
-        source_nodes: List[Tuple[str, int]],
-        target_nodes: List[Tuple[str, int]]
+        source_nodes: List[Tuple[str, int]], target_nodes: List[Tuple[str, int]]
     ) -> float:
         if not source_nodes and not target_nodes:
             return 100.0
@@ -135,8 +136,7 @@ class ASTDeepComparator:
 
     @staticmethod
     def _compute_structure_similarity(
-        source_nodes: List[Tuple[str, int]],
-        target_nodes: List[Tuple[str, int]]
+        source_nodes: List[Tuple[str, int]], target_nodes: List[Tuple[str, int]]
     ) -> float:
         if not source_nodes and not target_nodes:
             return 100.0

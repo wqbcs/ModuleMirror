@@ -18,13 +18,15 @@ async def list_reports(
         return {"reports": []}
     reports = []
     for f in sorted(rdir.rglob("*"), key=lambda p: p.stat().st_mtime, reverse=True):
-        if f.suffix in ('.html', '.json', '.md'):
-            reports.append({
-                'name': f.name,
-                'path': str(f.relative_to(rdir)),
-                'size': f.stat().st_size,
-                'modified': f.stat().st_mtime,
-            })
+        if f.suffix in (".html", ".json", ".md"):
+            reports.append(
+                {
+                    "name": f.name,
+                    "path": str(f.relative_to(rdir)),
+                    "size": f.stat().st_size,
+                    "modified": f.stat().st_mtime,
+                }
+            )
     return {"reports": reports, "total": len(reports)}
 
 
@@ -45,12 +47,12 @@ async def get_report(
 ):
     """获取报告内容"""
     target = _safe_report_path(report_dir, report_id)
-    if target.suffix == '.json':
-        with open(target, 'r', encoding='utf-8') as f:
+    if target.suffix == ".json":
+        with open(target, "r", encoding="utf-8") as f:
             return json.load(f)
-    elif target.suffix in ('.html', '.md'):
-        content = target.read_text(encoding='utf-8')
-        if target.suffix == '.html':
+    elif target.suffix in (".html", ".md"):
+        content = target.read_text(encoding="utf-8")
+        if target.suffix == ".html":
             return HTMLResponse(content=content)
         return PlainTextResponse(content=content)
     raise HTTPException(status_code=400, detail=f"不支持的报告格式: {target.suffix}")
@@ -63,13 +65,13 @@ async def get_report_summary(
 ):
     """获取报告摘要"""
     target = _safe_report_path(report_dir, report_id)
-    if target.suffix == '.json':
-        with open(target, 'r', encoding='utf-8') as f:
+    if target.suffix == ".json":
+        with open(target, "r", encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, list):
             return {
-                'total_results': len(data),
-                'total_matches': sum(r.get('match_count', 0) for r in data if isinstance(r, dict)),
+                "total_results": len(data),
+                "total_matches": sum(r.get("match_count", 0) for r in data if isinstance(r, dict)),
             }
         return data
     return {"path": str(target), "size": target.stat().st_size}
@@ -81,7 +83,9 @@ async def get_visual_report(
 ):
     """获取最新的可视化报告(D3.js热力图+依赖图)"""
     rdir = Path(report_dir).resolve()
-    for f in sorted(rdir.glob("visual_report*.html"), key=lambda p: p.stat().st_mtime, reverse=True):
+    for f in sorted(
+        rdir.glob("visual_report*.html"), key=lambda p: p.stat().st_mtime, reverse=True
+    ):
         content = f.read_text(encoding="utf-8")
         return HTMLResponse(content=content)
     raise HTTPException(status_code=404, detail="可视化报告不存在，请先执行检测生成报告")

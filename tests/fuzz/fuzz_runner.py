@@ -15,6 +15,7 @@ from typing import Callable, List
 
 try:
     import atheris
+
     ATHERIS_AVAILABLE = True
 except ImportError:
     ATHERIS_AVAILABLE = False
@@ -26,7 +27,7 @@ class FuzzTestRunner:
     def __init__(self, test_name: str = "fuzz"):
         self.test_name = test_name
         self._crashes: List[str] = []
-    
+
     def run(
         self,
         target: Callable[[bytes], None],
@@ -36,9 +37,9 @@ class FuzzTestRunner:
         if not ATHERIS_AVAILABLE:
             logger.warning("atheris not installed, skipping fuzz test")
             return 0
-        
+
         logger.info(f"Starting fuzz test: {self.test_name} (max_minutes={max_minutes})")
-        
+
         try:
             atheris.Setup(
                 sys.argv + [f"-max_minutes={max_minutes}", f"-max_runs={max_runs}"],
@@ -51,9 +52,9 @@ class FuzzTestRunner:
             self._crashes.append(str(e))
             logger.error(f"Fuzz test crashed: {e}")
             return 1
-        
+
         return 0
-    
+
     @property
     def crashes(self) -> List[str]:
         return self._crashes
@@ -61,6 +62,7 @@ class FuzzTestRunner:
 
 def fuzz_winnowing_target(data: bytes) -> None:
     from ...core.fingerprint.winnowing import Winnowing
+
     try:
         w = Winnowing(window_size=5, kgram_size=15)
         code = data.decode("utf-8", errors="ignore")
@@ -71,10 +73,11 @@ def fuzz_winnowing_target(data: bytes) -> None:
 
 def fuzz_jaccard_target(data: bytes) -> None:
     from ...core.similarity.calculator import JaccardSimilarity
+
     try:
         j = JaccardSimilarity()
-        set1 = set(data[:len(data)//2])
-        set2 = set(data[len(data)//2:])
+        set1 = set(data[: len(data) // 2])
+        set2 = set(data[len(data) // 2 :])
         j.calculate(set1, set2)
     except Exception:
         pass
@@ -84,7 +87,7 @@ def run_fuzz_winnowing(max_minutes: int = 1) -> int:
     if not ATHERIS_AVAILABLE:
         logger.warning("atheris not available")
         return 0
-    
+
     runner = FuzzTestRunner("winnowing")
     return runner.run(fuzz_winnowing_target, max_minutes=max_minutes)
 
@@ -93,6 +96,6 @@ def run_fuzz_jaccard(max_minutes: int = 1) -> int:
     if not ATHERIS_AVAILABLE:
         logger.warning("atheris not available")
         return 0
-    
+
     runner = FuzzTestRunner("jaccard")
     return runner.run(fuzz_jaccard_target, max_minutes=max_minutes)

@@ -86,14 +86,16 @@ class QualityGate:
         for cond in self.conditions:
             value = metrics.get(cond.metric)
             if value is None:
-                results.append({
-                    "metric": cond.metric,
-                    "threshold": cond.threshold,
-                    "operator": cond.operator.value,
-                    "actual": None,
-                    "passed": None,
-                    "status": "missing",
-                })
+                results.append(
+                    {
+                        "metric": cond.metric,
+                        "threshold": cond.threshold,
+                        "operator": cond.operator.value,
+                        "actual": None,
+                        "passed": None,
+                        "status": "missing",
+                    }
+                )
                 any_warning = True
                 continue
 
@@ -101,14 +103,16 @@ class QualityGate:
             if not passed:
                 all_passed = False
 
-            results.append({
-                "metric": cond.metric,
-                "threshold": cond.threshold,
-                "operator": cond.operator.value,
-                "actual": value,
-                "passed": passed,
-                "status": "passed" if passed else "failed",
-            })
+            results.append(
+                {
+                    "metric": cond.metric,
+                    "threshold": cond.threshold,
+                    "operator": cond.operator.value,
+                    "actual": value,
+                    "passed": passed,
+                    "status": "passed" if passed else "failed",
+                }
+            )
 
         if all_passed and not any_warning:
             status = GateStatus.PASSED

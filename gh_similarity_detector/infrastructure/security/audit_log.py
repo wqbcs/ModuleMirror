@@ -28,14 +28,18 @@ class AuditEntry:
     prev_hash: str = ""
 
     def _compute_payload(self) -> str:
-        return json.dumps({
-            "action": self.action,
-            "actor": self.actor,
-            "resource": self.resource,
-            "timestamp": self.timestamp,
-            "metadata": self.metadata,
-            "prev_hash": self.prev_hash,
-        }, sort_keys=True, ensure_ascii=False)
+        return json.dumps(
+            {
+                "action": self.action,
+                "actor": self.actor,
+                "resource": self.resource,
+                "timestamp": self.timestamp,
+                "metadata": self.metadata,
+                "prev_hash": self.prev_hash,
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+        )
 
     def sign(self, secret: bytes) -> None:
         payload = self._compute_payload()
@@ -85,7 +89,7 @@ class AuditLog:
                 if entry.prev_hash != self._entries[i - 1].entry_hash:
                     errors.append(
                         f"Entry {i}: chain broken (prev_hash={entry.prev_hash[:8]}... "
-                        f"vs actual={self._entries[i-1].entry_hash[:8]}...)"
+                        f"vs actual={self._entries[i - 1].entry_hash[:8]}...)"
                     )
         return errors
 

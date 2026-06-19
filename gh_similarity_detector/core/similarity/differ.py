@@ -43,7 +43,7 @@ class CodeDiffer:
         target_code: str,
         source_name: str = "source",
         target_name: str = "target",
-        context_lines: int = 3
+        context_lines: int = 3,
     ) -> DiffResult:
         """计算两段代码的差异
 
@@ -67,45 +67,47 @@ class CodeDiffer:
         added = removed = unchanged = 0
 
         for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-            if tag == 'equal':
+            if tag == "equal":
                 for k in range(i2 - i1):
-                    diff_lines.append(DiffLine(
-                        tag='equal',
-                        content=source_lines[i1 + k].rstrip('\n\r'),
-                        source_line=i1 + k + 1,
-                        target_line=j1 + k + 1
-                    ))
+                    diff_lines.append(
+                        DiffLine(
+                            tag="equal",
+                            content=source_lines[i1 + k].rstrip("\n\r"),
+                            source_line=i1 + k + 1,
+                            target_line=j1 + k + 1,
+                        )
+                    )
                     unchanged += 1
-            elif tag == 'replace':
+            elif tag == "replace":
                 for k in range(i1, i2):
-                    diff_lines.append(DiffLine(
-                        tag='remove',
-                        content=source_lines[k].rstrip('\n\r'),
-                        source_line=k + 1
-                    ))
+                    diff_lines.append(
+                        DiffLine(
+                            tag="remove", content=source_lines[k].rstrip("\n\r"), source_line=k + 1
+                        )
+                    )
                     removed += 1
                 for k in range(j1, j2):
-                    diff_lines.append(DiffLine(
-                        tag='add',
-                        content=target_lines[k].rstrip('\n\r'),
-                        target_line=k + 1
-                    ))
+                    diff_lines.append(
+                        DiffLine(
+                            tag="add", content=target_lines[k].rstrip("\n\r"), target_line=k + 1
+                        )
+                    )
                     added += 1
-            elif tag == 'delete':
+            elif tag == "delete":
                 for k in range(i1, i2):
-                    diff_lines.append(DiffLine(
-                        tag='remove',
-                        content=source_lines[k].rstrip('\n\r'),
-                        source_line=k + 1
-                    ))
+                    diff_lines.append(
+                        DiffLine(
+                            tag="remove", content=source_lines[k].rstrip("\n\r"), source_line=k + 1
+                        )
+                    )
                     removed += 1
-            elif tag == 'insert':
+            elif tag == "insert":
                 for k in range(j1, j2):
-                    diff_lines.append(DiffLine(
-                        tag='add',
-                        content=target_lines[k].rstrip('\n\r'),
-                        target_line=k + 1
-                    ))
+                    diff_lines.append(
+                        DiffLine(
+                            tag="add", content=target_lines[k].rstrip("\n\r"), target_line=k + 1
+                        )
+                    )
                     added += 1
 
         return DiffResult(
@@ -117,7 +119,7 @@ class CodeDiffer:
             target_total=len(target_lines),
             added=added,
             removed=removed,
-            unchanged=unchanged
+            unchanged=unchanged,
         )
 
     def format_unified_diff(
@@ -126,7 +128,7 @@ class CodeDiffer:
         target_code: str,
         source_name: str = "source",
         target_name: str = "target",
-        context_lines: int = 3
+        context_lines: int = 3,
     ) -> str:
         """生成 unified diff 格式的差异
 
@@ -141,12 +143,10 @@ class CodeDiffer:
         target_lines = target_code.splitlines(keepends=True)
 
         diff = difflib.unified_diff(
-            source_lines, target_lines,
-            fromfile=source_name, tofile=target_name,
-            n=context_lines
+            source_lines, target_lines, fromfile=source_name, tofile=target_name, n=context_lines
         )
 
-        return ''.join(diff)
+        return "".join(diff)
 
     def format_html_diff(self, diff_result: DiffResult) -> str:
         """生成 HTML 格式的差异视图
@@ -159,17 +159,15 @@ class CodeDiffer:
         """
         rows = []
         for line in diff_result.lines:
-            css_class = f'diff-{line.tag}'
+            css_class = f"diff-{line.tag}"
             src_num = f'<td class="line-num">{line.source_line or ""}</td>'
             tgt_num = f'<td class="line-num">{line.target_line or ""}</td>'
-            content = (line.content.replace('&', '&amp;')
-                       .replace('<', '&lt;')
-                       .replace('>', '&gt;'))
-            prefix = ''
-            if line.tag == 'add':
-                prefix = '+'
-            elif line.tag == 'remove':
-                prefix = '-'
+            content = line.content.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+            prefix = ""
+            if line.tag == "add":
+                prefix = "+"
+            elif line.tag == "remove":
+                prefix = "-"
             rows.append(
                 f'<tr class="{css_class}">{src_num}{tgt_num}'
                 f'<td class="diff-content"><span class="diff-prefix">{prefix}</span>{content}</td></tr>'
@@ -177,18 +175,18 @@ class CodeDiffer:
 
         stats = (
             f'<div class="diff-stats">'
-            f'相似率: {diff_result.ratio * 100:.1f}% | '
-            f'源: {diff_result.source_total} 行 | 目标: {diff_result.target_total} 行 | '
+            f"相似率: {diff_result.ratio * 100:.1f}% | "
+            f"源: {diff_result.source_total} 行 | 目标: {diff_result.target_total} 行 | "
             f'<span class="added">+{diff_result.added}</span> '
             f'<span class="removed">-{diff_result.removed}</span> '
             f'<span class="unchanged">={diff_result.unchanged}</span>'
-            f'</div>'
+            f"</div>"
         )
 
         table = (
             f'<table class="diff-table">'
-            f'<thead><tr><th>源</th><th>目标</th><th>内容</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table>'
+            f"<thead><tr><th>源</th><th>目标</th><th>内容</th></tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
         )
 
         return stats + table

@@ -74,7 +74,9 @@ class EventBus:
                 handler(event)
                 delivered += 1
             except Exception as e:
-                logger.error(f"EventBus 处理器异常: {handler.__name__}, 事件={event.event_type.value}, 错误={e}")
+                logger.error(
+                    f"EventBus 处理器异常: {handler.__name__}, 事件={event.event_type.value}, 错误={e}"
+                )
 
         for handler in self._wildcard_handlers:
             try:
@@ -94,7 +96,7 @@ class EventBus:
     def _add_to_history(self, event: DomainEvent) -> None:
         self._history.append(event)
         if len(self._history) > self._max_history:
-            self._history = self._history[-self._max_history:]
+            self._history = self._history[-self._max_history :]
 
     def get_history(
         self, event_type: Optional[DomainEventType] = None, limit: int = 100

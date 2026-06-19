@@ -27,6 +27,7 @@ from .logger import logger
 @dataclass
 class TrackedResource:
     """被追踪的资源"""
+
     resource_type: str
     description: str
     created_at: str
@@ -158,6 +159,7 @@ class ResourceTracker:
 
 def _timestamp() -> str:
     from datetime import datetime
+
     return datetime.now().isoformat()
 
 

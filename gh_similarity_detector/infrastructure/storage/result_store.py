@@ -84,7 +84,11 @@ class ResultStore:
         avg_sim = 0.0
         match_count = 0
         if results:
-            sims = [r.get("statistics", {}).get("avg_similarity", 0) for r in results if isinstance(r, dict)]
+            sims = [
+                r.get("statistics", {}).get("avg_similarity", 0)
+                for r in results
+                if isinstance(r, dict)
+            ]
             avg_sim = sum(sims) / len(sims) if sims else 0.0
             match_count = sum(len(r.get("matches", [])) for r in results if isinstance(r, dict))
 
@@ -94,7 +98,17 @@ class ResultStore:
             """INSERT INTO detection_results
             (source_project, target_project, avg_similarity, match_count, detection_type, config_hash, result_json, created_at, duration_ms)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            (source_project, target_project, avg_sim, match_count, detection_type, config_hash, result_json, time.time(), duration_ms),
+            (
+                source_project,
+                target_project,
+                avg_sim,
+                match_count,
+                detection_type,
+                config_hash,
+                result_json,
+                time.time(),
+                duration_ms,
+            ),
         )
         self._conn.commit()
         _logger.debug(f"检测结果已保存: {source_project} ↔ {target_project}, {match_count}个匹配")
@@ -167,7 +181,9 @@ class ResultStore:
         by_type = self._conn.execute(
             "SELECT detection_type, COUNT(*) as c, AVG(avg_similarity) as avg_sim FROM detection_results GROUP BY detection_type"
         ).fetchall()
-        cache_count = self._conn.execute("SELECT COUNT(*) as c FROM detection_cache").fetchone()["c"]
+        cache_count = self._conn.execute("SELECT COUNT(*) as c FROM detection_cache").fetchone()[
+            "c"
+        ]
         return {
             "total_detections": total,
             "cache_entries": cache_count,
