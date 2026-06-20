@@ -12,6 +12,7 @@ Author: GitHub 项目代码相似度检测工具
 
 from typing import List, Set, Tuple, Dict
 from ...models.entities import FingerprintSet, Module
+from ...utils.hash import stable_hash
 
 
 class RollingHash:
@@ -26,10 +27,7 @@ class RollingHash:
 
     @staticmethod
     def _deterministic_hash(item: str) -> int:
-        h = 0
-        for ch in item:
-            h = (h * 31 + ord(ch)) & 0xFFFFFFFF
-        return h
+        return stable_hash(item)
 
     def hash_sequence(self, sequence: List[str]) -> int:
         hash_value = 0

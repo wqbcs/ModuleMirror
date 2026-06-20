@@ -15,6 +15,7 @@ from ...infrastructure.parser.parser_manager import ParserManager
 from ...infrastructure.cache.fingerprint_cache import FingerprintCache
 from .winnowing import Winnowing
 from ...utils.logger import logger
+from ...utils.hash import stable_hash
 from ...config.config import DetectionConfig
 
 
@@ -51,13 +52,13 @@ class ASTFingerprintGenerator:
 
             if len(node_types) < self.window_size:
                 if node_types:
-                    return {hash(tuple(node_types))}
+                    return {stable_hash(",".join(node_types))}
                 return set()
 
             fingerprints = set()
             for i in range(0, len(node_types) - self.window_size + 1, self.window_size):
-                sequence = tuple(node_types[i : i + self.window_size])
-                fingerprints.add(hash(sequence))
+                sequence = ",".join(node_types[i : i + self.window_size])
+                fingerprints.add(stable_hash(sequence))
 
             return fingerprints
 

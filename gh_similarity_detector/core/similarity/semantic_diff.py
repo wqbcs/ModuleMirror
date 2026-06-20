@@ -18,6 +18,8 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 
+from ...utils.hash import stable_hash
+
 
 class ChangeType(Enum):
     ADDED = "added"
@@ -44,7 +46,7 @@ class CodeEntity:
 
     def _compute_hash(self) -> str:
         normalized = re.sub(r"\s+", "", self.source)
-        return hex(hash(normalized) & 0xFFFFFFFF)[2:]
+        return hex(stable_hash(normalized) & 0xFFFFFFFF)[2:]
 
 
 @dataclass
