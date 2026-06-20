@@ -29,13 +29,15 @@ def generate_similarity_heatmap(
     similarity_matrix: List[List[float]],
     title: str = "代码相似度热力图",
     output_path: Optional[str] = None,
+    label_max_length: int = 20,
+    max_modules: int = 100,
 ) -> Optional[str]:
     if not HAS_PYECHARTS:
         logger.warning("pyecharts未安装，请运行: pip install pyecharts")
         return None
 
     n = len(modules)
-    if n == 0 or n > 100:
+    if n == 0 or n > max_modules:
         logger.warning(f"模块数{n}不适合热力图，跳过")
         return None
 
@@ -46,10 +48,10 @@ def generate_similarity_heatmap(
 
     hm = (
         HeatMap()
-        .add_xaxis([m[:20] for m in modules])
+        .add_xaxis([m[:label_max_length] for m in modules])
         .add_yaxis(
             "相似度",
-            [m[:20] for m in modules],
+            [m[:label_max_length] for m in modules],
             data,
             label_opts=opts.LabelOpts(is_show=False),
         )

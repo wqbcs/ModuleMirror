@@ -8,7 +8,7 @@ Author: GitHub 项目代码相似度检测工具
 
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-from typing import List, Set, Optional
+from typing import List, Set, Optional, Dict
 import os
 import yaml
 from ..models.enums import ModuleType, ReportFormat
@@ -118,6 +118,12 @@ class DetectionConfig:
     deterministic_seed: int = 42
     enable_idempotency_check: bool = True
     use_process_pool: bool = False
+    github_timeout: int = 30
+    fusion_weights: Dict[str, float] = field(
+        default_factory=lambda: {"ast": 0.4, "dfg": 0.3, "cfg": 0.3}
+    )
+    label_max_length: int = 20
+    max_modules_display: int = 100
 
     @classmethod
     def strict(cls) -> "DetectionConfig":
@@ -229,6 +235,10 @@ class DetectionConfig:
             "deterministic_seed": self.deterministic_seed,
             "enable_idempotency_check": self.enable_idempotency_check,
             "use_process_pool": self.use_process_pool,
+            "github_timeout": self.github_timeout,
+            "fusion_weights": self.fusion_weights,
+            "label_max_length": self.label_max_length,
+            "max_modules_display": self.max_modules_display,
         }
 
         with open(yaml_path, "w", encoding="utf-8") as f:
@@ -257,6 +267,19 @@ class DetectionConfig:
 
         if self.api_file_limit < 1:
             raise ValueError(f"API 文件数限制必须 >= 1，当前值: {self.api_file_limit}")
+
+        if self.github_timeout < 5 or self.github_timeout > 300:
+            raise ValueError(f"GitHub 超时必须在 5-300 秒之间，当前值: {self.github_timeout}")
+
+        if self.label_max_length < 5 or self.label_max_length > 100:
+            raise ValueError(f"标签最大长度必须在 5-100 之间，当前值: {self.label_max_length}")
+
+        if self.max_modules_display < 10 or self.max_modules_display > 1000:
+            raise ValueError(f"最大展示模块数必须在 10-1000 之间，当前值: {self.max_modules_display}")
+
+        weight_sum = sum(self.fusion_weights.values())
+        if abs(weight_sum - 1.0) > 0.01:
+            raise ValueError(f"融合权重之和必须为 1.0，当前值: {weight_sum}")
 
         valid_languages = {"python", "java", "javascript", "typescript", "go", "rust", "c", "cpp"}
         for lang in self.supported_languages:

@@ -20,6 +20,7 @@ from ..resilience.fallback import (
     github_file_fallback,
     github_search_fallback,
 )
+from ... import __version__
 
 
 class GitHubAPIError(Exception):
@@ -61,7 +62,7 @@ class GitHubClient:
         self.timeout = timeout
         self.headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "gh-similarity-detector/0.1.0",
+            "User-Agent": f"gh-similarity-detector/{__version__}",
         }
 
         if token:
