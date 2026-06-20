@@ -9,6 +9,8 @@ import re
 from typing import Optional, List, Set
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from .logger import logger
+
 
 class DetectRequest(BaseModel):
     source_url: str = Field(..., min_length=1, max_length=500, description="源项目URL")

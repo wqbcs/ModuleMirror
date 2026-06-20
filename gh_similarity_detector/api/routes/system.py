@@ -39,7 +39,7 @@ async def health():
             result["db"] = {"status": db_status, "project_count": stats.get("project_count", 0)}
         except Exception:
             db_status = "error"
-            logger.warning(f"健康检查数据库连接失败")
+            logger.warning("健康检查数据库连接失败")
             result["db"] = {"status": db_status}
     else:
         result["db"] = {"status": "not_initialized"}

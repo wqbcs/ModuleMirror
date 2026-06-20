@@ -24,6 +24,7 @@ from ..infrastructure.github_client.client import (
     GitHubPermissionError,
 )
 from ..infrastructure.engines.ncd import NCD
+from ..utils.logger import logger
 from .db_commands import register_db_commands
 
 try:
