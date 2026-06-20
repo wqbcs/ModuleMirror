@@ -80,19 +80,19 @@ class AdaptiveRateLimiter:
             try:
                 self._state.remaining = int(remaining)
             except (ValueError, TypeError):
-                pass
+                logger.debug(f"无效的 X-RateLimit-Remaining 值: {remaining}")
 
         if limit is not None:
             try:
                 self._state.limit = int(limit)
             except (ValueError, TypeError):
-                pass
+                logger.debug(f"无效的 X-RateLimit-Limit 值: {limit}")
 
         if reset is not None:
             try:
                 self._state.reset_at = float(reset)
             except (ValueError, TypeError):
-                pass
+                logger.debug(f"无效的 X-RateLimit-Reset 值: {reset}")
 
         self._state.last_updated = time.monotonic()
 

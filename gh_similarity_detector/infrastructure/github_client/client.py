@@ -31,15 +31,21 @@ class GitHubAPIError(Exception):
 
 
 class RateLimitError(GitHubAPIError):
-    pass
+    """GitHub API 速率限制异常"""
+
+    ...
 
 
 class NotFoundError(GitHubAPIError):
-    pass
+    """GitHub 资源不存在异常"""
+
+    ...
 
 
 class GitHubPermissionError(GitHubAPIError):
-    pass
+    """GitHub 权限不足异常"""
+
+    ...
 
 
 class GitHubClient:

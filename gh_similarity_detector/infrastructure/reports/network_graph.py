@@ -216,4 +216,4 @@ def _inject_metadata(
         content = meta + "\n" + content
         output_path.write_text(content, encoding="utf-8")
     except Exception:
-        pass
+        logger.debug(f"DOT 文件写入失败: {output_path}")

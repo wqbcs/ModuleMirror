@@ -175,5 +175,5 @@ def validate_file_path(path: str) -> str:
     if ".." in path:
         raise ValueError("文件路径不能包含路径遍历(..)")
     if path.startswith("/") and not path.startswith("/tmp/"):
-        pass
+        logger.debug(f"非临时目录的绝对路径: {path}")
     return path

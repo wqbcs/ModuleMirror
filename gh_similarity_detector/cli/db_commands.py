@@ -10,7 +10,6 @@ def register_db_commands(main):
     @main.group()
     def db():
         """指纹库管理"""
-        pass
 
     @db.command("init")
     @click.option("--path", default="./fingerprint_db.sqlite", help="数据库路径")

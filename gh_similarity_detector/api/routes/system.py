@@ -11,6 +11,7 @@ from pathlib import Path
 from ...infrastructure.storage.fingerprint_db import FingerprintDB
 from ...infrastructure.github_client.client import GitHubClient, RateLimitError
 from ...infrastructure.observability.metrics import get_metrics, get_content_type
+from ...utils.logger import logger
 
 router = APIRouter(tags=["system"])
 
@@ -38,6 +39,7 @@ async def health():
             result["db"] = {"status": db_status, "project_count": stats.get("project_count", 0)}
         except Exception:
             db_status = "error"
+            logger.warning(f"健康检查数据库连接失败")
             result["db"] = {"status": db_status}
     else:
         result["db"] = {"status": "not_initialized"}

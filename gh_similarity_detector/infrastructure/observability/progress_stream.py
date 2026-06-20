@@ -71,7 +71,7 @@ class ProgressBroadcaster:
             try:
                 queue.put_nowait(last)
             except asyncio.QueueFull:
-                pass
+                logger.debug(f"SSE 队列已满，跳过进度推送: task={task_id}")
 
         logger.info(f"SSE 订阅: task={task_id}, 当前订阅数={len(self._sse_subscribers[task_id])}")
         return queue

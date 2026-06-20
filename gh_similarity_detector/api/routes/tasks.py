@@ -89,7 +89,7 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
                 try:
                     pipeline.project_fetcher.cleanup()
                 except Exception:
-                    pass
+                    logger.debug(f"任务 {task_id} 清理失败")
 
     thread = threading.Thread(target=_run_detection, daemon=True)
     thread.start()

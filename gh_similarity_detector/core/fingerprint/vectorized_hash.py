@@ -17,6 +17,8 @@ except ImportError:
     HAS_NUMPY = False
     np = None
 
+from ...utils.hash import stable_hash
+
 
 class VectorizedRollingHash:
     """向量化滚动哈希 (Numpy加速版)
@@ -48,11 +50,7 @@ class VectorizedRollingHash:
 
     @staticmethod
     def _deterministic_hash(item: str) -> int:
-        """单元素哈希（兼容原始实现）"""
-        h = 0
-        for ch in item:
-            h = (h * 31 + ord(ch)) & 0xFFFFFFFF
-        return h
+        return stable_hash(item)
 
     def hash_sequence(self, sequence: List[str]) -> int:
         """单序列哈希（向量化优化）

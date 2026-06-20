@@ -80,7 +80,7 @@ def _check_api_rate_limit(token: str) -> None:
             else:
                 click.echo(f"API 余额: {remaining}/{limit}")
     except Exception:
-        pass
+        click.echo("API 余额: 无法获取", err=True)
 
 
 def _make_progress_callback():
@@ -103,7 +103,6 @@ def main():
 
     用于自我审视（发现可复用模块）和抄袭检测（追溯代码来源）。
     """
-    pass
 
 
 @main.command()
@@ -454,7 +453,6 @@ register_db_commands(main)
 @main.group()
 def config():
     """配置管理"""
-    pass
 
 
 @config.command("generate")
@@ -530,7 +528,7 @@ def browse(db: str):
                 if len(modules) > 10:
                     proj_node.add(f"... 还有 {len(modules) - 10} 个模块")
             except Exception:
-                pass
+                logger.debug(f"模块列表渲染跳过: {proj_name}")
 
         console.print(tree)
         console.print(f"\n[green]共 {len(projects)} 个项目[/green]")
