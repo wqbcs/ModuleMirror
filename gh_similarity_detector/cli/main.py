@@ -578,3 +578,39 @@ def dashboard(db: str):
             console.print(f"[yellow]统计获取失败: {e}[/yellow]")
     else:
         console.print(f"[yellow]指纹库未创建: {db}[/yellow]")
+
+
+@main.command()
+@click.option(
+    "--shell",
+    type=click.Choice(["bash", "zsh", "fish"]),
+    required=True,
+    help="目标 shell 类型",
+)
+@click.option("--output", "-o", type=click.Path(), help="输出文件路径（默认输出到stdout）")
+def completion(shell: str, output: str):
+    """生成 shell 自动补全脚本
+
+    用法:
+      bash:  gh-sim completion --shell bash >> ~/.bashrc
+      zsh:   gh-sim completion --shell zsh >> ~/.zshrc
+      fish:  gh-sim completion --shell fish > ~/.config/fish/completions/gh-sim.fish
+    """
+    prog_name = "gh-sim"
+    if shell == "bash":
+        script = f'eval "$({prog_name} --bash-complete {prog_name})"'
+    elif shell == "zsh":
+        script = f'eval "$({prog_name} --zsh-complete {prog_name})"'
+    elif shell == "fish":
+        script = f"{prog_name} --fish-complete {prog_name}"
+    else:
+        click.echo(f"不支持的 shell: {shell}", err=True)
+        sys.exit(1)
+
+    if output:
+        from pathlib import Path as P
+        P(output).parent.mkdir(parents=True, exist_ok=True)
+        P(output).write_text(script, encoding="utf-8")
+        click.echo(f"补全脚本已写入: {output}")
+    else:
+        click.echo(script)

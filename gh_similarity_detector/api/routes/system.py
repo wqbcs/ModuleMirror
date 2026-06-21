@@ -11,7 +11,10 @@ from pathlib import Path
 from ...infrastructure.storage.fingerprint_db import FingerprintDB
 from ...infrastructure.github_client.client import GitHubClient, RateLimitError
 from ...infrastructure.observability.metrics import get_metrics, get_content_type
+from ...infrastructure.resilience.circuit_breaker import github_circuit
 from ...utils.logger import logger
+from ...utils.deps import DependencyRegistry
+from ... import __version__
 
 router = APIRouter(tags=["system"])
 
@@ -27,8 +30,8 @@ class SearchRequest(BaseModel):
 
 @router.get("/health")
 async def health():
-    """健康检查（含 DB/GitHub/磁盘状态）"""
-    result = {"status": "ok", "version": "0.1.0"}
+    """健康检查（含 DB/GitHub/磁盘/断路器/依赖状态）"""
+    result = {"status": "ok", "version": __version__}
 
     db_status = "unavailable"
     if Path(DB_PATH).exists():
@@ -44,12 +47,20 @@ async def health():
     else:
         result["db"] = {"status": "not_initialized"}
 
-    disk_usage = shutil.disk_usage("/")
-    result["disk"] = {
-        "total_gb": round(disk_usage.total / (1024**3), 1),
-        "free_gb": round(disk_usage.free / (1024**3), 1),
-        "used_percent": round(disk_usage.used / disk_usage.total * 100, 1),
-    }
+    try:
+        disk_usage = shutil.disk_usage("/")
+        result["disk"] = {
+            "total_gb": round(disk_usage.total / (1024**3), 1),
+            "free_gb": round(disk_usage.free / (1024**3), 1),
+            "used_percent": round(disk_usage.used / disk_usage.total * 100, 1),
+        }
+    except OSError:
+        result["disk"] = {"status": "unavailable"}
+
+    result["circuit_breaker"] = github_circuit.stats
+
+    registry = DependencyRegistry.get_instance()
+    result["dependencies"] = registry.report
 
     return result
 
