@@ -134,22 +134,31 @@ b251c4a feat(utils): P1-4 DependencyRegistry
 cd6c047 feat(config): P1-3 硬编码参数配置化
 2c357e2 fix(core): P0-2/P0-3 消除宽泛异常和空pass + 扩展异常体系
 ce2ef9d fix(core): P0-1 确定性哈希修复
+d089220 feat(logger): P1-2 structlog集成
+e5a50b2 feat: P2-2/P3-2/P3-3 可观测性+i18n+CLI补全
+c1db02e chore: pyproject.toml更新
 ```
 
 ## 六、文件变更统计
 
 | 类别 | 新增 | 修改 | 删除 |
 |------|------|------|------|
-| 源代码 | 2 (hash.py, deps.py) | 20+ | 0 |
-| 测试 | 2 (test_hash.py, test_deps.py) | 2 | 0 |
-| 配置 | 0 | 1 (.pre-commit-config.yaml) | 0 |
+| 源代码 | 2 (hash.py, deps.py) | 25+ | 0 |
+| 测试 | 2 (test_hash.py, test_deps.py) | 3 | 0 |
+| 配置 | 0 | 2 (.pre-commit-config.yaml, pyproject.toml) | 0 |
 | 文档 | 3 (spec.md, design.md, 开源调研报告) | 0 | 0 |
 
-## 七、未完成（后续迭代）
+## 七、第二轮完成项（v1.1第二轮）
 
-- [ ] P1-2 日志规范化（structlog集成）
-- [ ] P2-2 可观测性增强（断路器状态API、健康检查增强）
-- [ ] P2-3 CLI职责分离（main.py拆分）
-- [ ] P3-2 国际化统一（i18n消息键）
-- [ ] P3-3 CLI shell补全（Click 8.0+内置）
-- [ ] mypy/pyright strict mode配置
+- [x] P1-2 日志规范化（structlog 26.1.0 桥接集成，接口不变）
+- [x] P2-2 可观测性增强（断路器状态API + 依赖状态 + 版本号修复）
+- [x] P3-2 国际化统一（新增4个i18n消息键：断路器/连接池/基础设施/依赖）
+- [x] P3-3 CLI shell补全（completion命令：bash/zsh/fish）
+- [x] pyproject.toml: mmh3/orjson升级为核心依赖，structlog可选
+
+## 八、仍未完成（后续迭代）
+
+- [ ] P2-3 CLI职责分离（main.py 581→615行，Click命令注册耦合高，拆分风险大）
+- [ ] mypy/pyright strict mode配置（需全量类型注解）
+- [ ] MinHash批量更新优化（datasketch update_batch）
+- [ ] SQL参数化模板抽取（queries.py 642行）
