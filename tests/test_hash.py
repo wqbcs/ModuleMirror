@@ -47,8 +47,10 @@ class TestStableHash:
         assert isinstance(h, int)
 
     def test_cross_process_stable(self):
-        import subprocess, sys
-        code = f'from gh_similarity_detector.utils.hash import stable_hash; print(stable_hash("cross_process_test"))'
+        import subprocess
+        import sys
+
+        code = 'from gh_similarity_detector.utils.hash import stable_hash; print(stable_hash("cross_process_test"))'
         result = subprocess.run(
             [sys.executable, "-c", code],
             capture_output=True, text=True, cwd=r"D:/xinjian/project/ModuleMirror",

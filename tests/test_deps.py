@@ -41,7 +41,7 @@ class TestDependencyRegistry:
     def test_require_unavailable(self):
         from gh_similarity_detector.utils.exceptions import DependencyError
 
-        r = DependencyRegistry.get_instance()
+        DependencyRegistry.get_instance()
         registry = DependencyRegistry()
         registry.register("fake_pkg", "fake_package_xyz", "测试", "test")
         try:
