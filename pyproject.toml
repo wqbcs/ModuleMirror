@@ -121,7 +121,7 @@ tree-sitter-swift = {version = "^0.23.0", optional = true}
 datasketch = "^1.6.0"
 pyvis = {version = "^0.3.1", optional = true}
 faiss-cpu = {version = "^1.7.0", optional = true}
-sse-starlette = {version = "^2.0.0", optional = true}
+sse-starlette = {version = ">=2,<4", optional = true}
 pyecharts = {version = "^2.0.0", optional = true}
 
 [tool.poetry.group.dev.dependencies]
