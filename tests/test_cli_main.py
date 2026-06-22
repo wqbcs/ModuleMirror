@@ -6,8 +6,8 @@ from click.testing import CliRunner
 from gh_similarity_detector.cli.main import (
     main,
     _check_api_rate_limit,
-    _make_progress_callback,
 )
+from gh_similarity_detector.cli.formatters import make_progress_callback
 from gh_similarity_detector.models.results import (
     DetectionResult,
     SimilarityResult,
@@ -476,19 +476,19 @@ class TestCheckApiRateLimit:
 
 class TestMakeProgressCallback:
     def test_callback_at_zero(self, capsys):
-        cb = _make_progress_callback()
+        cb = make_progress_callback()
         cb(0.0)
         captured = capsys.readouterr()
         assert "0.0%" in captured.out
 
     def test_callback_at_one(self, capsys):
-        cb = _make_progress_callback()
+        cb = make_progress_callback()
         cb(1.0)
         captured = capsys.readouterr()
         assert "100.0%" in captured.out
 
     def test_callback_mid(self, capsys):
-        cb = _make_progress_callback()
+        cb = make_progress_callback()
         cb(0.5)
         captured = capsys.readouterr()
         assert "50.0%" in captured.out

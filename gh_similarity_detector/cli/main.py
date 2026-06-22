@@ -2,8 +2,7 @@
 CLI 命令行接口
 
 提供 gh-sim 命令行工具。
-
-Author: GitHub 项目代码相似度检测工具
+参考 Cookiecutter 薄CLI模式：命令函数仅做参数解析→调用业务→格式化输出。
 """
 
 import click
@@ -16,16 +15,22 @@ from ..models.enums import ModuleType, ReportFormat
 from ..models.results import DetectionResult
 from ..core import DetectionPipeline
 from ..core.similarity.differ import CodeDiffer
-from ..infrastructure.github_client.client import (
-    GitHubClient,
-    GitHubAPIError,
-    RateLimitError,
-    NotFoundError,
-    GitHubPermissionError,
-)
+from ..infrastructure.github_client.client import GitHubClient
 from ..infrastructure.engines.ncd import NCD
 from ..utils.logger import logger
 from .db_commands import register_db_commands
+from .error_handler import handle_cli_error
+from .formatters import (
+    make_progress_callback,
+    format_detection_header,
+    format_detection_results,
+    format_plagiarism_header,
+    format_plagiarism_results,
+    format_search_results,
+    format_diff_result,
+    format_api_rate_info,
+)
+from .validators import InputValidator
 
 try:
     from rich.console import Console
@@ -37,34 +42,6 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
-EXIT_RATE_LIMIT = 2
-EXIT_NOT_FOUND = 3
-EXIT_PERMISSION = 4
-EXIT_API_ERROR = 5
-
-
-def _handle_cli_error(e: Exception) -> None:
-    if isinstance(e, RateLimitError):
-        msg = "GitHub API 速率限制"
-        if e.retry_after:
-            msg += f"，请在 {e.retry_after} 秒后重试"
-        click.echo(f"\n错误: {msg}", err=True)
-        click.echo("提示: 可设置 GITHUB_TOKEN 环境变量提高速率限制", err=True)
-        sys.exit(EXIT_RATE_LIMIT)
-    elif isinstance(e, NotFoundError):
-        click.echo(f"\n错误: 项目或资源不存在 ({e.message})", err=True)
-        sys.exit(EXIT_NOT_FOUND)
-    elif isinstance(e, GitHubPermissionError):
-        click.echo(f"\n错误: 权限不足 ({e.message})", err=True)
-        click.echo("提示: 请检查 GITHUB_TOKEN 是否有效，或项目是否为私有仓库", err=True)
-        sys.exit(EXIT_PERMISSION)
-    elif isinstance(e, GitHubAPIError):
-        click.echo(f"\n错误: GitHub API 异常 ({e.message})", err=True)
-        sys.exit(EXIT_API_ERROR)
-    else:
-        click.echo(f"\n检测失败: {e}", err=True)
-        sys.exit(1)
-
 
 def _check_api_rate_limit(token: str) -> None:
     if not token:
@@ -72,29 +49,9 @@ def _check_api_rate_limit(token: str) -> None:
     try:
         client = GitHubClient(token=token)
         info = asyncio.run(client.check_rate_limit())
-        core = info.get("resources", {}).get("core", {})
-        remaining = core.get("remaining")
-        limit = core.get("limit")
-        if remaining is not None and limit is not None:
-            if remaining < 10:
-                click.echo(f"警告: API 余额不足 ({remaining}/{limit})，可能触发速率限制", err=True)
-            else:
-                click.echo(f"API 余额: {remaining}/{limit}")
+        format_api_rate_info(info)
     except Exception:
         click.echo("API 余额: 无法获取", err=True)
-
-
-def _make_progress_callback():
-    bar_width = 40
-
-    def callback(progress: float):
-        filled = int(bar_width * progress)
-        bar = "█" * filled + "░" * (bar_width - filled)
-        click.echo(f"\r进度: [{bar}] {progress * 100:.1f}%", nl=False)
-        if progress >= 1.0:
-            click.echo()
-
-    return callback
 
 
 @click.group()
@@ -161,6 +118,10 @@ def detect(
 
     检测目标项目与候选项目之间的相似模块。
     """
+    InputValidator.validate_all([
+        InputValidator.validate_threshold(threshold),
+    ])
+
     granularity_map = {
         "file": ModuleType.FILE,
         "function": ModuleType.FUNCTION,
@@ -197,14 +158,10 @@ def detect(
         click.echo("错误: 必须指定至少一个候选项目", err=True)
         sys.exit(1)
 
-    click.echo(f"目标项目: {target}")
-    click.echo(f"候选项目数: {len(all_candidates)}")
-    click.echo(f"模块粒度: {granularity}")
-    click.echo(f"相似度阈值: {threshold}%")
-    click.echo()
+    format_detection_header(target, len(all_candidates), granularity, threshold)
 
     pipeline = DetectionPipeline(config)
-    progress_callback = _make_progress_callback()
+    progress_callback = make_progress_callback()
 
     _check_api_rate_limit(token)
 
@@ -212,33 +169,10 @@ def detect(
         results = pipeline.detect(
             target, all_candidates, progress_callback, checkpoint_path=checkpoint
         )
-
-        for result in results:
-            click.echo()
-            click.echo(f"{'=' * 60}")
-            click.echo(f"检测: {result.source_project} ↔ {result.target_project}")
-            click.echo(f"{'=' * 60}")
-            click.echo(f"  总匹配数: {len(result.matches)}")
-            click.echo(f"  平均相似度: {result.statistics.get('avg_similarity', 0):.2f}%")
-            click.echo(f"  最高相似度: {result.statistics.get('max_similarity', 0):.2f}%")
-
-            if result.matches:
-                click.echo()
-                click.echo("Top 匹配:")
-                for i, match in enumerate(result.matches[:5], 1):
-                    location = ""
-                    if match.matched_code_snippet:
-                        s = match.matched_code_snippet
-                        location = f"\n       源: {s['source_file']}:{s['source_lines']} → 目标: {s['target_file']}:{s['target_lines']}"
-                    click.echo(
-                        f"  {i}. {match.source_module_id} ↔ "
-                        f"{match.target_module_id} "
-                        f"({match.similarity:.2f}% - {match.reuse_suggestion.value})"
-                        f"{location}"
-                    )
+        format_detection_results(results)
 
     except Exception as e:
-        _handle_cli_error(e)
+        handle_cli_error(e)
 
 
 @main.command()
@@ -259,45 +193,24 @@ def plagiarism(
 
     检测目标项目是否抄袭了指纹库中的项目代码。
     """
-
-    db_path = db
-    if not Path(db_path).exists():
-        click.echo(f"错误: 指纹库不存在: {db_path}", err=True)
-        click.echo("请先使用 'gh-sim db add' 构建指纹库。", err=True)
-        sys.exit(1)
+    InputValidator.validate_all([
+        InputValidator.validate_db_path(db),
+        InputValidator.validate_threshold(threshold),
+    ])
 
     config = DetectionConfig(
         supported_languages=list(language), similarity_threshold=threshold, output_path=Path(output)
     )
 
-    click.echo("抄袭溯源检测")
-    click.echo(f"  目标项目: {target}")
-    click.echo(f"  指纹库: {db}")
-    click.echo(f"  相似度阈值: {threshold}%")
-    click.echo()
+    format_plagiarism_header(target, db, threshold)
 
-    pipeline = DetectionPipeline(config, db_path=db_path)
-    progress_callback = _make_progress_callback()
+    pipeline = DetectionPipeline(config, db_path=db)
+    progress_callback = make_progress_callback()
 
     try:
         results = pipeline.plagiarism(target, progress_callback)
 
-        if results:
-            click.echo()
-            click.echo(f"{'=' * 60}")
-            click.echo("抄袭溯源结果")
-            click.echo(f"{'=' * 60}")
-
-            for i, result in enumerate(results, 1):
-                click.echo()
-                click.echo(f"来源 {i}: {result.source_project_id}")
-                click.echo(f"  置信度: {result.confidence_score:.2f}/100")
-                click.echo(f"  贡献比例: {result.contribution_ratio:.2f}%")
-                click.echo(f"  相似模块数: {result.similar_module_count}")
-                click.echo(f"  平均相似度: {result.average_similarity:.2f}%")
-                click.echo(f"  时间关系: {result.time_relation.value}")
-        else:
-            click.echo("未发现疑似抄袭来源。")
+        format_plagiarism_results(results)
 
         if update_db:
             click.echo("\n正在将目标项目添加到指纹库...")
@@ -334,7 +247,7 @@ def plagiarism(
             click.echo(f"\n报告已生成: {report_path}")
 
     except Exception as e:
-        _handle_cli_error(e)
+        handle_cli_error(e)
 
 
 @main.command()
@@ -358,25 +271,10 @@ def search(query: str, language: str, sort: str, max_results: int, token: str):
         results = asyncio.run(
             client.search_repositories(query, language=language, sort=sort, max_results=max_results)
         )
-
-        if not results:
-            click.echo("未找到匹配的仓库。")
-            return
-
-        click.echo(f"搜索结果 (共 {len(results)} 个):")
-        click.echo()
-        for i, repo in enumerate(results, 1):
-            click.echo(f"  {i}. {repo['full_name']}")
-            click.echo(f"     URL: {repo['url']}")
-            click.echo(
-                f"     Stars: {repo['stars']} | Forks: {repo['forks']} | 语言: {repo['language']}"
-            )
-            if repo["description"]:
-                desc = repo["description"][:80]
-                click.echo(f"     描述: {desc}")
+        format_search_results(results)
 
     except Exception as e:
-        _handle_cli_error(e)
+        handle_cli_error(e)
 
 
 @main.command()
@@ -405,8 +303,6 @@ def diff(file1: str, file2: str, context: int, unified: bool):
 
     显示两段代码之间的行级差异，帮助理解相似模块的具体区别。
     """
-    differ = CodeDiffer()
-
     try:
         with open(file1, "r", encoding="utf-8") as f:
             code1 = f.read()
@@ -429,23 +325,7 @@ def diff(file1: str, file2: str, context: int, unified: bool):
             click.echo("两文件内容完全相同。")
     else:
         result = differ.diff(code1, code2, file1, file2, context)
-
-        click.echo(f"源: {file1} ({result.source_total} 行)")
-        click.echo(f"目标: {file2} ({result.target_total} 行)")
-        click.echo(f"相似率: {result.ratio * 100:.1f}%")
-        click.echo(f"+{result.added} -{result.removed} ={result.unchanged}")
-        click.echo()
-
-        for line in result.lines:
-            prefix = " "
-            if line.tag == "add":
-                prefix = "+"
-            elif line.tag == "remove":
-                prefix = "-"
-
-            src_num = f"{line.source_line:>4}" if line.source_line else "    "
-            tgt_num = f"{line.target_line:>4}" if line.target_line else "    "
-            click.echo(f"{src_num} {tgt_num} {prefix}{line.content}")
+        format_diff_result(result, file1, file2)
 
 
 register_db_commands(main)
