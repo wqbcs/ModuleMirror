@@ -7,6 +7,8 @@
 
 from typing import Optional, Dict, Any
 
+from ..infrastructure.i18n import t
+
 
 class ModuleMirrorError(Exception):
     """ModuleMirror 基础异常"""
@@ -40,7 +42,7 @@ class ConfigurationError(ModuleMirrorError):
 class InvalidThresholdError(ConfigurationError):
     def __init__(self, value: float, valid_range: str = "0-100"):
         super().__init__(
-            f"相似度阈值 {value} 无效，有效范围: {valid_range}",
+            t("error.config.invalid_threshold", value=value, valid_range=valid_range),
             {"value": value, "valid_range": valid_range},
         )
 
@@ -48,7 +50,7 @@ class InvalidThresholdError(ConfigurationError):
 class UnsupportedLanguageError(ConfigurationError):
     def __init__(self, language: str, supported: list = None):
         super().__init__(
-            f"不支持的语言: {language}",
+            t("error.config.unsupported_language", language=language),
             {"language": language, "supported": supported or []},
         )
 
@@ -63,14 +65,17 @@ class FingerprintError(ModuleMirrorError):
 class TokenizationError(FingerprintError):
     def __init__(self, language: str, reason: str = ""):
         super().__init__(
-            f"Tokenization 失败 (language={language}): {reason}",
+            t("error.fingerprint.tokenization", language=language, reason=reason),
             {"language": language, "reason": reason},
         )
 
 
 class WinnowingError(FingerprintError):
     def __init__(self, reason: str = ""):
-        super().__init__(f"Winnowing 计算失败: {reason}", {"reason": reason})
+        super().__init__(
+            t("error.fingerprint.winnowing", reason=reason),
+            {"reason": reason},
+        )
 
 
 class SimilarityError(ModuleMirrorError):
@@ -83,7 +88,7 @@ class SimilarityError(ModuleMirrorError):
 class EmptyFingerprintError(SimilarityError):
     def __init__(self, module_id: str):
         super().__init__(
-            f"模块 {module_id} 指纹为空，无法计算相似度",
+            t("error.similarity.empty_fingerprint", module_id=module_id),
             {"module_id": module_id},
         )
 
@@ -98,14 +103,17 @@ class StorageError(ModuleMirrorError):
 class DatabaseError(StorageError):
     def __init__(self, reason: str = "", db_path: str = ""):
         super().__init__(
-            f"数据库操作失败: {reason}",
+            t("error.storage.database", reason=reason),
             {"reason": reason, "db_path": db_path},
         )
 
 
 class CacheError(StorageError):
     def __init__(self, reason: str = ""):
-        super().__init__(f"缓存操作失败: {reason}", {"reason": reason})
+        super().__init__(
+            t("error.storage.cache", reason=reason),
+            {"reason": reason},
+        )
 
 
 class ProjectError(ModuleMirrorError):
@@ -118,7 +126,7 @@ class ProjectError(ModuleMirrorError):
 class ProjectFetchError(ProjectError):
     def __init__(self, source: str, reason: str = ""):
         super().__init__(
-            f"项目获取失败 ({source}): {reason}",
+            t("error.project.fetch", source=source, reason=reason),
             {"source": source, "reason": reason},
         )
 
@@ -126,7 +134,7 @@ class ProjectFetchError(ProjectError):
 class ModuleExtractionError(ProjectError):
     def __init__(self, file_path: str, reason: str = ""):
         super().__init__(
-            f"模块提取失败 ({file_path}): {reason}",
+            t("error.project.module_extraction", file_path=file_path, reason=reason),
             {"file_path": file_path, "reason": reason},
         )
 
@@ -141,20 +149,21 @@ class APIError(ModuleMirrorError):
 class RateLimitExceededError(APIError):
     def __init__(self, retry_after: float = 0):
         super().__init__(
-            f"API 限流，请 {retry_after:.0f} 秒后重试",
+            t("error.api.rate_limit", retry_after=retry_after),
             {"retry_after": retry_after},
         )
 
 
 class AuthenticationError(APIError):
-    def __init__(self, reason: str = "认证失败"):
-        super().__init__(reason, {"reason": reason})
+    def __init__(self, reason: str = ""):
+        msg = reason or t("error.api.auth")
+        super().__init__(msg, {"reason": reason})
 
 
 class ResourceNotFoundError(APIError):
     def __init__(self, resource: str = ""):
         super().__init__(
-            f"资源不存在: {resource}" if resource else "资源不存在",
+            t("error.api.not_found", resource=resource) if resource else t("error.api.not_found", resource=""),
             {"resource": resource},
         )
 
@@ -162,7 +171,7 @@ class ResourceNotFoundError(APIError):
 class CircuitBreakerOpenError(APIError):
     def __init__(self, service: str = "", recovery_timeout: float = 0):
         super().__init__(
-            f"断路器已断开 ({service})，请 {recovery_timeout:.0f} 秒后重试",
+            t("error.api.circuit_open", service=service, recovery_timeout=recovery_timeout),
             {"service": service, "recovery_timeout": recovery_timeout},
         )
 
@@ -177,7 +186,7 @@ class InfrastructureError(ModuleMirrorError):
 class ConnectionPoolError(InfrastructureError):
     def __init__(self, reason: str = "", pool_size: int = 0):
         super().__init__(
-            f"连接池错误: {reason}",
+            t("error.infra.pool", reason=reason),
             {"reason": reason, "pool_size": pool_size},
         )
 
@@ -185,7 +194,7 @@ class ConnectionPoolError(InfrastructureError):
 class ResilienceError(InfrastructureError):
     def __init__(self, component: str = "", reason: str = ""):
         super().__init__(
-            f"弹性组件错误 ({component}): {reason}",
+            t("error.infra.resilience", component=component, reason=reason),
             {"component": component, "reason": reason},
         )
 
@@ -193,7 +202,7 @@ class ResilienceError(InfrastructureError):
 class SSRFProtectionError(InfrastructureError):
     def __init__(self, url: str = "", reason: str = ""):
         super().__init__(
-            f"SSRF 防护拦截: {reason}",
+            t("error.infra.ssrf", reason=reason),
             {"url": url, "reason": reason},
         )
 
@@ -207,9 +216,7 @@ class DependencyError(ModuleMirrorError):
         feature: str = "",
         install_hint: str = "",
     ):
-        msg = f"可选依赖 {package} 不可用"
-        if feature:
-            msg += f"（{feature} 功能需要）"
+        msg = t("error.dependency.missing", package=package, feature=feature)
         if install_hint:
             msg += f"，请运行: {install_hint}"
         super().__init__(
