@@ -9,6 +9,7 @@ Prometheus 指标导出模块
 - Circuit Breaker状态
 """
 
+from ... import __version__
 from prometheus_client import (
     Counter,
     Histogram,
@@ -96,7 +97,7 @@ PROJECT_INFO = Info(
     registry=registry,
 )
 
-PROJECT_INFO.info({"version": "0.1.0", "language": "python"})
+PROJECT_INFO.info({"version": __version__, "language": "python"})
 
 
 def get_metrics() -> bytes:

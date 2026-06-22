@@ -13,6 +13,8 @@ from typing import Optional, Dict, Any, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
+from ... import __version__
+
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
@@ -24,7 +26,7 @@ from ...utils.logger import logger
 @dataclass
 class TracingConfig:
     SERVICE_NAME: str = "modulemirror"
-    SERVICE_VERSION: str = "0.1.0"
+    SERVICE_VERSION: str = __version__
     ENABLED: bool = True
 
 

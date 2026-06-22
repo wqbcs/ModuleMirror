@@ -50,7 +50,7 @@ def _check_api_rate_limit(token: str) -> None:
 
 
 @click.group()
-@click.version_option(version="1.0.0", prog_name="gh-sim")
+@click.version_option(version="1.1.0", prog_name="gh-sim")
 def main() -> None:
     """GitHub 项目代码相似度检测工具
 
@@ -431,7 +431,7 @@ def dashboard(db: str) -> None:
     info_table = Table(title="系统信息")
     info_table.add_column("指标", style="cyan")
     info_table.add_column("值", style="green")
-    info_table.add_row("版本", "0.1.0")
+    info_table.add_row("版本", "1.1.0")
     info_table.add_row("Python", sys.version.split()[0])
     info_table.add_row("平台", sys.platform)
     console.print(info_table)

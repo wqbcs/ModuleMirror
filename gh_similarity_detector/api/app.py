@@ -8,6 +8,8 @@ Web API 接口
 from __future__ import annotations
 
 import os
+
+from .. import __version__
 import signal
 import uuid
 from contextlib import asynccontextmanager
@@ -74,7 +76,7 @@ GitHub 项目代码相似度检测工具 REST API。
 - Rate Limiter: 请求速率限制
 - Graceful Shutdown: SIGTERM 触发优雅关闭，排空进行中请求
 """,
-    version="1.0.0",
+    version=__version__,
     openapi_url="/openapi.json",
     docs_url="/docs",
     redoc_url="/redoc",
