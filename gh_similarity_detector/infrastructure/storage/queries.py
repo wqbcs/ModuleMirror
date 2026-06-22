@@ -11,6 +11,149 @@ from ...utils.logger import logger
 from .schema import SCHEMA_VERSION
 from ._connection_pool import _ConnectionPool
 
+SQL_INSERT_PROJECT = """
+                INSERT OR REPLACE INTO projects
+                (id, name, url, language, file_count, module_count, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """
+
+SQL_INSERT_MODULE = """
+                    INSERT OR REPLACE INTO modules
+                    (id, project_id, name, file_path, module_type, source_code,
+                     start_line, end_line, token_count, language)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """
+
+SQL_INSERT_FINGERPRINT = """
+                    INSERT OR IGNORE INTO fingerprints
+                    (module_id, fingerprint, fingerprint_type)
+                    VALUES (?, ?, ?)
+                """
+
+SQL_SELECT_MODULE_ID_BY_FINGERPRINT = """
+                SELECT module_id FROM fingerprints
+                WHERE fingerprint = ? AND fingerprint_type = ?
+            """
+
+SQL_GET_MODULE = """
+                SELECT id, project_id, name, file_path, module_type,
+                       start_line, end_line, token_count, language
+                FROM modules WHERE id = ?
+            """
+
+SQL_GET_PROJECT = """
+                SELECT id, name, url, language, file_count, module_count,
+                       created_at, updated_at
+                FROM projects WHERE id = ?
+            """
+
+SQL_GET_MODULE_FINGERPRINTS = """
+                SELECT fingerprint FROM fingerprints
+                WHERE module_id = ? AND fingerprint_type = ?
+            """
+
+SQL_COUNT_PROJECTS = "SELECT COUNT(*) FROM projects"
+
+SQL_COUNT_MODULES = "SELECT COUNT(*) FROM modules"
+
+SQL_COUNT_FINGERPRINTS = "SELECT COUNT(*) FROM fingerprints"
+
+SQL_LIST_PROJECTS = """
+                SELECT id, name, url, language, module_count, updated_at
+                FROM projects ORDER BY updated_at DESC
+            """
+
+SQL_DELETE_PROJECT = "DELETE FROM projects WHERE id = ?"
+
+SQL_LOOKUP_CANDIDATES_BATCH = """
+                    SELECT module_id, COUNT(*) as overlap
+                    FROM fingerprints
+                    WHERE fingerprint IN ({placeholders}) AND fingerprint_type = ?
+                    GROUP BY module_id
+                """
+
+SQL_GET_ALL_PROJECT_FINGERPRINTS = """
+                SELECT f.module_id, f.fingerprint
+                FROM fingerprints f
+                WHERE f.fingerprint_type = ?
+            """
+
+SQL_GET_ALL_PROJECT_FINGERPRINTS_EXCLUDE_SUFFIX = " AND f.module_id NOT IN (SELECT id FROM modules WHERE project_id = ?)"
+
+SQL_GET_SIMILARITY_CACHE = """
+                SELECT similarity, winnowing_overlap, ast_similarity, computed_at
+                FROM similarity_cache
+                WHERE source_module_id = ? AND target_module_id = ?
+            """
+
+SQL_INSERT_SIMILARITY_CACHE = """
+                INSERT OR REPLACE INTO similarity_cache
+                (source_module_id, target_module_id, similarity,
+                 winnowing_overlap, ast_similarity, computed_at)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """
+
+SQL_DELETE_SIMILARITY_CACHE_OLDER_THAN = """
+                    DELETE FROM similarity_cache
+                    WHERE computed_at < datetime('now', ?)
+                """
+
+SQL_DELETE_SIMILARITY_CACHE_ALL = "DELETE FROM similarity_cache"
+
+SQL_INSERT_DETECTION_TASK = """
+                INSERT OR REPLACE INTO detection_tasks
+                (id, target_project, candidates, status, progress, created_at, updated_at)
+                VALUES (?, ?, ?, 'pending', 0.0, ?, ?)
+            """
+
+SQL_GET_DETECTION_TASK = """
+                SELECT id, target_project, candidates, status, progress,
+                       result_path, created_at, updated_at
+                FROM detection_tasks WHERE id = ?
+            """
+
+SQL_LIST_TASKS_BY_STATUS = "SELECT id, target_project, status, progress, created_at FROM detection_tasks WHERE status = ? ORDER BY created_at DESC"
+
+SQL_LIST_TASKS_ALL = "SELECT id, target_project, status, progress, created_at FROM detection_tasks ORDER BY created_at DESC"
+
+SQL_UPDATE_DETECTION_TASK_TEMPLATE = "UPDATE detection_tasks SET {set_clause} WHERE id = ?"
+
+SQL_DELETE_DETECTION_TASK = "DELETE FROM detection_tasks WHERE id = ?"
+
+SQL_EXPORT_SELECT_PROJECTS = "SELECT id, name, url, language, created_at, updated_at FROM projects"
+
+SQL_EXPORT_SELECT_MODULES = "SELECT id, name, file_path, module_type, language FROM modules WHERE project_id = ?"
+
+SQL_EXPORT_SELECT_FINGERPRINTS = "SELECT fingerprint, fingerprint_type FROM fingerprints WHERE module_id = ?"
+
+SQL_CHECK_PROJECT_EXISTS = "SELECT 1 FROM projects WHERE id = ?"
+
+SQL_IMPORT_INSERT_PROJECT = "INSERT INTO projects (id, name, url, language, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)"
+
+SQL_IMPORT_INSERT_MODULE = "INSERT INTO modules (id, name, file_path, module_type, language, project_id) VALUES (?, ?, ?, ?, ?, ?)"
+
+SQL_IMPORT_INSERT_FINGERPRINT = "INSERT INTO fingerprints (fingerprint, fingerprint_type, module_id) VALUES (?, ?, ?)"
+
+SQL_INSERT_DETECTION_HISTORY = """INSERT INTO detection_history
+                   (target_project, candidate_count, match_count, avg_similarity, max_similarity, duration_ms)
+                   VALUES (?, ?, ?, ?, ?, ?)"""
+
+SQL_GET_DETECTION_HISTORY_BY_PROJECT = """SELECT id, target_project, candidate_count, match_count,
+                       avg_similarity, max_similarity, duration_ms, created_at
+                       FROM detection_history
+                       WHERE target_project = ?
+                       ORDER BY created_at DESC LIMIT ? OFFSET ?"""
+
+SQL_GET_DETECTION_HISTORY_ALL = """SELECT id, target_project, candidate_count, match_count,
+                       avg_similarity, max_similarity, duration_ms, created_at
+                       FROM detection_history
+                       ORDER BY created_at DESC LIMIT ? OFFSET ?"""
+
+SQL_GET_DETECTION_TREND = """SELECT created_at, match_count, avg_similarity, max_similarity
+                   FROM detection_history
+                   WHERE target_project = ?
+                   ORDER BY created_at ASC LIMIT ?"""
+
 
 class Queries:
     LOOKUP_BATCH_SIZE = 500
@@ -39,11 +182,7 @@ class Queries:
     ) -> None:
         with self._get_conn() as conn:
             conn.execute(
-                """
-                INSERT OR REPLACE INTO projects
-                (id, name, url, language, file_count, module_count, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            """,
+                SQL_INSERT_PROJECT,
                 (
                     project.id,
                     project.name,
@@ -74,12 +213,7 @@ class Queries:
                     )
             if module_rows:
                 conn.executemany(
-                    """
-                    INSERT OR REPLACE INTO modules
-                    (id, project_id, name, file_path, module_type, source_code,
-                     start_line, end_line, token_count, language)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
+                    SQL_INSERT_MODULE,
                     module_rows,
                 )
 
@@ -91,11 +225,7 @@ class Queries:
                     fp_rows.append((module_id, fp, FingerprintType.AST.value))
             if fp_rows:
                 conn.executemany(
-                    """
-                    INSERT OR IGNORE INTO fingerprints
-                    (module_id, fingerprint, fingerprint_type)
-                    VALUES (?, ?, ?)
-                """,
+                    SQL_INSERT_FINGERPRINT,
                     fp_rows,
                 )
 
@@ -114,10 +244,7 @@ class Queries:
     ) -> List[str]:
         with self._get_conn() as conn:
             cursor = conn.execute(
-                """
-                SELECT module_id FROM fingerprints
-                WHERE fingerprint = ? AND fingerprint_type = ?
-            """,
+                SQL_SELECT_MODULE_ID_BY_FINGERPRINT,
                 (fingerprint, fp_type),
             )
             return [row[0] for row in cursor.fetchall()]
@@ -125,11 +252,7 @@ class Queries:
     def get_module(self, module_id: str) -> Optional[Dict]:
         with self._get_conn() as conn:
             cursor = conn.execute(
-                """
-                SELECT id, project_id, name, file_path, module_type,
-                       start_line, end_line, token_count, language
-                FROM modules WHERE id = ?
-            """,
+                SQL_GET_MODULE,
                 (module_id,),
             )
             row = cursor.fetchone()
@@ -150,11 +273,7 @@ class Queries:
     def get_project(self, project_id: str) -> Optional[Dict]:
         with self._get_conn() as conn:
             cursor = conn.execute(
-                """
-                SELECT id, name, url, language, file_count, module_count,
-                       created_at, updated_at
-                FROM projects WHERE id = ?
-            """,
+                SQL_GET_PROJECT,
                 (project_id,),
             )
             row = cursor.fetchone()
@@ -174,21 +293,18 @@ class Queries:
     def get_module_fingerprints(self, module_id: str, fp_type: str = "winnowing") -> Set[int]:
         with self._get_conn() as conn:
             cursor = conn.execute(
-                """
-                SELECT fingerprint FROM fingerprints
-                WHERE module_id = ? AND fingerprint_type = ?
-            """,
+                SQL_GET_MODULE_FINGERPRINTS,
                 (module_id, fp_type),
             )
             return {row[0] for row in cursor.fetchall()}
 
     def get_stats(self) -> Dict:
         with self._get_conn() as conn:
-            project_count = conn.execute("SELECT COUNT(*) FROM projects").fetchone()[0]
+            project_count = conn.execute(SQL_COUNT_PROJECTS).fetchone()[0]
 
-            module_count = conn.execute("SELECT COUNT(*) FROM modules").fetchone()[0]
+            module_count = conn.execute(SQL_COUNT_MODULES).fetchone()[0]
 
-            fp_count = conn.execute("SELECT COUNT(*) FROM fingerprints").fetchone()[0]
+            fp_count = conn.execute(SQL_COUNT_FINGERPRINTS).fetchone()[0]
 
             return {
                 "project_count": project_count,
@@ -198,10 +314,7 @@ class Queries:
 
     def list_projects(self) -> List[Dict]:
         with self._get_conn() as conn:
-            cursor = conn.execute("""
-                SELECT id, name, url, language, module_count, updated_at
-                FROM projects ORDER BY updated_at DESC
-            """)
+            cursor = conn.execute(SQL_LIST_PROJECTS)
             return [
                 {
                     "id": row[0],
@@ -216,7 +329,7 @@ class Queries:
 
     def delete_project(self, project_id: str) -> bool:
         with self._get_conn() as conn:
-            cursor = conn.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+            cursor = conn.execute(SQL_DELETE_PROJECT, (project_id,))
             deleted = cursor.rowcount > 0
 
         if deleted:
@@ -242,12 +355,7 @@ class Queries:
                 placeholders = ",".join("?" * len(batch))
                 # nosec B608: placeholders are parameterized with ?
                 cursor = conn.execute(
-                    f"""
-                    SELECT module_id, COUNT(*) as overlap
-                    FROM fingerprints
-                    WHERE fingerprint IN ({placeholders}) AND fingerprint_type = ?
-                    GROUP BY module_id
-                """,
+                    SQL_LOOKUP_CANDIDATES_BATCH.format(placeholders=placeholders),
                     batch + [fp_type],
                 )
 
@@ -261,15 +369,11 @@ class Queries:
         self, exclude_project_id: Optional[str] = None, fp_type: str = "winnowing"
     ) -> Dict[str, Set[int]]:
         with self._get_conn() as conn:
-            query = """
-                SELECT f.module_id, f.fingerprint
-                FROM fingerprints f
-                WHERE f.fingerprint_type = ?
-            """
+            query = SQL_GET_ALL_PROJECT_FINGERPRINTS
             params: list = [fp_type]
 
             if exclude_project_id:
-                query += " AND f.module_id NOT IN (SELECT id FROM modules WHERE project_id = ?)"
+                query += SQL_GET_ALL_PROJECT_FINGERPRINTS_EXCLUDE_SUFFIX
                 params.append(exclude_project_id)
 
             cursor = conn.execute(query, params)
@@ -285,11 +389,7 @@ class Queries:
     def get_similarity_cache(self, source_module_id: str, target_module_id: str) -> Optional[Dict]:
         with self._get_conn() as conn:
             cursor = conn.execute(
-                """
-                SELECT similarity, winnowing_overlap, ast_similarity, computed_at
-                FROM similarity_cache
-                WHERE source_module_id = ? AND target_module_id = ?
-            """,
+                SQL_GET_SIMILARITY_CACHE,
                 (source_module_id, target_module_id),
             )
             row = cursor.fetchone()
@@ -312,12 +412,7 @@ class Queries:
     ) -> None:
         with self._get_conn() as conn:
             conn.execute(
-                """
-                INSERT OR REPLACE INTO similarity_cache
-                (source_module_id, target_module_id, similarity,
-                 winnowing_overlap, ast_similarity, computed_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """,
+                SQL_INSERT_SIMILARITY_CACHE,
                 (
                     source_module_id,
                     target_module_id,
@@ -334,12 +429,7 @@ class Queries:
         now = datetime.now().isoformat()
         with self._get_conn() as conn:
             conn.executemany(
-                """
-                INSERT OR REPLACE INTO similarity_cache
-                (source_module_id, target_module_id, similarity,
-                 winnowing_overlap, ast_similarity, computed_at)
-                VALUES (?, ?, ?, ?, ?, ?)
-            """,
+                SQL_INSERT_SIMILARITY_CACHE,
                 [
                     (
                         e["source_module_id"],
@@ -357,14 +447,11 @@ class Queries:
         with self._get_conn() as conn:
             if older_than_days:
                 cursor = conn.execute(
-                    """
-                    DELETE FROM similarity_cache
-                    WHERE computed_at < datetime('now', ?)
-                """,
+                    SQL_DELETE_SIMILARITY_CACHE_OLDER_THAN,
                     (f"-{older_than_days} days",),
                 )
             else:
-                cursor = conn.execute("DELETE FROM similarity_cache")
+                cursor = conn.execute(SQL_DELETE_SIMILARITY_CACHE_ALL)
             return cursor.rowcount
 
     def create_task(
@@ -372,11 +459,7 @@ class Queries:
     ) -> None:
         with self._get_conn() as conn:
             conn.execute(
-                """
-                INSERT OR REPLACE INTO detection_tasks
-                (id, target_project, candidates, status, progress, created_at, updated_at)
-                VALUES (?, ?, ?, 'pending', 0.0, ?, ?)
-            """,
+                SQL_INSERT_DETECTION_TASK,
                 (
                     task_id,
                     target_project,
@@ -389,11 +472,7 @@ class Queries:
     def get_task(self, task_id: str) -> Optional[Dict]:
         with self._get_conn() as conn:
             cursor = conn.execute(
-                """
-                SELECT id, target_project, candidates, status, progress,
-                       result_path, created_at, updated_at
-                FROM detection_tasks WHERE id = ?
-            """,
+                SQL_GET_DETECTION_TASK,
                 (task_id,),
             )
             row = cursor.fetchone()
@@ -414,12 +493,12 @@ class Queries:
         with self._get_conn() as conn:
             if status:
                 cursor = conn.execute(
-                    "SELECT id, target_project, status, progress, created_at FROM detection_tasks WHERE status = ? ORDER BY created_at DESC",
+                    SQL_LIST_TASKS_BY_STATUS,
                     (status,),
                 )
             else:
                 cursor = conn.execute(
-                    "SELECT id, target_project, status, progress, created_at FROM detection_tasks ORDER BY created_at DESC"
+                    SQL_LIST_TASKS_ALL
                 )
             return [
                 {
@@ -456,19 +535,19 @@ class Queries:
             params.append(task_id)
             # nosec B608: sets are built from known field names, params are parameterized
             cursor = conn.execute(
-                f"UPDATE detection_tasks SET {', '.join(sets)} WHERE id = ?", params
+                SQL_UPDATE_DETECTION_TASK_TEMPLATE.format(set_clause=", ".join(sets)), params
             )
             return cursor.rowcount > 0
 
     def delete_task(self, task_id: str) -> bool:
         with self._get_conn() as conn:
-            cursor = conn.execute("DELETE FROM detection_tasks WHERE id = ?", (task_id,))
+            cursor = conn.execute(SQL_DELETE_DETECTION_TASK, (task_id,))
             return cursor.rowcount > 0
 
     def export_to_json(self, output_path: str) -> int:
         with self._get_conn() as conn:
             projects = conn.execute(
-                "SELECT id, name, url, language, created_at, updated_at FROM projects"
+                SQL_EXPORT_SELECT_PROJECTS
             ).fetchall()
             export_data = {
                 "schema_version": SCHEMA_VERSION,
@@ -486,7 +565,7 @@ class Queries:
                     "modules": [],
                 }
                 modules = conn.execute(
-                    "SELECT id, name, file_path, module_type, language FROM modules WHERE project_id = ?",
+                    SQL_EXPORT_SELECT_MODULES,
                     (proj[0],),
                 ).fetchall()
                 for mod in modules:
@@ -499,7 +578,7 @@ class Queries:
                         "fingerprints": [],
                     }
                     fps = conn.execute(
-                        "SELECT fingerprint, fingerprint_type FROM fingerprints WHERE module_id = ?",
+                        SQL_EXPORT_SELECT_FINGERPRINTS,
                         (mod[0],),
                     ).fetchall()
                     for fp in fps:
@@ -520,12 +599,12 @@ class Queries:
         with self._get_conn() as conn:
             for proj_data in data.get("projects", []):
                 existing = conn.execute(
-                    "SELECT 1 FROM projects WHERE id = ?", (proj_data["id"],)
+                    SQL_CHECK_PROJECT_EXISTS, (proj_data["id"],)
                 ).fetchone()
                 if existing:
                     continue
                 conn.execute(
-                    "INSERT INTO projects (id, name, url, language, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?)",
+                    SQL_IMPORT_INSERT_PROJECT,
                     (
                         proj_data["id"],
                         proj_data["name"],
@@ -537,7 +616,7 @@ class Queries:
                 )
                 for mod_data in proj_data.get("modules", []):
                     conn.execute(
-                        "INSERT INTO modules (id, name, file_path, module_type, language, project_id) VALUES (?, ?, ?, ?, ?, ?)",
+                        SQL_IMPORT_INSERT_MODULE,
                         (
                             mod_data["id"],
                             mod_data["name"],
@@ -549,7 +628,7 @@ class Queries:
                     )
                     for fp_data in mod_data.get("fingerprints", []):
                         conn.execute(
-                            "INSERT INTO fingerprints (fingerprint, fingerprint_type, module_id) VALUES (?, ?, ?)",
+                            SQL_IMPORT_INSERT_FINGERPRINT,
                             (fp_data["value"], fp_data.get("type", "winnowing"), mod_data["id"]),
                         )
                 imported += 1
@@ -566,9 +645,7 @@ class Queries:
     ) -> int:
         with self._get_conn() as conn:
             cursor = conn.execute(
-                """INSERT INTO detection_history
-                   (target_project, candidate_count, match_count, avg_similarity, max_similarity, duration_ms)
-                   VALUES (?, ?, ?, ?, ?, ?)""",
+                SQL_INSERT_DETECTION_HISTORY,
                 (
                     target_project,
                     candidate_count,
@@ -589,19 +666,12 @@ class Queries:
         with self._get_conn() as conn:
             if target_project:
                 rows = conn.execute(
-                    """SELECT id, target_project, candidate_count, match_count,
-                       avg_similarity, max_similarity, duration_ms, created_at
-                       FROM detection_history
-                       WHERE target_project = ?
-                       ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+                    SQL_GET_DETECTION_HISTORY_BY_PROJECT,
                     (target_project, limit, offset),
                 ).fetchall()
             else:
                 rows = conn.execute(
-                    """SELECT id, target_project, candidate_count, match_count,
-                       avg_similarity, max_similarity, duration_ms, created_at
-                       FROM detection_history
-                       ORDER BY created_at DESC LIMIT ? OFFSET ?""",
+                    SQL_GET_DETECTION_HISTORY_ALL,
                     (limit, offset),
                 ).fetchall()
             return [
@@ -625,10 +695,7 @@ class Queries:
     ) -> List[Dict]:
         with self._get_conn() as conn:
             rows = conn.execute(
-                """SELECT created_at, match_count, avg_similarity, max_similarity
-                   FROM detection_history
-                   WHERE target_project = ?
-                   ORDER BY created_at ASC LIMIT ?""",
+                SQL_GET_DETECTION_TREND,
                 (target_project, limit),
             ).fetchall()
             return [
