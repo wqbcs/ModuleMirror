@@ -4,8 +4,11 @@
 提供统一的日志记录功能，支持:
 - correlation_id 请求链路追踪
 - 模块级日志（自动添加模块名）
-- JSON结构化输出
+- JSON结构化输出（structlog加速）
 - 请求上下文绑定
+
+底层使用 structlog（当可用时），回退 stdlib logging。
+对外接口 StructuredLogger 保持不变。
 
 Author: GitHub 项目代码相似度检测工具
 """
@@ -20,6 +23,29 @@ from typing import Optional, Dict, Any
 from pathlib import Path
 
 from .json_utils import dumps as json_dumps
+
+try:
+    import structlog
+
+    HAS_STRUCTLOG = True
+except ImportError:
+    HAS_STRUCTLOG = False
+
+if HAS_STRUCTLOG:
+    structlog.configure(
+        processors=[
+            structlog.contextvars.merge_contextvars,
+            structlog.processors.add_log_level,
+            structlog.processors.StackInfoRenderer(),
+            structlog.dev.set_exc_info,
+            structlog.processors.TimeStamper(fmt="iso"),
+            structlog.processors.JSONRenderer(serializer=lambda x, **kw: json_dumps(x, ensure_ascii=False, **kw)),
+        ],
+        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        context_class=dict,
+        logger_factory=structlog.PrintLoggerFactory(),
+        cache_logger_on_first_use=True,
+    )
 
 
 _correlation_context = threading.local()
@@ -111,18 +137,15 @@ class StructuredLogger:
         use_json: bool = True,
         component: Optional[str] = None,
     ):
-        """初始化日志器
-
-        Args:
-            name: 日志器名称
-            level: 日志级别
-            log_file: 日志文件路径
-            use_json: 是否使用 JSON 格式
-            component: 组件名称（自动添加到日志）
-        """
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
         self.component = component
+        self._name = name
+
+        if HAS_STRUCTLOG:
+            self._structlog_logger = structlog.get_logger(name)
+        else:
+            self._structlog_logger = None
 
         if not self.logger.handlers:
             handler: logging.Handler

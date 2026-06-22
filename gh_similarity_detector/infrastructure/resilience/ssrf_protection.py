@@ -13,6 +13,8 @@ import ipaddress
 from typing import FrozenSet
 from urllib.parse import urlparse
 
+from ...utils.logger import logger
+
 
 ALLOWED_DOMAINS: FrozenSet[str] = frozenset(
     {
@@ -46,7 +48,11 @@ PRIVATE_NETWORKS = [
 
 
 class SSRFError(ValueError):
-    pass
+    """SSRF 防护异常"""
+
+    def __init__(self, message: str = ""):
+        self.message = message
+        super().__init__(message)
 
 
 class SSRFProtector:
@@ -134,7 +140,7 @@ class SSRFProtector:
             if self._is_private_ip(ip):
                 raise SSRFError(f"主机名指向私有IP: {hostname}")
         except ValueError:
-            pass
+            logger.debug(f"主机名非IP格式，跳过IP验证: {hostname}")
 
     @staticmethod
     def _is_private_ip(ip: ipaddress._BaseAddress) -> bool:

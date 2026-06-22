@@ -59,7 +59,7 @@ class InMemorySink(ResultSink):
         self.results.extend(results)
 
     def flush(self) -> None:
-        pass
+        ...
 
     def get_latest(self, n: int = 1) -> List[Any]:
         return self.results[-n:]

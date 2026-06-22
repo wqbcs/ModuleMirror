@@ -3,6 +3,7 @@ import threading
 from queue import Queue, Empty
 
 from ...utils.resource_tracker import resource_tracker
+from ...utils.logger import logger
 
 
 class _ConnectionPool:
@@ -50,7 +51,7 @@ class _ConnectionPool:
             try:
                 conn.close()
             except Exception:
-                pass
+                logger.debug(f"连接关闭失败 (pool:{self.db_path})")
             resource_tracker.untrack(conn)
             with self._lock:
                 self._created -= 1
@@ -62,6 +63,6 @@ class _ConnectionPool:
                 resource_tracker.untrack(conn)
                 conn.close()
             except Exception:
-                pass
+                logger.debug(f"连接关闭失败 (pool:{self.db_path})")
         with self._lock:
             self._created = 0

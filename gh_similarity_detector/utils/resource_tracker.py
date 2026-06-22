@@ -21,8 +21,6 @@ from dataclasses import dataclass
 from contextlib import contextmanager
 from weakref import WeakSet
 
-from .logger import logger
-
 
 @dataclass
 class TrackedResource:
@@ -135,11 +133,18 @@ class ResourceTracker:
             return
 
         total = sum(len(v) for v in leaks.values())
-        logger.warning(f"资源泄露检测: {total} 个资源未释放")
-        for rtype, items in leaks.items():
-            logger.warning(f"  {rtype}: {len(items)} 个泄露")
-            for item in items[:3]:
-                logger.debug(f"    - {item['description']} (thread={item['thread_id']})")
+        import sys
+
+        try:
+            if not sys.stderr.closed:
+                lines = [f"[ResourceTracker] 资源泄露检测: {total} 个资源未释放"]
+                for rtype, items in leaks.items():
+                    lines.append(f"  {rtype}: {len(items)} 个泄露")
+                    for item in items[:3]:
+                        lines.append(f"    - {item['description']} (thread={item['thread_id']})")
+                sys.stderr.write("\n".join(lines) + "\n")
+        except (ValueError, OSError):
+            pass
 
     @property
     def tracked_count(self) -> int:

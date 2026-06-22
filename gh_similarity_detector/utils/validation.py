@@ -9,6 +9,8 @@ import re
 from typing import Optional, List, Set
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from .logger import logger
+
 
 class DetectRequest(BaseModel):
     source_url: str = Field(..., min_length=1, max_length=500, description="源项目URL")
@@ -175,5 +177,5 @@ def validate_file_path(path: str) -> str:
     if ".." in path:
         raise ValueError("文件路径不能包含路径遍历(..)")
     if path.startswith("/") and not path.startswith("/tmp/"):
-        pass
+        logger.debug(f"非临时目录的绝对路径: {path}")
     return path

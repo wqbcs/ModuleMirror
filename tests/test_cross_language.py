@@ -16,7 +16,7 @@ from gh_similarity_detector.core.similarity.cross_language import (
 class TestIRNode:
     def test_structural_hash(self):
         n = IRNode(node_type=IRNodeType.FUNCTION, label="test")
-        assert len(n.structural_hash()) == 12
+        assert len(n.structural_hash()) == 16
 
     def test_identical_hash(self):
         n1 = IRNode(

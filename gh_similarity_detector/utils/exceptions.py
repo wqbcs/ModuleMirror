@@ -157,3 +157,63 @@ class ResourceNotFoundError(APIError):
             f"资源不存在: {resource}" if resource else "资源不存在",
             {"resource": resource},
         )
+
+
+class CircuitBreakerOpenError(APIError):
+    def __init__(self, service: str = "", recovery_timeout: float = 0):
+        super().__init__(
+            f"断路器已断开 ({service})，请 {recovery_timeout:.0f} 秒后重试",
+            {"service": service, "recovery_timeout": recovery_timeout},
+        )
+
+
+class InfrastructureError(ModuleMirrorError):
+    """基础设施层错误"""
+
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, "MM700", details)
+
+
+class ConnectionPoolError(InfrastructureError):
+    def __init__(self, reason: str = "", pool_size: int = 0):
+        super().__init__(
+            f"连接池错误: {reason}",
+            {"reason": reason, "pool_size": pool_size},
+        )
+
+
+class ResilienceError(InfrastructureError):
+    def __init__(self, component: str = "", reason: str = ""):
+        super().__init__(
+            f"弹性组件错误 ({component}): {reason}",
+            {"component": component, "reason": reason},
+        )
+
+
+class SSRFProtectionError(InfrastructureError):
+    def __init__(self, url: str = "", reason: str = ""):
+        super().__init__(
+            f"SSRF 防护拦截: {reason}",
+            {"url": url, "reason": reason},
+        )
+
+
+class DependencyError(ModuleMirrorError):
+    """可选依赖缺失错误"""
+
+    def __init__(
+        self,
+        package: str = "",
+        feature: str = "",
+        install_hint: str = "",
+    ):
+        msg = f"可选依赖 {package} 不可用"
+        if feature:
+            msg += f"（{feature} 功能需要）"
+        if install_hint:
+            msg += f"，请运行: {install_hint}"
+        super().__init__(
+            msg,
+            "MM800",
+            {"package": package, "feature": feature, "install_hint": install_hint},
+        )

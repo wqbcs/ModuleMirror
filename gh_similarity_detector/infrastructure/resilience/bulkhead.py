@@ -16,7 +16,11 @@ _logger = get_module_logger("bulkhead")
 class BulkheadFullError(Exception):
     """Bulkhead已满，拒绝新请求"""
 
-    pass
+    def __init__(self, name: str = "", max_concurrent: int = 0):
+        self.name = name
+        self.max_concurrent = max_concurrent
+        msg = f"Bulkhead '{name}' 已满 (max={max_concurrent})"
+        super().__init__(msg)
 
 
 class Bulkhead:

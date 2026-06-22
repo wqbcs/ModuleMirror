@@ -34,19 +34,21 @@ SAFE_REGEX_TIMEOUT_MS = 1000
 
 
 class SanitizationError(ValueError):
-    pass
+    def __init__(self, message: str = ""):
+        self.message = message
+        super().__init__(message)
 
 
 class PathTraversalError(SanitizationError):
-    pass
+    ...
 
 
 class CommandInjectionError(SanitizationError):
-    pass
+    ...
 
 
 class ReDoSVulnerabilityError(SanitizationError):
-    pass
+    ...
 
 
 def sanitize_path(

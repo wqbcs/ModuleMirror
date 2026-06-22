@@ -64,6 +64,10 @@ _MESSAGES: Dict[str, Dict[str, str]] = {
         "success.detect.save": "检测结果已保存: {path}",
         "success.fingerprint.store": "指纹已存储: {module}",
         "success.auth.login": "登录成功: {user}",
+        "error.resilience.circuit_open": "断路器已断开: {service} (请 {retry_after} 秒后重试)",
+        "error.resilience.pool_exhausted": "连接池耗尽: {pool}",
+        "error.infrastructure.connection": "基础设施连接失败: {detail}",
+        "error.dependency.missing": "可选依赖 {package} 不可用（{feature} 功能需要）",
     },
     "en": {
         "error.config.invalid": "Invalid configuration: {detail}",
@@ -112,6 +116,10 @@ _MESSAGES: Dict[str, Dict[str, str]] = {
         "success.detect.save": "Detection results saved: {path}",
         "success.fingerprint.store": "Fingerprints stored: {module}",
         "success.auth.login": "Login successful: {user}",
+        "error.resilience.circuit_open": "Circuit breaker open: {service} (retry after {retry_after}s)",
+        "error.resilience.pool_exhausted": "Connection pool exhausted: {pool}",
+        "error.infrastructure.connection": "Infrastructure connection failed: {detail}",
+        "error.dependency.missing": "Optional dependency {package} unavailable ({feature} required)",
     },
 }
 

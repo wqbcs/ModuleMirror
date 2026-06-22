@@ -20,6 +20,7 @@ from ..resilience.fallback import (
     github_file_fallback,
     github_search_fallback,
 )
+from ... import __version__
 
 
 class GitHubAPIError(Exception):
@@ -31,15 +32,21 @@ class GitHubAPIError(Exception):
 
 
 class RateLimitError(GitHubAPIError):
-    pass
+    """GitHub API 速率限制异常"""
+
+    ...
 
 
 class NotFoundError(GitHubAPIError):
-    pass
+    """GitHub 资源不存在异常"""
+
+    ...
 
 
 class GitHubPermissionError(GitHubAPIError):
-    pass
+    """GitHub 权限不足异常"""
+
+    ...
 
 
 class GitHubClient:
@@ -55,7 +62,7 @@ class GitHubClient:
         self.timeout = timeout
         self.headers = {
             "Accept": "application/vnd.github.v3+json",
-            "User-Agent": "gh-similarity-detector/0.1.0",
+            "User-Agent": f"gh-similarity-detector/{__version__}",
         }
 
         if token:

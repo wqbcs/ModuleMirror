@@ -24,6 +24,7 @@ from ..infrastructure.github_client.client import (
     GitHubPermissionError,
 )
 from ..infrastructure.engines.ncd import NCD
+from ..utils.logger import logger
 from .db_commands import register_db_commands
 
 try:
@@ -80,7 +81,7 @@ def _check_api_rate_limit(token: str) -> None:
             else:
                 click.echo(f"API 余额: {remaining}/{limit}")
     except Exception:
-        pass
+        click.echo("API 余额: 无法获取", err=True)
 
 
 def _make_progress_callback():
@@ -103,7 +104,6 @@ def main():
 
     用于自我审视（发现可复用模块）和抄袭检测（追溯代码来源）。
     """
-    pass
 
 
 @main.command()
@@ -454,7 +454,6 @@ register_db_commands(main)
 @main.group()
 def config():
     """配置管理"""
-    pass
 
 
 @config.command("generate")
@@ -530,7 +529,7 @@ def browse(db: str):
                 if len(modules) > 10:
                     proj_node.add(f"... 还有 {len(modules) - 10} 个模块")
             except Exception:
-                pass
+                logger.debug(f"模块列表渲染跳过: {proj_name}")
 
         console.print(tree)
         console.print(f"\n[green]共 {len(projects)} 个项目[/green]")
@@ -579,3 +578,39 @@ def dashboard(db: str):
             console.print(f"[yellow]统计获取失败: {e}[/yellow]")
     else:
         console.print(f"[yellow]指纹库未创建: {db}[/yellow]")
+
+
+@main.command()
+@click.option(
+    "--shell",
+    type=click.Choice(["bash", "zsh", "fish"]),
+    required=True,
+    help="目标 shell 类型",
+)
+@click.option("--output", "-o", type=click.Path(), help="输出文件路径（默认输出到stdout）")
+def completion(shell: str, output: str):
+    """生成 shell 自动补全脚本
+
+    用法:
+      bash:  gh-sim completion --shell bash >> ~/.bashrc
+      zsh:   gh-sim completion --shell zsh >> ~/.zshrc
+      fish:  gh-sim completion --shell fish > ~/.config/fish/completions/gh-sim.fish
+    """
+    prog_name = "gh-sim"
+    if shell == "bash":
+        script = f'eval "$({prog_name} --bash-complete {prog_name})"'
+    elif shell == "zsh":
+        script = f'eval "$({prog_name} --zsh-complete {prog_name})"'
+    elif shell == "fish":
+        script = f"{prog_name} --fish-complete {prog_name}"
+    else:
+        click.echo(f"不支持的 shell: {shell}", err=True)
+        sys.exit(1)
+
+    if output:
+        from pathlib import Path as P
+        P(output).parent.mkdir(parents=True, exist_ok=True)
+        P(output).write_text(script, encoding="utf-8")
+        click.echo(f"补全脚本已写入: {output}")
+    else:
+        click.echo(script)

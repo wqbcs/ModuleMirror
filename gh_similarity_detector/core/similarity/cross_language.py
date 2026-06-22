@@ -14,10 +14,11 @@
 Author: ModuleMirror
 """
 
-import hashlib
 from typing import Dict, List, Any, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
+
+from ...utils.hash import structural_hash
 
 
 class IRNodeType(Enum):
@@ -45,7 +46,7 @@ class IRNode:
     def structural_hash(self) -> str:
         child_hashes = ";".join(c.structural_hash() for c in self.children)
         raw = f"{self.node_type.value}:{child_hashes}"
-        return hashlib.md5(raw.encode()).hexdigest()[:12]
+        return structural_hash(raw)
 
     def depth(self) -> int:
         if not self.children:

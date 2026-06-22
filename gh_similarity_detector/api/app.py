@@ -141,7 +141,7 @@ def _handle_shutdown(signum: int, frame) -> None:
 try:
     signal.signal(signal.SIGTERM, _handle_shutdown)
 except (OSError, ValueError):
-    pass
+    logger.debug("SIGTERM 信号注册失败（非主线程或不支持）")
 
 graceful_shutdown.register_signals()
 

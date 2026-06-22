@@ -9,10 +9,11 @@ CFG: 控制流图特征(分支+循环)
 Author: ModuleMirror
 """
 
-import hashlib
 from typing import Dict, List, Any
 from dataclasses import dataclass, field
 from enum import Enum
+
+from ...utils.hash import structural_hash
 
 
 class ViewType(Enum):
@@ -51,7 +52,7 @@ class MultiViewFeature:
 
     def fused_hash(self) -> str:
         combined = f"{self.ast_feature.structural_hash}:{self.dfg_feature.structural_hash}:{self.cfg_feature.structural_hash}"
-        return hashlib.md5(combined.encode()).hexdigest()[:16]
+        return structural_hash(combined)
 
     def fused_similarity(
         self, other: "MultiViewFeature", weights: Dict[str, float] = None
@@ -133,7 +134,7 @@ class ASTViewExtractor:
                 node_types.append("statement")
 
         raw = ":".join(sorted(set(node_types)))
-        structural_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
+        view_hash = structural_hash(raw)
 
         return ViewFeature(
             view_type=ViewType.AST,
@@ -142,7 +143,7 @@ class ASTViewExtractor:
             depth=max_depth,
             node_count=len(node_types),
             edge_count=len(edge_types),
-            structural_hash=structural_hash,
+            structural_hash=view_hash,
         )
 
 
@@ -182,7 +183,7 @@ class DFGViewExtractor:
 
         node_types = ["def_node"] * len(definitions) + ["use_node"] * len(set(uses))
         raw = f"defs:{len(definitions)}:uses:{len(set(uses))}"
-        structural_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
+        view_hash = structural_hash(raw)
 
         return ViewFeature(
             view_type=ViewType.DFG,
@@ -191,7 +192,7 @@ class DFGViewExtractor:
             depth=1,
             node_count=len(definitions) + len(set(uses)),
             edge_count=len(def_use_edges),
-            structural_hash=structural_hash,
+            structural_hash=view_hash,
         )
 
 
@@ -236,7 +237,7 @@ class CFGViewExtractor:
             edge_types.append("fall_through")
 
         raw = ":".join(sorted(set(node_types + edge_types)))
-        structural_hash = hashlib.md5(raw.encode()).hexdigest()[:12]
+        view_hash = structural_hash(raw)
 
         return ViewFeature(
             view_type=ViewType.CFG,
@@ -245,7 +246,7 @@ class CFGViewExtractor:
             depth=2 if has_loop else 1,
             node_count=len(set(node_types)),
             edge_count=len(set(edge_types)),
-            structural_hash=structural_hash,
+            structural_hash=view_hash,
         )
 
 
@@ -257,7 +258,7 @@ class MultiViewFusion:
 
     def extract(self, code: str, code_id: str = "") -> MultiViewFeature:
         return MultiViewFeature(
-            code_id=code_id or hashlib.md5(code.encode()).hexdigest()[:8],
+            code_id=code_id or structural_hash(code)[:8],
             ast_feature=self._ast.extract(code),
             dfg_feature=self._dfg.extract(code),
             cfg_feature=self._cfg.extract(code),

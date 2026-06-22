@@ -36,6 +36,8 @@ dependencies = [
     "prometheus-client>=0.17",
     "PyJWT>=2.8",
     "datasketch>=1.6.0",
+    "mmh3>=4.0.0",
+    "orjson>=3.9.0",
 ]
 
 [project.optional-dependencies]
@@ -44,8 +46,9 @@ visualization = ["pyvis>=0.3.1"]
 visualization-enhanced = ["pyvis>=0.3.1", "pyecharts>=2.0.0"]
 vector-index = ["faiss-cpu>=1.7.0"]
 realtime = ["sse-starlette>=2.0.0"]
+structured-logging = ["structlog>=24.0.0"]
 all-languages = ["tree-sitter-go>=0.23.0", "tree-sitter-rust>=0.23.0", "tree-sitter-c>=0.23.0", "tree-sitter-cpp>=0.23.0"]
-all = ["gh-similarity-detector[api,visualization,vector-index,realtime,all-languages]"]
+all = ["gh-similarity-detector[api,visualization,vector-index,realtime,structured-logging,all-languages]"]
 dev = [
     "pytest>=7.3.0",
     "pytest-asyncio>=0.21.0",

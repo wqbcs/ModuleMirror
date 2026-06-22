@@ -6,4 +6,4 @@ try:
     from .lsh_index import MinHashLSHIndex as MinHashLSHIndex
     from .lsh_index import HybridIndex as HybridIndex
 except ImportError:
-    pass
+    ...

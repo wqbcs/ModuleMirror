@@ -201,14 +201,14 @@ class RuleEngine:
             try:
                 action = RuleAction(data["action"])
             except ValueError:
-                pass
+                logger.debug(f"无效的规则动作: {data['action']}，使用默认 FLAG")
 
         severity = RuleSeverity.MEDIUM
         if "severity" in data:
             try:
                 severity = RuleSeverity(data["severity"])
             except ValueError:
-                pass
+                logger.debug(f"无效的规则严重度: {data['severity']}，使用默认 MEDIUM")
 
         return DetectionRule(
             id=data["id"],

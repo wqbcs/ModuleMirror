@@ -25,7 +25,14 @@ PERMISSION_HIERARCHY: Dict[Permission, int] = {
 
 
 class AuthorizationError(Exception):
-    pass
+    def __init__(self, user_id: str = "", resource: str = "", required: str = ""):
+        self.user_id = user_id
+        self.resource = resource
+        self.required = required
+        msg = f"用户 {user_id} 无权访问 {resource}"
+        if required:
+            msg += f"（需要 {required} 权限）"
+        super().__init__(msg)
 
 
 class ProjectAuthorization:

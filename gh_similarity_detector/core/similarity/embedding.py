@@ -16,6 +16,12 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 
+from ...utils.deps import DependencyRegistry
+
+_numpy_available = DependencyRegistry.get_instance().is_available("numpy")
+if _numpy_available:
+    import numpy as np
+
 
 @dataclass
 class CodeEmbedding:
@@ -28,6 +34,14 @@ class CodeEmbedding:
     def cosine_similarity(self, other: "CodeEmbedding") -> float:
         if self.dimension != other.dimension:
             return 0.0
+        if _numpy_available:
+            a = np.array(self.vector, dtype=np.float64)
+            b = np.array(other.vector, dtype=np.float64)
+            norm_a = np.linalg.norm(a)
+            norm_b = np.linalg.norm(b)
+            if norm_a == 0 or norm_b == 0:
+                return 0.0
+            return float(np.dot(a, b) / (norm_a * norm_b))
         dot = sum(a * b for a, b in zip(self.vector, other.vector))
         norm_a = math.sqrt(sum(a * a for a in self.vector))
         norm_b = math.sqrt(sum(b * b for b in other.vector))
@@ -36,6 +50,10 @@ class CodeEmbedding:
         return dot / (norm_a * norm_b)
 
     def euclidean_distance(self, other: "CodeEmbedding") -> float:
+        if _numpy_available:
+            a = np.array(self.vector, dtype=np.float64)
+            b = np.array(other.vector, dtype=np.float64)
+            return float(np.linalg.norm(a - b))
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(self.vector, other.vector)))
 
     def to_dict(self) -> Dict[str, Any]:

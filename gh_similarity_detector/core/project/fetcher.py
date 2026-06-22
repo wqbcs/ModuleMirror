@@ -59,7 +59,7 @@ class ProjectFetcher:
             try:
                 instance.cleanup()
             except Exception:
-                pass
+                logger.debug(f"atexit 清理失败: {instance}")
 
     def fetch_project(self, source: str) -> Optional[Project]:
         if os.path.exists(source):
