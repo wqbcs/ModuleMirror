@@ -6,9 +6,11 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import sqlite3
 import time
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, cast
 from pathlib import Path
 from dataclasses import dataclass
 
@@ -62,10 +64,10 @@ CREATE TABLE IF NOT EXISTS detection_cache (
 class ResultStore:
     def __init__(self, db_path: str = "./detection_results.sqlite"):
         self._db_path = db_path
-        self._conn: Optional[sqlite3.Connection] = None
+        self._conn: sqlite3.Connection = None  # type: ignore[assignment]
         self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         Path(self._db_path).parent.mkdir(parents=True, exist_ok=True)
         self._conn = sqlite3.connect(self._db_path)
         self._conn.row_factory = sqlite3.Row
@@ -112,7 +114,7 @@ class ResultStore:
         )
         self._conn.commit()
         _logger.debug(f"检测结果已保存: {source_project} ↔ {target_project}, {match_count}个匹配")
-        return cursor.lastrowid
+        return cursor.lastrowid if cursor.lastrowid is not None else 0
 
     def get_cached_result(
         self,
@@ -127,7 +129,7 @@ class ResultStore:
         ).fetchone()
         if row and (time.time() - row["created_at"]) < max_age_seconds:
             _logger.debug(f"缓存命中: {source_project} ↔ {target_project}")
-            return json_loads(row["result_json"])
+            return cast(Optional[List[Dict[str, Any]]], json_loads(row["result_json"]))
         return None
 
     def save_cached_result(
@@ -137,7 +139,7 @@ class ResultStore:
         config_hash: str,
         results: List[Dict[str, Any]],
         result_hash: str = "",
-    ):
+    ) -> None:
         result_json = json_dumps(results, ensure_ascii=False, default=str)
         self._conn.execute(
             """INSERT OR REPLACE INTO detection_cache
@@ -190,7 +192,7 @@ class ResultStore:
             "by_type": [dict(r) for r in by_type],
         }
 
-    def close(self):
+    def close(self) -> None:
         if self._conn:
             self._conn.close()
-            self._conn = None
+            self._conn = None  # type: ignore[assignment]

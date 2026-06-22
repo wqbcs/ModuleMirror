@@ -10,6 +10,8 @@ i18n 核心实现
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import threading
 from typing import Dict, Optional, Any
 
@@ -190,7 +192,7 @@ class I18n:
         self._locale = value
 
     @property
-    def supported_locales(self) -> set:
+    def supported_locales(self) -> set[str]:
         return set(_SUPPORTED_LOCALES)
 
     def translate(self, key: str, **kwargs: Any) -> str:
@@ -218,7 +220,7 @@ class I18n:
                 return msg
         return key
 
-    def get_all_keys(self, locale: Optional[str] = None) -> set:
+    def get_all_keys(self, locale: Optional[str] = None) -> set[str]:
         lang = locale or self._locale
         if lang in self._messages:
             return set(self._messages[lang].keys())

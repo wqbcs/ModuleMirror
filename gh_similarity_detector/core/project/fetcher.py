@@ -7,6 +7,8 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 import os
 import asyncio
 import atexit
@@ -54,7 +56,7 @@ class ProjectFetcher:
         _fetcher_instances.append(self)
 
     @classmethod
-    def _atexit_cleanup(cls):
+    def _atexit_cleanup(cls) -> None:
         for instance in _fetcher_instances:
             try:
                 instance.cleanup()
@@ -194,13 +196,13 @@ class ProjectFetcher:
         )
 
     async def _fetch_files_parallel(
-        self, owner: str, repo: str, branch: str, fetch_tasks: List[tuple], concurrency: int = 10
+        self, owner: str, repo: str, branch: str, fetch_tasks: List[tuple[str, str]], concurrency: int = 10
     ) -> List[CodeFile]:
         """并行获取文件内容，使用信号量控制并发数"""
         semaphore = asyncio.Semaphore(concurrency)
         files = []
 
-        async def _fetch_one(path: str, language: str):
+        async def _fetch_one(path: str, language: str) -> Optional[CodeFile]:
             async with semaphore:
                 try:
                     content = await self.github_client.get_file_content(owner, repo, path, branch)

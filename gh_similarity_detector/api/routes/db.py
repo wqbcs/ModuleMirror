@@ -1,6 +1,10 @@
 """指纹库管理路由"""
 
+from __future__ import annotations
+
 import os
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
@@ -22,7 +26,7 @@ class AddToDbRequest(BaseModel):
 
 
 @router.get("/stats")
-async def db_stats():
+async def db_stats() -> dict[str, Any]:
     """获取指纹库统计信息"""
     if not Path(DB_PATH).exists():
         raise HTTPException(status_code=404, detail="指纹库不存在")
@@ -31,7 +35,7 @@ async def db_stats():
 
 
 @router.get("/projects")
-async def db_list_projects():
+async def db_list_projects() -> list[dict[str, Any]]:
     """列出指纹库中的所有项目"""
     if not Path(DB_PATH).exists():
         raise HTTPException(status_code=404, detail="指纹库不存在")
@@ -40,7 +44,7 @@ async def db_list_projects():
 
 
 @router.post("/add")
-async def db_add_project(req: AddToDbRequest):
+async def db_add_project(req: AddToDbRequest) -> dict[str, Any]:
     """添加项目到指纹库"""
     config = DetectionConfig(supported_languages=req.language, min_token_length=req.min_tokens)
     pipeline = DetectionPipeline(config, db_path=DB_PATH)
@@ -53,12 +57,16 @@ async def db_add_project(req: AddToDbRequest):
     if not success:
         raise HTTPException(status_code=400, detail="添加项目失败")
 
-    stats = pipeline.fingerprint_db.get_stats()
+    fp_db = pipeline.fingerprint_db
+    if fp_db is not None:
+        stats = fp_db.get_stats()
+    else:
+        stats = {}
     return {"status": "added", "project": req.project, "db_stats": stats}
 
 
 @router.delete("/projects/{project_id}")
-async def db_delete_project(project_id: str):
+async def db_delete_project(project_id: str) -> dict[str, Any]:
     """从指纹库中删除项目"""
     if not Path(DB_PATH).exists():
         raise HTTPException(status_code=404, detail="指纹库不存在")

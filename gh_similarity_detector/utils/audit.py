@@ -7,10 +7,12 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 import json
 import os
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pathlib import Path
 
 
@@ -35,8 +37,8 @@ class AuditLogger:
         details: Optional[Dict[str, Any]] = None,
         duration_ms: Optional[int] = None,
         user: Optional[str] = None,
-    ):
-        record = {
+    ) -> None:
+        record: Dict[str, Any] = {
             "timestamp": datetime.now().isoformat(),
             "operation": operation,
             "target": target,
@@ -60,11 +62,11 @@ class AuditLogger:
     def log_detect(
         self,
         target_project: str,
-        candidates: list,
+        candidates: List[str],
         match_count: int,
         duration_ms: int,
         status: str = "success",
-    ):
+    ) -> None:
         self.log(
             operation="detect",
             target=target_project,
@@ -82,7 +84,7 @@ class AuditLogger:
         source_count: int,
         duration_ms: int,
         status: str = "success",
-    ):
+    ) -> None:
         self.log(
             operation="plagiarism",
             target=target_project,
@@ -97,7 +99,7 @@ class AuditLogger:
         module_count: int,
         duration_ms: int,
         status: str = "success",
-    ):
+    ) -> None:
         self.log(
             operation="db_add",
             target=project,
@@ -110,7 +112,7 @@ class AuditLogger:
         self,
         project_id: str,
         status: str = "success",
-    ):
+    ) -> None:
         self.log(
             operation="db_delete",
             target=project_id,

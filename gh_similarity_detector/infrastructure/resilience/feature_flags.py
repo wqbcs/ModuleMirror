@@ -6,7 +6,9 @@
 Author: ModuleMirror
 """
 
-from typing import Dict, Any, Optional, Callable, List
+from __future__ import annotations
+
+from typing import Dict, Any, Optional, Callable, List, cast
 from dataclasses import dataclass, field
 import json
 
@@ -33,9 +35,9 @@ class EvaluationContext:
 
 
 class FeatureFlagProvider:
-    def __init__(self):
+    def __init__(self) -> None:
         self._flags: Dict[str, FeatureFlag] = {}
-        self._hooks: List[Callable] = []
+        self._hooks: List[Callable[..., Any]] = []
 
     def register_flag(self, flag: FeatureFlag) -> None:
         self._flags[flag.key] = flag
@@ -64,7 +66,7 @@ class FeatureFlagProvider:
         self,
         flag_key: str,
         default_value: bool = False,
-        context: EvaluationContext = None,
+        context: Optional[EvaluationContext] = None,
     ) -> bool:
         if flag_key not in self._flags:
             return default_value
@@ -77,7 +79,7 @@ class FeatureFlagProvider:
                     variant = rule.get("variant", "true")
                     if variant in flag.variants:
                         return bool(flag.variants[variant])
-                    return variant == "true"
+                    return cast(bool, variant == "true")
 
         return flag.default_value
 
@@ -85,7 +87,7 @@ class FeatureFlagProvider:
         self,
         flag_key: str,
         default_variant: str,
-        context: EvaluationContext = None,
+        context: Optional[EvaluationContext] = None,
     ) -> str:
         if flag_key not in self._flags:
             return default_variant
@@ -95,7 +97,7 @@ class FeatureFlagProvider:
         if context and flag.targeting_rules:
             for rule in flag.targeting_rules:
                 if self._match_rule(rule, context):
-                    return rule.get("variant", default_variant)
+                    return cast(str, rule.get("variant", default_variant))
 
         return default_variant
 
@@ -135,7 +137,7 @@ class FeatureFlagProvider:
 
         return True
 
-    def add_hook(self, hook: Callable) -> None:
+    def add_hook(self, hook: Callable[..., Any]) -> None:
         self._hooks.append(hook)
 
     def list_flags(self) -> List[str]:
@@ -158,23 +160,23 @@ class FeatureFlags:
     _provider: Optional[FeatureFlagProvider] = None
 
     @classmethod
-    def initialize(cls, provider: FeatureFlagProvider = None) -> None:
+    def initialize(cls, provider: Optional[FeatureFlagProvider] = None) -> None:
         cls._provider = provider or FeatureFlagProvider()
 
     @classmethod
     def get_provider(cls) -> FeatureFlagProvider:
         if cls._provider is None:
             cls.initialize()
-        return cls._provider
+        return cast(FeatureFlagProvider, cls._provider)
 
     @classmethod
     def enabled(
-        cls, flag_key: str, default: bool = False, context: EvaluationContext = None
+        cls, flag_key: str, default: bool = False, context: Optional[EvaluationContext] = None
     ) -> bool:
         return cls.get_provider().evaluate(flag_key, default, context)
 
     @classmethod
-    def variant(cls, flag_key: str, default: str, context: EvaluationContext = None) -> str:
+    def variant(cls, flag_key: str, default: str, context: Optional[EvaluationContext] = None) -> str:
         return cls.get_provider().evaluate_variant(flag_key, default, context)
 
 

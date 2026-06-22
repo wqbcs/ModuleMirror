@@ -7,7 +7,10 @@ MkDocs Material是最佳文档主题之一。
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 from pathlib import Path
+from typing import Any
 
 
 MKDOCS_YML_TEMPLATE = """site_name: ModuleMirror - GitHub代码相似度检测器
@@ -234,7 +237,7 @@ gh-sim --help
 def generate_mkdocs_config(
     output_dir: str = "docs",
     overwrite: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     output = Path(output_dir)
     output.mkdir(parents=True, exist_ok=True)
 

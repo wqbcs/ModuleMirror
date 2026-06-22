@@ -12,9 +12,11 @@ Usage:
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import subprocess
 from pathlib import Path
-from typing import Optional, List
+from typing import Optional, List, Any
 import argparse
 
 from ..utils.logger import logger
@@ -133,7 +135,7 @@ def profile_similarity_detect(
     output_dir: str = "profile_reports",
     use_scalene: bool = True,
     use_memray: bool = False,
-) -> dict:
+) -> dict[str, Any]:
     results = {}
 
     script_code = f'''
@@ -157,7 +159,7 @@ main()
     return results
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(description="性能分析工具")
     parser.add_argument("--scalene", action="store_true", help="使用Scalene进行CPU+内存分析")
     parser.add_argument("--memray", action="store_true", help="使用Memray进行内存分析")

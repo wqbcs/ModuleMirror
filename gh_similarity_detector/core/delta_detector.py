@@ -1,11 +1,13 @@
 """
 增量检测模块 - 仅分析变更文件
 
-基于内容哈希(SHA256)判断文件是否变更:
+基于文件内容哈希判断文件是否变更:
 - 首次检测: 全量分析
 - 后续检测: 仅分析新增/修改/删除的文件
 - 与指纹库联动: 删除旧指纹+生成新指纹
 """
+
+from __future__ import annotations
 
 import hashlib
 from typing import Dict, Set, List, Optional
@@ -54,7 +56,7 @@ class DeltaDetector:
     基于文件内容哈希判断变更，避免全量重新分析。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._file_hashes: Dict[str, str] = {}
 
     @staticmethod

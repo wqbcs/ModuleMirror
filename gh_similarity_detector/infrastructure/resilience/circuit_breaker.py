@@ -7,6 +7,8 @@ Circuit Breaker 模式
 Reference: Martin Fowler, "CircuitBreaker" pattern.
 """
 
+from __future__ import annotations
+
 import time
 from enum import Enum
 from typing import Optional, Callable, Any
@@ -120,9 +122,9 @@ class CircuitBreaker:
         self._success_count = 0
         self._last_failure_time = None
 
-    def __call__(self, func: Callable) -> Callable:
+    def __call__(self, func: Callable[..., Any]) -> Callable[..., Any]:
         @wraps(func)
-        def wrapper(*args, **kwargs) -> Any:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
             self.check()
             try:
                 result = func(*args, **kwargs)
@@ -135,7 +137,7 @@ class CircuitBreaker:
         return wrapper
 
     @property
-    def stats(self) -> dict:
+    def stats(self) -> dict[str, Any]:
         return {
             "name": self.name,
             "state": self.state.value,

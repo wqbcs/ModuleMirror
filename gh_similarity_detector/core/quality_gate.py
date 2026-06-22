@@ -9,7 +9,9 @@
 Author: ModuleMirror
 """
 
-from typing import Dict, List, Any
+from __future__ import annotations
+
+from typing import Dict, List, Any, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -36,7 +38,7 @@ class GateCondition:
     description: str = ""
 
     def evaluate(self, value: float) -> bool:
-        ops = {
+        ops: Dict[ConditionOperator, Callable[[float, float], bool]] = {
             ConditionOperator.GT: lambda v, t: v > t,
             ConditionOperator.LT: lambda v, t: v < t,
             ConditionOperator.GTE: lambda v, t: v >= t,

@@ -6,7 +6,9 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
-from typing import List, Dict, Optional
+from __future__ import annotations
+
+from typing import List, Dict, Optional, Any
 from pathlib import Path
 from tree_sitter import Node, Query, QueryCursor
 
@@ -112,7 +114,7 @@ class ModuleExtractor:
 
     def _extract_functions(self, file: CodeFile, root_node: Node) -> List[Module]:
         """提取函数定义"""
-        modules = []
+        modules: List[Module] = []
         lines = file.content.splitlines()
 
         query_str = self.FUNCTION_QUERIES.get(file.language)
@@ -128,7 +130,7 @@ class ModuleExtractor:
             cursor = QueryCursor(query)
             matches = cursor.matches(root_node)
 
-            function_nodes = {}
+            function_nodes: Dict[int, Node] = {}
             for _pattern_idx, capture_dict in matches:
                 for tag in ("function", "method"):
                     for node in capture_dict.get(tag, []):
@@ -165,7 +167,7 @@ class ModuleExtractor:
 
     def _extract_classes(self, file: CodeFile, root_node: Node) -> List[Module]:
         """提取类定义"""
-        modules = []
+        modules: List[Module] = []
         lines = file.content.splitlines()
 
         query_str = self.CLASS_QUERIES.get(file.language)
@@ -181,7 +183,7 @@ class ModuleExtractor:
             cursor = QueryCursor(query)
             matches = cursor.matches(root_node)
 
-            class_nodes = {}
+            class_nodes: Dict[int, Node] = {}
             for _pattern_idx, capture_dict in matches:
                 for node in capture_dict.get("class", []):
                     class_nodes[node.id] = node
@@ -236,7 +238,7 @@ class ModuleExtractor:
         traverse(node)
         return count
 
-    def extract_all_modules(self, project) -> Dict[str, List[Module]]:
+    def extract_all_modules(self, project: Any) -> Dict[str, List[Module]]:
         """从项目中提取所有模块
 
         Args:

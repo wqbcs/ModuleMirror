@@ -7,8 +7,10 @@
 - 重试统计: 记录重试次数和最终结果
 """
 
+from __future__ import annotations
+
 import functools
-from typing import Type, Tuple, Optional, Callable, Any
+from typing import Type, Tuple, Optional, Callable, Any, Union
 
 from tenacity import (
     retry,
@@ -29,7 +31,7 @@ _logger = get_module_logger("retry")
 class RetryStats:
     """重试统计"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.total_calls = 0
         self.total_retries = 0
         self.success_after_retry = 0
@@ -44,7 +46,7 @@ class RetryStats:
             else:
                 self.final_failures += 1
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         return {
             "total_calls": self.total_calls,
             "total_retries": self.total_retries,
@@ -72,7 +74,7 @@ def github_api_retry(
     exponential_multiplier: float = 1.0,
     exponential_min: float = 4.0,
     exponential_max: float = 10.0,
-):
+) -> Any:
     """GitHub API 重试策略
 
     特点: 指数退避 + 最多3次 + 网络异常重试
@@ -94,7 +96,7 @@ def db_query_retry(
     max_attempts: int = 3,
     wait_seconds: float = 0.1,
     retryable_exceptions: Tuple[Type[Exception], ...] = (ConnectionError, OSError),
-):
+) -> Any:
     """数据库查询重试策略
 
     特点: 固定等待 + 短间隔 + 数据库异常重试
@@ -111,7 +113,7 @@ def db_query_retry(
 def file_read_retry(
     max_attempts: int = 2,
     wait_seconds: float = 0.5,
-):
+) -> Any:
     """文件读取重试策略
 
     特点: 最多2次 + 短等待 + IO异常重试
@@ -130,7 +132,7 @@ def network_retry(
     max_delay_seconds: float = 60.0,
     exponential_min: float = 1.0,
     exponential_max: float = 30.0,
-):
+) -> Any:
     """网络请求重试策略
 
     特点: 最多5次 + 指数退避 + 总超时 + 网络异常重试
@@ -155,7 +157,7 @@ def custom_retry(
     wait_max: float = 10.0,
     retryable_exceptions: Tuple[Type[Exception], ...] = (Exception,),
     max_delay: Optional[float] = None,
-):
+) -> Any:
     """自定义重试策略
 
     Args:
@@ -167,7 +169,7 @@ def custom_retry(
         max_delay: 最大总延迟(秒)
     """
     if wait_type == "exponential":
-        wait_strategy = wait_exponential(multiplier=1.0, min=wait_min, max=wait_max)
+        wait_strategy: Union[wait_exponential, wait_fixed, wait_random] = wait_exponential(multiplier=1.0, min=wait_min, max=wait_max)
     elif wait_type == "fixed":
         wait_strategy = wait_fixed(wait_min)
     elif wait_type == "random":
@@ -175,7 +177,7 @@ def custom_retry(
     else:
         wait_strategy = wait_exponential(multiplier=1.0, min=wait_min, max=wait_max)
 
-    stop_strategy = stop_after_attempt(max_attempts)
+    stop_strategy: Union[stop_after_attempt, Any] = stop_after_attempt(max_attempts)
     if max_delay is not None:
         stop_strategy = stop_strategy | stop_after_delay(max_delay)
 
@@ -188,7 +190,7 @@ def custom_retry(
     )
 
 
-def with_retry_stats(func: Callable) -> Callable:
+def with_retry_stats(func: Callable[..., Any]) -> Callable[..., Any]:
     """装饰器: 记录重试统计"""
 
     @functools.wraps(func)

@@ -10,7 +10,7 @@ jscpd 支持 170+ 语言的代码克隆检测，作为 Winnowing 的交叉验证
 import json
 import subprocess
 import tempfile
-from typing import List, Dict, Optional
+from typing import Any, List, Dict, Optional
 from pathlib import Path
 
 from ...models.results import SimilarityResult
@@ -101,7 +101,7 @@ class JscpdAdapter:
             return []
 
     def _convert_results(
-        self, data: Dict, source_path: str, target_path: str
+        self, data: Dict[str, Any], source_path: str, target_path: str
     ) -> List[SimilarityResult]:
         """将 jscpd 结果转换为 SimilarityResult"""
         results = []

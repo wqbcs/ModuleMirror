@@ -8,9 +8,11 @@
 4. 内存告警阈值
 """
 
+from __future__ import annotations
+
 import tracemalloc
 import time
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Generator
 from dataclasses import dataclass, field
 from contextlib import contextmanager
 
@@ -149,12 +151,12 @@ class MemoryProfiler:
         stats = snapshot_old.statistics("lineno")
         leaks = []
         for stat in stats[:top_n]:
-            if stat.size_diff > self._leak_threshold_bytes:
+            if stat.size_diff > self._leak_threshold_bytes:  # type: ignore[attr-defined]
                 leaks.append(
                     MemoryLeak(
                         traceback=str(stat.traceback),
-                        size_diff=stat.size_diff,
-                        count_diff=stat.count_diff,
+                        size_diff=stat.size_diff,  # type: ignore[attr-defined]
+                        count_diff=stat.count_diff,  # type: ignore[attr-defined]
                     )
                 )
 
@@ -208,7 +210,7 @@ class MemoryProfiler:
         return leaks
 
     @contextmanager
-    def track_allocations(self, label: str = ""):
+    def track_allocations(self, label: str = "") -> Generator[None, None, None]:
         """上下文管理器：追踪代码块的内存分配
 
         Args:

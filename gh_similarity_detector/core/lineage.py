@@ -6,6 +6,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 from typing import Dict, List, Set, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -25,7 +27,7 @@ class CloneLineage:
     propagation_path: List[str] = field(default_factory=list)
     detected_at: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.detected_at:
             self.detected_at = datetime.now().isoformat()
 
@@ -40,7 +42,7 @@ class LineageNode:
 
 
 class CloneLineageTracker:
-    def __init__(self):
+    def __init__(self) -> None:
         self._nodes: Dict[str, LineageNode] = {}
         self._edges: List[Tuple[str, str, float]] = []
 
@@ -53,7 +55,7 @@ class CloneLineageTracker:
         for module in modules:
             node_id = f"{version}:{module.id}"
             self._nodes[node_id] = LineageNode(
-                module_id=module.id,
+                module_id=module.id or "",
                 version=version,
             )
         logger.info(f"版本 {version} 添加 {len(modules)} 个模块")

@@ -11,6 +11,8 @@
 支持静态阈值 + 动态阈值（基于滑动窗口均值）。
 """
 
+from __future__ import annotations
+
 import time
 from typing import Optional, Dict, Any, List, Callable
 from dataclasses import dataclass, field
@@ -99,7 +101,7 @@ class AlertManager:
     管理告警规则，定期评估并触发告警。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._rules: Dict[str, AlertRule] = {}
         self._metric_providers: Dict[str, Callable[[], float]] = {}
         self._listeners: List[Callable[[AlertEvent], None]] = []

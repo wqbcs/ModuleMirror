@@ -10,7 +10,9 @@ Reference: Mining of Massive Datasets, Leskovec et al., Chapter 3
 Author: ModuleMirror
 """
 
-from typing import Dict, List, Set, Optional, Tuple
+from __future__ import annotations
+
+from typing import Dict, List, Set, Optional, Tuple, Any
 
 try:
     from datasketch import MinHash, MinHashLSHForest
@@ -84,8 +86,8 @@ class MinHashLSHIndex:
         self._fingerprint_sets[module_id] = set(fingerprints)
         mh = self._create_minhash(fingerprints)
         self._minhashes[module_id] = mh
-        self._forest.add(module_id, mh)
-        self._forest.index()
+        self._forest.add(module_id, mh)  # type: ignore[union-attr]
+        self._forest.index()  # type: ignore[union-attr]
         self._indexed = True
         logger.info(f"增量添加模块到LSH: {module_id}, {len(fingerprints)}个指纹")
 
@@ -112,7 +114,7 @@ class MinHashLSHIndex:
             return []
 
         mh = self._minhashes[module_id]
-        candidates = self._forest.query(mh, top_k)
+        candidates = self._forest.query(mh, top_k)  # type: ignore[union-attr]
 
         results = []
         for cand_id in candidates:
@@ -135,7 +137,7 @@ class MinHashLSHIndex:
             return []
 
         mh = self._create_minhash(fingerprints)
-        candidates = self._forest.query(mh, top_k)
+        candidates = self._forest.query(mh, top_k)  # type: ignore[union-attr]
 
         results = []
         for cand_id in candidates:
@@ -235,7 +237,7 @@ class HybridIndex:
         return self._exact.get_module_count()
 
     @property
-    def exact_index(self):
+    def exact_index(self) -> Any:
         return self._exact
 
     @property

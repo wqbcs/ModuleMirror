@@ -7,10 +7,12 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import os
 import time
 import threading
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Generator
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from contextlib import contextmanager
@@ -147,7 +149,7 @@ class RuntimeProfiler:
         return self._profile
 
     @contextmanager
-    def profile(self, labels: Optional[Dict[str, str]] = None):
+    def profile(self, labels: Optional[Dict[str, str]] = None) -> Generator[Optional[RuntimeProfile], None, None]:
         self.start(labels)
         try:
             yield self._profile
@@ -179,16 +181,16 @@ class RuntimeProfiler:
     @staticmethod
     def _get_cpu_percent() -> float:
         try:
-            import psutil
+            import psutil  # type: ignore[import-untyped]
 
-            return psutil.cpu_percent(interval=0)
+            return psutil.cpu_percent(interval=0)  # type: ignore[no-any-return]
         except ImportError:
             times = os.times()
             total = times.user + times.system
             return min(total * 10, 100.0)
 
     @staticmethod
-    def _get_memory_info() -> tuple:
+    def _get_memory_info() -> tuple[float, float]:
         try:
             import psutil
 
@@ -202,7 +204,7 @@ class RuntimeProfiler:
             try:
                 import resource
 
-                usage = resource.getrusage(resource.RUSAGE_SELF)
+                usage = resource.getrusage(resource.RUSAGE_SELF)  # type: ignore[attr-defined]
                 mem_mb = usage.ru_maxrss / 1024
                 return mem_mb, 0.0
             except (ImportError, AttributeError):
@@ -213,7 +215,7 @@ class RuntimeProfiler:
         try:
             import psutil
 
-            return psutil.Process(os.getpid()).num_fds()
+            return psutil.Process(os.getpid()).num_fds()  # type: ignore[no-any-return]
         except (ImportError, AttributeError):
             try:
                 fds = os.listdir("/proc/self/fd")

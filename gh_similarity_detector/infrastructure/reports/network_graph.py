@@ -7,6 +7,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -115,10 +117,10 @@ def generate_network_graph(
 
 
 def _extract_graph_data(
-    results: List[Dict],
+    results: List[Dict[str, Any]],
     project_names: Optional[List[str]],
     min_similarity: float,
-) -> tuple:
+) -> tuple[list[tuple[str, str, int]], list[tuple[str, str, float, str]]]:
     node_set = set()
     nodes = []
     edges = []

@@ -7,7 +7,9 @@ OpenTelemetry 链路追踪集成
 Author: ModuleMirror
 """
 
-from typing import Optional, Dict, Any
+from __future__ import annotations
+
+from typing import Optional, Dict, Any, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -57,7 +59,7 @@ class TracingManager:
         return self._tracer
 
     @contextmanager
-    def span(self, name: str, attributes: Optional[Dict[str, Any]] = None):
+    def span(self, name: str, attributes: Optional[Dict[str, Any]] = None) -> Generator[Any, None, None]:
         if not self.config.ENABLED:
             yield None
             return

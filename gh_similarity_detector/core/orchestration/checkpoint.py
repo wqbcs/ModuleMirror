@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import json
 from pathlib import Path
 from typing import List, Optional, Dict, Any
@@ -53,7 +55,8 @@ class Checkpoint:
 
     @property
     def candidate_sources(self) -> List[str]:
-        return self.data.get("candidate_sources", [])
+        val = self.data.get("candidate_sources", [])
+        return val if isinstance(val, list) else []
 
     @candidate_sources.setter
     def candidate_sources(self, value: List[str]) -> None:
@@ -61,7 +64,8 @@ class Checkpoint:
 
     @property
     def completed_candidates(self) -> List[str]:
-        return self.data.get("completed_candidates", [])
+        val = self.data.get("completed_candidates", [])
+        return val if isinstance(val, list) else []
 
     def mark_completed(self, candidate_source: str) -> None:
         if candidate_source not in self.data["completed_candidates"]:
@@ -69,17 +73,19 @@ class Checkpoint:
 
     @property
     def failed_candidates(self) -> List[Dict[str, str]]:
-        return self.data.get("failed_candidates", [])
+        val = self.data.get("failed_candidates", [])
+        return val if isinstance(val, list) else []
 
     def mark_failed(self, candidate_source: str, error: str) -> None:
         self.data["failed_candidates"].append({"source": candidate_source, "error": error})
 
     @property
-    def results(self) -> List[Dict]:
-        return self.data.get("results", [])
+    def results(self) -> List[Dict[str, Any]]:
+        val = self.data.get("results", [])
+        return val if isinstance(val, list) else []
 
     def add_result(
-        self, source_project: str, target_project: str, match_count: int, statistics: Dict
+        self, source_project: str, target_project: str, match_count: int, statistics: Dict[str, Any]
     ) -> None:
         self.data["results"].append(
             {

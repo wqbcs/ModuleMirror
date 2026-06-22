@@ -6,10 +6,12 @@
 内置 LRU 驱逐策略，限制内存中缓存条目数量。
 """
 
+from __future__ import annotations
+
 import hashlib
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Any
 from collections import OrderedDict
 
 from ...models.entities import Module, FingerprintSet
@@ -30,7 +32,7 @@ class FingerprintCache:
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._cache_file = self.cache_dir / "fingerprint_cache.json"
-        self._cache: OrderedDict = OrderedDict()
+        self._cache: OrderedDict[str, Any] = OrderedDict()
         self._max_entries = max_entries
         self._load()
 
@@ -45,10 +47,10 @@ class FingerprintCache:
                 logger.info(f"指纹缓存已加载: {len(self._cache)} 条记录")
             except json.JSONDecodeError as e:
                 logger.warning(f"缓存文件损坏，已重置: {e}")
-                self._cache = OrderedDict()
+                self._cache = OrderedDict[str, Any]()
             except (IOError, OSError) as e:
                 logger.error(f"加载指纹缓存IO失败: {e}")
-                self._cache = OrderedDict()
+                self._cache = OrderedDict[str, Any]()
 
     def _save(self) -> None:
         try:
@@ -69,14 +71,14 @@ class FingerprintCache:
         return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
     def get(self, module: Module) -> Optional[FingerprintSet]:
-        cache_key = module.id
+        cache_key = module.id or ""
         content_hash = self.compute_content_hash(module.source_code)
 
         entry = self._cache.get(cache_key)
         if entry and entry.get("content_hash") == content_hash:
             self._cache.move_to_end(cache_key)
             return FingerprintSet(
-                module_id=module.id,
+                module_id=module.id or "",
                 winnowing_fingerprints=set(entry["winnowing_fps"]),
                 ast_fingerprints=set(entry.get("ast_fps", [])),
                 token_count=entry.get("token_count", 0),
@@ -85,13 +87,14 @@ class FingerprintCache:
 
     def put(self, module: Module, fp_set: FingerprintSet) -> None:
         content_hash = self.compute_content_hash(module.source_code)
-        self._cache[module.id] = {
+        mid = module.id or ""
+        self._cache[mid] = {
             "content_hash": content_hash,
             "winnowing_fps": list(fp_set.winnowing_fingerprints),
             "ast_fps": list(fp_set.ast_fingerprints),
             "token_count": fp_set.token_count,
         }
-        self._cache.move_to_end(module.id)
+        self._cache.move_to_end(mid)
         self._evict()
 
     def flush(self) -> None:

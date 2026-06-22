@@ -8,10 +8,12 @@ Fallback 模式
 避免无谓的请求等待。
 """
 
+from __future__ import annotations
+
 import json
 import time
 from pathlib import Path
-from typing import Optional, Dict, Any, Callable, TypeVar, Generic
+from typing import Optional, Dict, Any, Callable, TypeVar, Generic, Awaitable
 from dataclasses import dataclass
 
 from ...utils.logger import logger
@@ -52,7 +54,7 @@ class FallbackCache:
         self._cache_dir.mkdir(parents=True, exist_ok=True)
         self._default_ttl = default_ttl
         self._max_entries = max_memory_entries
-        self._memory: Dict[str, FallbackEntry] = {}
+        self._memory: Dict[str, FallbackEntry[Any]] = {}
         self._hit_count = 0
         self._miss_count = 0
 
@@ -67,7 +69,8 @@ class FallbackCache:
         if path.exists():
             try:
                 with open(path, "r", encoding="utf-8") as f:
-                    return json.load(f)
+                    data: Dict[str, Any] = json.load(f)
+                    return data
             except (json.JSONDecodeError, IOError, OSError) as e:
                 logger.warning(f"Fallback磁盘缓存读取失败 [{category}]: {e}")
         return {}
@@ -200,8 +203,8 @@ class FallbackStrategy:
     async def execute(
         self,
         key: str,
-        primary_fn: Callable,
-        circuit=None,
+        primary_fn: Callable[..., Awaitable[Any]],
+        circuit: Any = None,
         accept_expired_fallback: bool = True,
     ) -> Any:
         """执行 fallback 策略

@@ -14,9 +14,11 @@
 - 支持 track/untrack 手动管理
 """
 
+from __future__ import annotations
+
 import atexit
 import threading
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional, Generator
 from dataclasses import dataclass
 from contextlib import contextmanager
 from weakref import WeakSet
@@ -41,9 +43,9 @@ class ResourceTracker:
     程序退出时自动报告未释放的资源。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._tracked: Dict[int, TrackedResource] = {}
-        self._weak_refs: WeakSet = WeakSet()
+        self._weak_refs: WeakSet[object] = WeakSet()
         self._lock = threading.Lock()
         self._registered = False
         self._leak_reported = False
@@ -88,7 +90,7 @@ class ResourceTracker:
             self._tracked.pop(rid, None)
 
     @contextmanager
-    def track_context(self, resource_type: str, description: str = ""):
+    def track_context(self, resource_type: str, description: str = "") -> Generator[Any, None, None]:
         """上下文管理器：自动追踪和取消追踪
 
         Usage:
@@ -181,9 +183,14 @@ class TrackedConnectionMixin:
     _tracker = resource_tracker
     _resource_type = "connection"
 
-    def __enter_tracked__(self):
+    def __enter_tracked__(self) -> TrackedConnectionMixin:
         self._tracker.track(self, self._resource_type, repr(self)[:100])
         return self
 
-    def __exit_tracked__(self, exc_type, exc_val, exc_tb):
+    def __exit_tracked__(
+        self,
+        exc_type: Optional[type],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[Any],
+    ) -> None:
         self._tracker.untrack(self)

@@ -5,8 +5,10 @@ Bulkhead 隔离模式 - 限制并发请求数
 防止某一类操作耗尽所有资源导致系统崩溃。
 """
 
+from __future__ import annotations
+
 import threading
-from typing import Optional
+from typing import Any, Optional
 
 from ...utils.logger import get_module_logger
 
@@ -75,7 +77,7 @@ class Bulkhead:
         """剩余容量"""
         return self.max_concurrent - self.active_count
 
-    def get_stats(self) -> dict:
+    def get_stats(self) -> dict[str, Any]:
         """获取统计信息"""
         with self._lock:
             return {
@@ -87,12 +89,12 @@ class Bulkhead:
                 "total_rejected": self._total_rejected,
             }
 
-    def __enter__(self):
+    def __enter__(self) -> Bulkhead:
         if not self.acquire(timeout=5.0):
             raise BulkheadFullError(f"Bulkhead {self.name} 已满(max={self.max_concurrent})")
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, *args: Any) -> None:
         self.release()
 
 

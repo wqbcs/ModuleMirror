@@ -46,7 +46,7 @@ class APIInventory:
     防止影子API和废弃端点泄露。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._endpoints: Dict[str, APIEndpoint] = {}
         self._access_log: Dict[str, int] = {}
 
@@ -140,7 +140,7 @@ class ThirdPartyAPIValidator:
     防止数据注入、响应篡改和异常数据泄露。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._configs: Dict[str, ThirdPartyAPIConfig] = {}
         self._validation_errors: List[Dict[str, Any]] = []
 

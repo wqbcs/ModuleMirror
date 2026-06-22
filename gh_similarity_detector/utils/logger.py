@@ -19,7 +19,7 @@ import sys
 import uuid
 import threading
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 from pathlib import Path
 
 from .json_utils import dumps as json_dumps
@@ -157,6 +157,7 @@ class StructuredLogger:
             else:
                 handler = logging.StreamHandler(sys.stdout)
 
+            formatter: Union[JSONFormatter, logging.Formatter]
             if use_json:
                 formatter = JSONFormatter()
             else:

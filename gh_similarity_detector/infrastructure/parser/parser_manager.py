@@ -6,6 +6,10 @@ Tree-sitter 解析器管理
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
+from typing import Dict, Optional, Any
+
 import tree_sitter_python as tspython
 import tree_sitter_java as tsjava
 import tree_sitter_javascript as tsjavascript
@@ -15,11 +19,11 @@ try:
 
     _HAS_TYPESCRIPT = True
 except ImportError:
-    tstypescript = None
+    tstypescript = None  # type: ignore[assignment]
     _HAS_TYPESCRIPT = False
 
 try:
-    import tree_sitter_go as tsgo
+    import tree_sitter_go as tsgo  # type: ignore[import-not-found]
 
     _HAS_GO = True
 except ImportError:
@@ -27,7 +31,7 @@ except ImportError:
     _HAS_GO = False
 
 try:
-    import tree_sitter_rust as tsrust
+    import tree_sitter_rust as tsrust  # type: ignore[import-not-found]
 
     _HAS_RUST = True
 except ImportError:
@@ -35,7 +39,7 @@ except ImportError:
     _HAS_RUST = False
 
 try:
-    import tree_sitter_c as tsc
+    import tree_sitter_c as tsc  # type: ignore[import-not-found]
 
     _HAS_C = True
 except ImportError:
@@ -43,7 +47,6 @@ except ImportError:
     _HAS_C = False
 
 from tree_sitter import Language, Parser
-from typing import Dict, Optional, Any
 
 from ...utils.logger import logger
 
@@ -75,7 +78,7 @@ class ParserManager:
         LANGUAGE_MAPPING["c"] = tsc
         LANGUAGE_MAPPING["cpp"] = tsc
 
-    def __init__(self, languages: Optional[list] = None):
+    def __init__(self, languages: Optional[list[str]] = None):
         """初始化解析器管理器
 
         Args:
@@ -172,7 +175,7 @@ class ParserManager:
         """
         return language in self.parsers
 
-    def get_supported_languages(self) -> list:
+    def get_supported_languages(self) -> list[str]:
         """获取已加载的语言列表
 
         Returns:

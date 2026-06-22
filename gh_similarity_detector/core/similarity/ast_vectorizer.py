@@ -7,9 +7,11 @@ AST 结构向量化 (Deckard 方案)
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import hashlib
 import math
-from typing import List, Dict, Set, Tuple
+from typing import List, Dict, Set, Tuple, Any
 from collections import Counter
 from dataclasses import dataclass
 
@@ -104,11 +106,11 @@ class ASTVectorizer:
             node_count=len(node_types),
         )
 
-    def vectorize_ast_tree(self, tree_structure: Dict) -> ASTFeatureVector:
-        node_types = []
+    def vectorize_ast_tree(self, tree_structure: Dict[str, Any]) -> ASTFeatureVector:
+        node_types: List[str] = []
         max_depth = [0]
 
-        def traverse(node: Dict, depth: int = 0):
+        def traverse(node: Dict[str, Any], depth: int = 0) -> None:
             max_depth[0] = max(max_depth[0], depth)
             node_type = node.get("type", "unknown")
             node_types.append(node_type)

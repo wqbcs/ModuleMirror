@@ -9,6 +9,8 @@
 与 DetectionPipeline 集成，返回结构化的多项目检测结果。
 """
 
+from __future__ import annotations
+
 from typing import List, Dict, Any, Optional, Callable
 from dataclasses import dataclass, field
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -56,7 +58,7 @@ class MultiRepositoryComparator:
     - matrix: 所有项目互相对比
     """
 
-    def __init__(self, pipeline):
+    def __init__(self, pipeline: Any):
         self._pipeline = pipeline
 
     def one_to_many(
@@ -116,7 +118,7 @@ class MultiRepositoryComparator:
         completed = 0
         total = len(targets)
 
-        def _detect_target(target: str) -> tuple:
+        def _detect_target(target: str) -> tuple[Any, Any, Any]:
             try:
                 results = self._pipeline.detect(
                     target,

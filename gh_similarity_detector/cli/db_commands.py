@@ -1,19 +1,22 @@
+from __future__ import annotations
+
 import click
 from pathlib import Path
+from typing import Any
 
 from ..config.config import DetectionConfig
 from ..core import DetectionPipeline
 from ..infrastructure.storage.fingerprint_db import FingerprintDB
 
 
-def register_db_commands(main):
-    @main.group()
-    def db():
+def register_db_commands(main: Any) -> None:
+    @main.group()  # type: ignore[untyped-decorator]
+    def db() -> None:
         """指纹库管理"""
 
-    @db.command("init")
+    @db.command("init")  # type: ignore[untyped-decorator]
     @click.option("--path", default="./fingerprint_db.sqlite", help="数据库路径")
-    def db_init(path: str):
+    def db_init(path: str) -> None:
         """初始化指纹库"""
         fp_db = FingerprintDB(path)
         stats = fp_db.get_stats()
@@ -23,12 +26,12 @@ def register_db_commands(main):
         click.echo(f"  模块数: {stats['module_count']}")
         click.echo(f"  指纹数: {stats['fingerprint_count']}")
 
-    @db.command("add")
+    @db.command("add")  # type: ignore[untyped-decorator]
     @click.option("--project", "-p", required=True, help="项目 URL 或路径")
     @click.option("--db", "db_path", default="./fingerprint_db.sqlite", help="数据库路径")
     @click.option("--language", "-l", multiple=True, default=["python"], help="编程语言")
     @click.option("--min-tokens", type=int, default=50, help="最小 token 长度")
-    def db_add(project: str, db_path: str, language: tuple, min_tokens: int):
+    def db_add(project: str, db_path: str, language: tuple[str, ...], min_tokens: int) -> None:
         """添加项目到指纹库"""
         config = DetectionConfig(supported_languages=list(language), min_token_length=min_tokens)
         pipeline = DetectionPipeline(config, db_path=db_path)
@@ -37,25 +40,25 @@ def register_db_commands(main):
 
         with click.progressbar(length=100, label="处理中") as bar:
 
-            def progress(p):
+            def progress(p: float) -> None:
                 bar.update(int(p * 100) - bar.pos)
 
             success = pipeline.add_to_db(project, progress)
 
         if success:
-            stats = pipeline.fingerprint_db.get_stats()
+            stats = pipeline.fingerprint_db.get_stats()  # type: ignore[union-attr]
             click.echo("项目已添加到指纹库")
             click.echo(f"  总项目数: {stats['project_count']}")
             click.echo(f"  总模块数: {stats['module_count']}")
         else:
             click.echo("添加失败。", err=True)
 
-    @db.command("update")
+    @db.command("update")  # type: ignore[untyped-decorator]
     @click.option("--project", "-p", required=True, help="项目 GitHub URL")
     @click.option("--db", "db_path", default="./fingerprint_db.sqlite", help="数据库路径")
     @click.option("--language", "-l", multiple=True, default=["python"], help="编程语言")
     @click.option("--min-tokens", type=int, default=50, help="最小 token 长度")
-    def db_update(project: str, db_path: str, language: tuple, min_tokens: int):
+    def db_update(project: str, db_path: str, language: tuple[str, ...], min_tokens: int) -> None:
         """增量更新指纹库中的项目（检测新提交后更新）"""
         config = DetectionConfig(supported_languages=list(language), min_token_length=min_tokens)
         pipeline = DetectionPipeline(config, db_path=db_path)
@@ -64,7 +67,7 @@ def register_db_commands(main):
 
         with click.progressbar(length=100, label="处理中") as bar:
 
-            def progress(p):
+            def progress(p: float) -> None:
                 bar.update(int(p * 100) - bar.pos)
 
             updated = pipeline.update_db(project, progress)
@@ -74,9 +77,9 @@ def register_db_commands(main):
         else:
             click.echo("项目指纹已是最新")
 
-    @db.command("stats")
+    @db.command("stats")  # type: ignore[untyped-decorator]
     @click.option("--db", "db_path", default="./fingerprint_db.sqlite", help="数据库路径")
-    def db_stats(db_path: str):
+    def db_stats(db_path: str) -> None:
         """查看指纹库统计信息"""
         if not Path(db_path).exists():
             click.echo(f"指纹库不存在: {db_path}")
@@ -97,9 +100,9 @@ def register_db_commands(main):
             for p in projects:
                 click.echo(f"  - {p['name']} ({p['language']}, {p['module_count']} 模块)")
 
-    @db.command("list")
+    @db.command("list")  # type: ignore[untyped-decorator]
     @click.option("--db", "db_path", default="./fingerprint_db.sqlite", help="数据库路径")
-    def db_list(db_path: str):
+    def db_list(db_path: str) -> None:
         """列出指纹库中的所有项目"""
         if not Path(db_path).exists():
             click.echo(f"指纹库不存在: {db_path}")
@@ -120,11 +123,11 @@ def register_db_commands(main):
                 f"    语言: {p['language']} | 模块数: {p['module_count']} | 更新: {p['updated_at']}"
             )
 
-    @db.command("delete")
+    @db.command("delete")  # type: ignore[untyped-decorator]
     @click.option("--project-id", "-p", required=True, help="项目 ID")
     @click.option("--db", "db_path", default="./fingerprint_db.sqlite", help="数据库路径")
     @click.option("--force", "-f", is_flag=True, help="跳过确认提示")
-    def db_delete(project_id: str, db_path: str, force: bool):
+    def db_delete(project_id: str, db_path: str, force: bool) -> None:
         """从指纹库中删除项目"""
         if not force:
             if not click.confirm(f"确认删除项目 '{project_id}'？此操作不可恢复"):
@@ -137,7 +140,7 @@ def register_db_commands(main):
         else:
             click.echo(f"项目不存在: {project_id}", err=True)
 
-    @db.command("import")
+    @db.command("import")  # type: ignore[untyped-decorator]
     @click.option(
         "--file",
         "-f",
@@ -153,8 +156,8 @@ def register_db_commands(main):
         "--continue-on-error", is_flag=True, default=True, help="单个项目失败时继续（默认开启）"
     )
     def db_import(
-        import_file: str, db_path: str, language: tuple, min_tokens: int, continue_on_error: bool
-    ):
+        import_file: str, db_path: str, language: tuple[str, ...], min_tokens: int, continue_on_error: bool
+    ) -> None:
         """从文件批量导入项目到指纹库
 
         每行一个项目 URL 或路径，支持 # 开头注释行和空行。
@@ -174,7 +177,7 @@ def register_db_commands(main):
         click.echo(f"批量导入: {len(lines)} 个项目")
 
         succeeded = 0
-        failed = []
+        failed: list[tuple[str, str]] = []
 
         for i, project_source in enumerate(lines, 1):
             click.echo(f"\n[{i}/{len(lines)}] {project_source}")
@@ -182,7 +185,7 @@ def register_db_commands(main):
             try:
                 with click.progressbar(length=100, label="处理中") as bar:
 
-                    def progress(p):
+                    def progress(p: float) -> None:
                         bar.update(int(p * 100) - bar.pos)
 
                     success = pipeline.add_to_db(project_source, progress)

@@ -12,6 +12,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 
@@ -58,7 +60,7 @@ class RetrievalResult:
 
 
 class EmbeddingIndex:
-    def __init__(self):
+    def __init__(self) -> None:
         self._embeddings: Dict[str, CodeEmbedding] = {}
         self._languages: Dict[str, str] = {}
 
@@ -75,7 +77,7 @@ class EmbeddingIndex:
         self,
         query: CodeEmbedding,
         top_k: int = 10,
-        exclude_ids: Optional[set] = None,
+        exclude_ids: Optional[set[str]] = None,
         min_similarity: float = 0.0,
     ) -> List[RetrievalResult]:
         results = []
@@ -219,7 +221,7 @@ class FaissEmbeddingIndex:
         self,
         query: CodeEmbedding,
         top_k: int = 10,
-        exclude_ids: Optional[set] = None,
+        exclude_ids: Optional[set[str]] = None,
         min_similarity: float = 0.0,
     ) -> List[RetrievalResult]:
         self._ensure_index()

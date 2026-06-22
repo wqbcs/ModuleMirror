@@ -10,6 +10,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import hashlib
 import math
 from abc import ABC, abstractmethod
@@ -43,11 +45,11 @@ class CodeEmbedding:
                 return 0.0
             return float(np.dot(a, b) / (norm_a * norm_b))
         dot = sum(a * b for a, b in zip(self.vector, other.vector))
-        norm_a = math.sqrt(sum(a * a for a in self.vector))
-        norm_b = math.sqrt(sum(b * b for b in other.vector))
-        if norm_a == 0 or norm_b == 0:
+        na = math.sqrt(sum(a * a for a in self.vector))
+        nb = math.sqrt(sum(b * b for b in other.vector))
+        if na == 0 or nb == 0:
             return 0.0
-        return dot / (norm_a * norm_b)
+        return float(dot / (na * nb))
 
     def euclidean_distance(self, other: "CodeEmbedding") -> float:
         if _numpy_available:
@@ -132,7 +134,7 @@ class Code2VecEngine(EmbeddingEngine):
         combined = "|".join(path)
         return int(hashlib.md5(combined.encode()).hexdigest(), 16)
 
-    def _initialize_weights(self):
+    def _initialize_weights(self) -> None:
         if self._weights is None:
             seed = 42
             self._weights = []
@@ -147,13 +149,13 @@ class Code2VecEngine(EmbeddingEngine):
 
         if not paths:
             for i in range(self._dimension):
-                vector[i] = self._weights[i] * 0.01
+                vector[i] = self._weights[i] * 0.01  # type: ignore[index]
         else:
             for path in paths:
                 h = self._path_to_hash(path)
                 for i in range(self._dimension):
                     angle = (h + i) * 0.618033988749895
-                    vector[i] += math.sin(angle) * self._weights[i % len(self._weights)]
+                    vector[i] += math.sin(angle) * self._weights[i % len(self._weights)]  # type: ignore[index,arg-type]
 
             norm = math.sqrt(sum(v * v for v in vector))
             if norm > 0:
@@ -185,17 +187,17 @@ class CodeBERTEngine(EmbeddingEngine):
         self._model = None
         self._dimension = 768
 
-    def _load_model(self):
+    def _load_model(self) -> None:
         if self._model is not None:
             return
         try:
-            from transformers import AutoTokenizer, AutoModel
+            from transformers import AutoTokenizer, AutoModel  # type: ignore[import-not-found]
 
             self._tokenizer = AutoTokenizer.from_pretrained(self._model_name)
             self._model = AutoModel.from_pretrained(self._model_name)
-            self._model.eval()
+            self._model.eval()  # type: ignore[attr-defined]
             if self._device != "cpu":
-                self._model = self._model.to(self._device)
+                self._model = self._model.to(self._device)  # type: ignore[attr-defined]
         except ImportError:
             raise ImportError("CodeBERT需要transformers库: pip install transformers torch")
 
@@ -203,11 +205,11 @@ class CodeBERTEngine(EmbeddingEngine):
         self._load_model()
         import torch
 
-        inputs = self._tokenizer(code, return_tensors="pt", truncation=True, max_length=512)
+        inputs = self._tokenizer(code, return_tensors="pt", truncation=True, max_length=512)  # type: ignore[misc]
         if self._device != "cpu":
             inputs = {k: v.to(self._device) for k, v in inputs.items()}
         with torch.no_grad():
-            outputs = self._model(**inputs)
+            outputs = self._model(**inputs)  # type: ignore[misc]
         vector = outputs.last_hidden_state[0, 0, :].cpu().tolist()
         return CodeEmbedding(
             code_id=code_id or hashlib.md5(code.encode()).hexdigest()[:8],
@@ -226,7 +228,7 @@ class CodeBERTEngine(EmbeddingEngine):
         return self._dimension
 
 
-def create_embedding_engine(engine_type: str = "dummy", **kwargs) -> EmbeddingEngine:
+def create_embedding_engine(engine_type: str = "dummy", **kwargs: Any) -> EmbeddingEngine:
     engines = {
         "dummy": DummyEngine,
         "code2vec": Code2VecEngine,
@@ -235,7 +237,7 @@ def create_embedding_engine(engine_type: str = "dummy", **kwargs) -> EmbeddingEn
     cls = engines.get(engine_type)
     if cls is None:
         raise ValueError(f"未知嵌入引擎: {engine_type}，可选: {list(engines.keys())}")
-    return cls(**kwargs)
+    return cls(**kwargs)  # type: ignore[no-any-return]
 
 
 def compute_semantic_similarity(

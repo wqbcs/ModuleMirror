@@ -11,6 +11,8 @@
 7. 超时保护（强制退出）
 """
 
+from __future__ import annotations
+
 import asyncio
 import signal
 import time
@@ -32,7 +34,7 @@ class ShutdownHook:
     """关闭钩子"""
 
     name: str
-    callback: Callable
+    callback: Callable[..., Any]
     priority: int = 100
     timeout: float = 30.0
 
@@ -71,7 +73,7 @@ class GracefulShutdown:
     def register_hook(
         self,
         name: str,
-        callback: Callable,
+        callback: Callable[..., Any],
         priority: int = 100,
         timeout: float = 30.0,
     ) -> None:
@@ -96,7 +98,7 @@ class GracefulShutdown:
         except (OSError, ValueError) as e:
             logger.warning(f"信号注册失败（非主线程?）: {e}")
 
-    def _signal_handler(self, signum: int, frame) -> None:
+    def _signal_handler(self, signum: int, frame: Any) -> None:
         logger.info(f"收到信号 {signum}，启动优雅关闭...")
         self.initiate_shutdown()
 

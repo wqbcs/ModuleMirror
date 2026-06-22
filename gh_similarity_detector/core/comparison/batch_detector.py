@@ -8,6 +8,8 @@
 3. JSON 文件（结构化检测任务）
 """
 
+from __future__ import annotations
+
 import csv
 import json
 from pathlib import Path
@@ -42,7 +44,7 @@ class BatchDetector:
     从文件读取检测任务，支持 txt/csv/json 三种格式。
     """
 
-    def __init__(self, pipeline):
+    def __init__(self, pipeline: Any):
         self._pipeline = pipeline
 
     @staticmethod

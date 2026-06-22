@@ -9,6 +9,8 @@ NCD(x,y) = (C(xy) - min(C(x), C(y))) / max(C(x), C(y))
 其中 C(x) 是 x 的压缩后大小。
 """
 
+from __future__ import annotations
+
 import zlib
 from typing import Optional, List, Tuple, Dict
 from pathlib import Path
@@ -81,7 +83,7 @@ class NCD:
         return similarity
 
     def compute_project_similarity(
-        self, source_dir: str, target_dir: str, extensions: Optional[list] = None
+        self, source_dir: str, target_dir: str, extensions: Optional[List[str]] = None
     ) -> float:
         """计算两个项目目录的整体相似度
 
@@ -106,7 +108,7 @@ class NCD:
         )
         return sim
 
-    def _read_project(self, directory: str, extensions: Optional[list] = None) -> bytes:
+    def _read_project(self, directory: str, extensions: Optional[List[str]] = None) -> bytes:
         """读取项目中所有代码文件并拼接，受 MAX_TOTAL_BYTES 限制"""
         dir_path = Path(directory)
         if not dir_path.exists():
@@ -205,7 +207,7 @@ class NCD:
     def compute_project_similarity_parallel(
         self,
         project_pairs: List[Tuple[str, str]],
-        extensions: Optional[list] = None,
+        extensions: Optional[List[str]] = None,
     ) -> List[float]:
         """并行计算多对项目目录的相似度
 

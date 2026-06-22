@@ -1,6 +1,10 @@
 """报告路由"""
 
+from __future__ import annotations
+
 import json
+from typing import Any, Union
+
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pathlib import Path
@@ -11,7 +15,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 @router.get("")
 async def list_reports(
     report_dir: str = Query(default="./report"),
-):
+) -> dict[str, Any]:
     """列出所有检测报告"""
     rdir = Path(report_dir).resolve()
     if not rdir.exists():
@@ -40,16 +44,16 @@ def _safe_report_path(report_dir: str, report_id: str) -> Path:
     return target
 
 
-@router.get("/{report_id}")
+@router.get("/{report_id}", response_model=None)
 async def get_report(
     report_id: str,
     report_dir: str = Query(default="./report"),
-):
+) -> Union[dict[str, Any], HTMLResponse, PlainTextResponse]:
     """获取报告内容"""
     target = _safe_report_path(report_dir, report_id)
     if target.suffix == ".json":
         with open(target, "r", encoding="utf-8") as f:
-            return json.load(f)
+            return json.load(f)  # type: ignore[no-any-return]
     elif target.suffix in (".html", ".md"):
         content = target.read_text(encoding="utf-8")
         if target.suffix == ".html":
@@ -62,8 +66,7 @@ async def get_report(
 async def get_report_summary(
     report_id: str,
     report_dir: str = Query(default="./report"),
-):
-    """获取报告摘要"""
+) -> dict[str, Any]:
     target = _safe_report_path(report_dir, report_id)
     if target.suffix == ".json":
         with open(target, "r", encoding="utf-8") as f:
@@ -73,14 +76,14 @@ async def get_report_summary(
                 "total_results": len(data),
                 "total_matches": sum(r.get("match_count", 0) for r in data if isinstance(r, dict)),
             }
-        return data
+        return data  # type: ignore[no-any-return]
     return {"path": str(target), "size": target.stat().st_size}
 
 
 @router.get("/visual/latest")
 async def get_visual_report(
     report_dir: str = Query(default="./report"),
-):
+) -> HTMLResponse:
     """获取最新的可视化报告(D3.js热力图+依赖图)"""
     rdir = Path(report_dir).resolve()
     for f in sorted(

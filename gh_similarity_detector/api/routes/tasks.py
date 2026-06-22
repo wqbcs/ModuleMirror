@@ -1,9 +1,13 @@
 """异步任务路由"""
 
+from __future__ import annotations
+
 import os
 import uuid
 import threading
 import json
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 from typing import List, Optional
@@ -37,7 +41,7 @@ class TaskResponse(BaseModel):
 
 
 @router.post("", response_model=TaskResponse)
-async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks):
+async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks) -> TaskResponse:
     """创建异步检测任务"""
     task_id = str(uuid.uuid4())
     candidates_str = ",".join(req.candidates)
@@ -56,7 +60,7 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
         module_granularity=granularity_map.get(req.granularity, ModuleType.FUNCTION),
     )
 
-    def _run_detection():
+    def _run_detection() -> None:
         pipeline = None
         fp_db.update_task(task_id, status="running")
         try:
@@ -106,7 +110,7 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
 @router.get("", response_model=List[TaskResponse])
 async def list_tasks(
     status: Optional[str] = None,
-):
+) -> list[TaskResponse]:
     """列出所有检测任务"""
     if not Path(DB_PATH).exists():
         raise HTTPException(status_code=404, detail="指纹库不存在")
@@ -127,7 +131,7 @@ async def list_tasks(
 @router.get("/{task_id}")
 async def get_task(
     task_id: str,
-):
+) -> dict[str, Any]:
     """获取任务详情"""
     if not Path(DB_PATH).exists():
         raise HTTPException(status_code=404, detail="指纹库不存在")
@@ -141,7 +145,7 @@ async def get_task(
 @router.delete("/{task_id}")
 async def delete_task(
     task_id: str,
-):
+) -> dict[str, str]:
     """删除任务"""
     if not Path(DB_PATH).exists():
         raise HTTPException(status_code=404, detail="指纹库不存在")
