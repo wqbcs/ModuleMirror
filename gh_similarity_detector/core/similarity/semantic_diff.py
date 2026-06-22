@@ -13,8 +13,10 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import re
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional, Tuple, Set
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -40,7 +42,7 @@ class CodeEntity:
     params: List[str] = field(default_factory=list)
     body_hash: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.body_hash and self.source:
             self.body_hash = self._compute_hash()
 
@@ -154,7 +156,7 @@ class CodeEntityExtractor:
                     name = m.group(1)
                     params = (
                         [p.strip() for p in m.group(2).split(",") if p.strip()]
-                        if m.lastindex >= 2
+                        if m.lastindex is not None and m.lastindex >= 2
                         else []
                     )
                     entities.append(
@@ -233,7 +235,7 @@ class CodeEntityExtractor:
 
 
 class SemanticDiffer:
-    def __init__(self):
+    def __init__(self) -> None:
         self._extractor = CodeEntityExtractor()
 
     def diff(
@@ -341,8 +343,8 @@ class SemanticDiffer:
         self,
         source_entity: CodeEntity,
         target_map: Dict[str, CodeEntity],
-        excluded_names: set,
-        existing_source_names: set = None,
+        excluded_names: Set[str],
+        existing_source_names: Optional[Set[str]] = None,
     ) -> Optional[str]:
         existing = existing_source_names or set()
         for name, te in target_map.items():

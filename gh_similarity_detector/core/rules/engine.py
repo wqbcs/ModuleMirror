@@ -156,7 +156,7 @@ class RuleMatchResult:
 
 
 class RuleEngine:
-    def __init__(self):
+    def __init__(self) -> None:
         self._rules: Dict[str, DetectionRule] = {}
 
     def add_rule(self, rule: DetectionRule) -> None:

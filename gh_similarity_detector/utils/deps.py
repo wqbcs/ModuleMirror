@@ -38,7 +38,7 @@ class DependencyRegistry:
 
     _instance: Optional["DependencyRegistry"] = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._deps: Dict[str, DepInfo] = {}
 
     @classmethod

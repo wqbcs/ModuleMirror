@@ -8,8 +8,10 @@
 3. 内存预算控制
 """
 
+from __future__ import annotations
+
 import os
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Any
 from pathlib import Path
 
 from ...utils.logger import logger
@@ -38,7 +40,6 @@ class StreamReader:
         self._bytes_read = 0
         self._files_processed = 0
 
-    @property
     def should_stream(self, file_path: str) -> bool:
         """判断是否需要流式读取"""
         try:
@@ -118,7 +119,7 @@ class StreamReader:
         return "".join(parts)
 
     @property
-    def stats(self) -> dict:
+    def stats(self) -> dict[str, Any]:
         return {
             "bytes_read": self._bytes_read,
             "files_processed": self._files_processed,

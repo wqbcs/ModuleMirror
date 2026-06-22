@@ -7,6 +7,8 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 import json
 import re
 from typing import List, Optional, Dict, Any
@@ -140,7 +142,7 @@ class ReportGenerator:
         return lines
 
     def _generate_json_report(self, results: List[DetectionResult]) -> str:
-        data = {"generated_at": datetime.now().isoformat(), "results": []}
+        data: Dict[str, Any] = {"generated_at": datetime.now().isoformat(), "results": []}
 
         for result in results:
             result_data = {

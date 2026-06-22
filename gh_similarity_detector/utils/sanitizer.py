@@ -131,7 +131,7 @@ def sanitize_command_input(value: str) -> str:
     return value
 
 
-def sanitize_url(url: str, allowed_domains: frozenset = ALLOWED_GITHUB_DOMAINS) -> str:
+def sanitize_url(url: str, allowed_domains: frozenset[str] = ALLOWED_GITHUB_DOMAINS) -> str:
     """消毒URL，限制到允许的域名
 
     Args:

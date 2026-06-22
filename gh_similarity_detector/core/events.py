@@ -7,6 +7,8 @@ EventBus 发布-订阅模式，解耦核心模块间通信。
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import time
 from typing import Dict, List, Callable, Any, Optional, Set
 from dataclasses import dataclass, field
@@ -37,7 +39,7 @@ class DomainEvent:
     timestamp: float = field(default_factory=time.time)
     event_id: str = ""
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if not self.event_id:
             self.event_id = f"{self.event_type.value}_{self.timestamp:.6f}"
 
@@ -46,7 +48,7 @@ EventHandler = Callable[[DomainEvent], None]
 
 
 class EventBus:
-    def __init__(self):
+    def __init__(self) -> None:
         self._handlers: Dict[DomainEventType, List[EventHandler]] = defaultdict(list)
         self._wildcard_handlers: List[EventHandler] = []
         self._history: List[DomainEvent] = []
@@ -88,7 +90,7 @@ class EventBus:
         logger.debug(f"EventBus 发布: {event.event_type.value}, 投递={delivered}")
         return delivered
 
-    def publish_simple(self, event_type: DomainEventType, **kwargs) -> DomainEvent:
+    def publish_simple(self, event_type: DomainEventType, **kwargs: Any) -> DomainEvent:
         event = DomainEvent(event_type=event_type, payload=kwargs)
         self.publish(event)
         return event

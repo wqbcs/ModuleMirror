@@ -6,7 +6,9 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
-from typing import List, Dict, Set, Optional
+from __future__ import annotations
+
+from typing import List, Dict, Set, Optional, Any
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -25,7 +27,7 @@ class InvertedIndex:
     支持增量更新：添加/删除模块指纹无需全量重建。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.index: Dict[int, List[str]] = defaultdict(list)
         self._module_fingerprints: Dict[str, Set[int]] = defaultdict(set)
 
@@ -120,7 +122,7 @@ class SimilarityCalculator:
     AST_VERIFY_THRESHOLD = 90
     MIN_OVERLAP_THRESHOLD = 1
 
-    def __init__(self, config: DetectionConfig, similarity_cache_db=None):
+    def __init__(self, config: DetectionConfig, similarity_cache_db: Any = None) -> None:
         self.config = config
         self.inverted_index = InvertedIndex()
         self.ast_comparator = ASTDeepComparator(languages=config.supported_languages)
@@ -152,10 +154,10 @@ class SimilarityCalculator:
         for file_modules in source_modules.values():
             source_module_list.extend(file_modules)
 
-        candidate_module_map = {}
+        candidate_module_map: Dict[str, Module] = {}
         for file_modules in candidate_modules.values():
             for m in file_modules:
-                candidate_module_map[m.id] = m
+                candidate_module_map[m.id or ""] = m
 
         with ThreadPoolExecutor(max_workers=self.config.parallelism) as executor:
             futures = []
@@ -164,7 +166,7 @@ class SimilarityCalculator:
                 future = executor.submit(
                     self._find_similar_modules,
                     module,
-                    source_fingerprints.get(module.id),
+                    source_fingerprints.get(module.id or "", FingerprintSet(module_id="")),
                     candidate_fingerprints,
                     candidate_module_map,
                 )
@@ -233,7 +235,7 @@ class SimilarityCalculator:
                     cached = self._cache_db.get_similarity_cache(source_module.id, candidate_id)
                     if cached:
                         result = SimilarityResult(
-                            source_module_id=source_module.id,
+                            source_module_id=source_module.id or "",
                             target_module_id=candidate_id,
                             similarity=cached["similarity"],
                             winnowing_overlap=cached.get("winnowing_overlap", overlap),
@@ -280,7 +282,7 @@ class SimilarityCalculator:
                         )
 
             if combined_similarity >= self.config.similarity_threshold:
-                matched_snippet = None
+                matched_snippet: Optional[Dict[str, Any]] = None
                 if candidate_module_map and candidate_id in candidate_module_map:
                     cand_mod = candidate_module_map[candidate_id]
                     matched_snippet = {
@@ -295,7 +297,7 @@ class SimilarityCalculator:
                     }
 
                 result = SimilarityResult(
-                    source_module_id=source_module.id,
+                    source_module_id=source_module.id or "",
                     target_module_id=candidate_id,
                     similarity=combined_similarity,
                     winnowing_overlap=overlap,
@@ -418,7 +420,7 @@ class SimilarityCalculator:
         else:
             return ReuseSuggestion.NEED_REFACTOR
 
-    def calculate_statistics(self, results: List[SimilarityResult]) -> Dict:
+    def calculate_statistics(self, results: List[SimilarityResult]) -> Dict[str, Any]:
         """计算统计信息
 
         Args:

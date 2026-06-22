@@ -5,10 +5,13 @@ Web API 接口
 路由已拆分到 routes/ 子模块。
 """
 
+from __future__ import annotations
+
 import os
 import signal
 import uuid
 from contextlib import asynccontextmanager
+from typing import AsyncIterator, Awaitable, Callable
 
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,7 +43,7 @@ API_KEY_ENV = "MODULEMIRROR_API_KEY"
 
 
 @asynccontextmanager
-async def lifespan(app_instance: FastAPI):
+async def lifespan(app_instance: FastAPI) -> AsyncIterator[None]:
     yield
     results = await graceful_shutdown.execute_shutdown()
     logger.info(f"服务关闭，清理资源完成: {results}")
@@ -94,7 +97,7 @@ GitHub 项目代码相似度检测工具 REST API。
 
 if RATE_LIMIT_ENABLED:
     app.state.limiter = _limiter
-    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+    app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
 CORS_ORIGINS = os.getenv("MODULEMIRROR_CORS_ORIGINS", "").split(",")
 CORS_ORIGINS = [o.strip() for o in CORS_ORIGINS if o.strip()]
@@ -119,8 +122,8 @@ if _static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
-@app.get("/dashboard")
-async def dashboard():
+@app.get("/dashboard", response_model=None)
+async def dashboard() -> Response | dict[str, str]:
     from fastapi.responses import FileResponse
 
     dashboard_path = _static_dir / "dashboard.html"
@@ -132,7 +135,7 @@ async def dashboard():
 _shutdown_requested = False
 
 
-def _handle_shutdown(signum: int, frame) -> None:
+def _handle_shutdown(signum: int, frame: object) -> None:
     global _shutdown_requested
     _shutdown_requested = True
     logger.info(f"收到信号 {signum}，开始优雅关闭...")
@@ -147,7 +150,7 @@ graceful_shutdown.register_signals()
 
 
 @app.middleware("http")
-async def security_headers_and_auth(request: Request, call_next):
+async def security_headers_and_auth(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     if not graceful_shutdown.begin_request():
         return Response(
             content='{"detail":"Server is shutting down"}',

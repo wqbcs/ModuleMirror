@@ -6,6 +6,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 from typing import Dict, Type, Any, Callable, Optional, TypeVar
 from dataclasses import dataclass
 from enum import Enum
@@ -28,19 +30,19 @@ class ServiceLifetime(Enum):
 
 @dataclass
 class ServiceDescriptor:
-    interface: Type
-    implementation: Type
+    interface: Type[Any]
+    implementation: Type[Any]
     lifetime: ServiceLifetime
-    factory: Optional[Callable] = None
+    factory: Optional[Callable[..., Any]] = None
     instance: Optional[Any] = None
 
 
 class DIContainer:
     _instance: Optional["DIContainer"] = None
 
-    def __init__(self):
-        self._services: Dict[Type, ServiceDescriptor] = {}
-        self._singletons: Dict[Type, Any] = {}
+    def __init__(self) -> None:
+        self._services: Dict[Type[Any], ServiceDescriptor] = {}
+        self._singletons: Dict[Type[Any], Any] = {}
 
     @classmethod
     def get_instance(cls) -> "DIContainer":
@@ -55,8 +57,8 @@ class DIContainer:
     def register_singleton(
         self,
         interface: Type[T],
-        implementation: Type[T] = None,
-        factory: Callable = None,
+        implementation: Optional[Type[T]] = None,
+        factory: Optional[Callable[..., Any]] = None,
     ) -> None:
         impl = implementation or interface
         self._services[interface] = ServiceDescriptor(
@@ -69,8 +71,8 @@ class DIContainer:
     def register_transient(
         self,
         interface: Type[T],
-        implementation: Type[T] = None,
-        factory: Callable = None,
+        implementation: Optional[Type[T]] = None,
+        factory: Optional[Callable[..., Any]] = None,
     ) -> None:
         impl = implementation or interface
         self._services[interface] = ServiceDescriptor(
@@ -97,17 +99,17 @@ class DIContainer:
 
         if descriptor.lifetime == ServiceLifetime.SINGLETON:
             if interface in self._singletons:
-                return self._singletons[interface]
+                return self._singletons[interface]  # type: ignore[no-any-return]
 
             if descriptor.instance is not None:
                 self._singletons[interface] = descriptor.instance
-                return descriptor.instance
+                return descriptor.instance  # type: ignore[no-any-return]
 
             instance = self._create_instance(descriptor)
             self._singletons[interface] = instance
-            return instance
+            return instance  # type: ignore[no-any-return]
 
-        return self._create_instance(descriptor)
+        return self._create_instance(descriptor)  # type: ignore[no-any-return]
 
     def _create_instance(self, descriptor: ServiceDescriptor) -> Any:
         if descriptor.factory:
@@ -121,10 +123,10 @@ class DIContainer:
         except KeyError:
             return None
 
-    def is_registered(self, interface: Type) -> bool:
+    def is_registered(self, interface: Type[Any]) -> bool:
         return interface in self._services
 
-    def get_all_services(self) -> Dict[Type, ServiceDescriptor]:
+    def get_all_services(self) -> Dict[Type[Any], ServiceDescriptor]:
         return dict(self._services)
 
 
@@ -134,10 +136,10 @@ def configure_default_services() -> DIContainer:
     from .events import EventBus
 
     if not container.is_registered(ILogger):
-        container.register_singleton(ILogger, factory=lambda: logger)
+        container.register_singleton(ILogger, factory=lambda: logger)  # type: ignore[type-abstract]
 
     if not container.is_registered(IEventBus):
-        container.register_singleton(IEventBus, factory=lambda: EventBus())
+        container.register_singleton(IEventBus, factory=lambda: EventBus())  # type: ignore[type-abstract]
 
     return container
 

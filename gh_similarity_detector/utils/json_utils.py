@@ -6,12 +6,14 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 try:
     import orjson
 
     HAS_ORJSON = True
 except ImportError:
-    orjson = None
+    orjson = None  # type: ignore[assignment]
     HAS_ORJSON = False
 
 import json
@@ -24,7 +26,7 @@ def dumps(
     ensure_ascii: bool = True,
     indent: bool = False,
     sort_keys: bool = False,
-    default=None,
+    default: Any = None,
 ) -> str:
     if HAS_ORJSON:
         opt = 0

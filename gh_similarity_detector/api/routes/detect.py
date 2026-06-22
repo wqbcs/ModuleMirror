@@ -1,5 +1,9 @@
 """检测相关路由"""
 
+from __future__ import annotations
+
+from typing import Any
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List
@@ -37,7 +41,7 @@ class DetectRequest(BaseModel):
 
 
 class DetectResponse(BaseModel):
-    results: List[dict]
+    results: List[dict[str, Any]]
     total_matches: int
 
 
@@ -54,7 +58,7 @@ class NcdResponse(BaseModel):
 
 
 @router.post("/detect", response_model=DetectResponse)
-async def detect(req: DetectRequest):
+async def detect(req: DetectRequest) -> DetectResponse:
     """执行自我审视检测"""
     granularity_map = {
         "file": ModuleType.FILE,
@@ -96,7 +100,7 @@ async def detect(req: DetectRequest):
 
 
 @router.post("/ncd", response_model=NcdResponse)
-async def compute_ncd(req: NcdRequest):
+async def compute_ncd(req: NcdRequest) -> NcdResponse:
     """计算 NCD 压缩距离相似度"""
     source = Path(req.source_dir).resolve()
     target = Path(req.target_dir).resolve()
@@ -135,7 +139,7 @@ class PlagiarismRequest(BaseModel):
 
 
 @router.post("/plagiarism")
-async def detect_plagiarism(req: PlagiarismRequest):
+async def detect_plagiarism(req: PlagiarismRequest) -> dict[str, Any]:
     """执行抄袭溯源检测，将源项目与嫌疑项目对比并追踪代码来源"""
     config = DetectionConfig(
         supported_languages=req.language,
@@ -146,7 +150,7 @@ async def detect_plagiarism(req: PlagiarismRequest):
     pipeline = DetectionPipeline(config, db_path=req.db_path)
 
     try:
-        results = pipeline.plagiarism(req.source, req.suspects)
+        results = pipeline.plagiarism(req.source, req.suspects)  # type: ignore[arg-type]
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -157,7 +161,7 @@ async def detect_plagiarism(req: PlagiarismRequest):
 
 
 class QualityGateRequest(BaseModel):
-    results: List[dict]
+    results: List[dict[str, Any]]
     gate_name: str = "default"
 
     model_config = {
@@ -173,7 +177,7 @@ class QualityGateRequest(BaseModel):
 
 
 @router.post("/quality-gate")
-async def evaluate_quality_gate(req: QualityGateRequest):
+async def evaluate_quality_gate(req: QualityGateRequest) -> dict[str, Any]:
     """评估检测结果是否通过质量门禁"""
     from ...core.quality_gate import (
         extract_detection_metrics,

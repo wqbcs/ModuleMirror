@@ -7,10 +7,12 @@ SQLite 迁移框架
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import sqlite3
 import hashlib
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Any
 from dataclasses import dataclass
 
 from ...utils.logger import logger
@@ -55,7 +57,7 @@ class MigrationManager:
         row = self.conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
         return int(row[0]) if row else 0
 
-    def get_applied_migrations(self) -> List[Dict]:
+    def get_applied_migrations(self) -> List[Dict[str, Any]]:
         rows = self.conn.execute(
             "SELECT version, name, checksum, applied_at FROM _migration_history ORDER BY version"
         ).fetchall()
@@ -163,7 +165,7 @@ class MigrationManager:
 
         return rolled_back
 
-    def status(self) -> Dict:
+    def status(self) -> Dict[str, Any]:
         current = self.get_current_version()
         applied = self.get_applied_migrations()
         return {

@@ -10,7 +10,10 @@ Reference: Saul Schleimer, Daniel S. Wilkerson, and Alex Aiken.
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 from typing import List, Set, Tuple, Dict
+from collections import deque
 from ...models.entities import FingerprintSet, Module
 from ...utils.hash import stable_hash
 
@@ -327,9 +330,9 @@ class Winnowing:
             if tokens:
                 fp = self.hasher.hash_sequence(tokens)
                 return FingerprintSet(
-                    module_id=module.id, winnowing_fingerprints={fp}, token_count=len(tokens)
+                    module_id=module.id or "", winnowing_fingerprints={fp}, token_count=len(tokens)
                 )
-            return FingerprintSet(module_id=module.id)
+            return FingerprintSet(module_id=module.id or "")
 
         kgram_hashes = []
         for i in range(len(tokens) - self.kgram_size + 1):
@@ -340,7 +343,7 @@ class Winnowing:
         fingerprints = self._winnow(kgram_hashes)
 
         return FingerprintSet(
-            module_id=module.id, winnowing_fingerprints=fingerprints, token_count=len(tokens)
+            module_id=module.id or "", winnowing_fingerprints=fingerprints, token_count=len(tokens)
         )
 
     def _winnow(self, kgram_hashes: List[Tuple[int, int]]) -> Set[int]:
@@ -363,9 +366,7 @@ class Winnowing:
                 fingerprints.add(hash_val)
             return fingerprints
 
-        from collections import deque
-
-        deq = deque()
+        deq: deque[int] = deque()
         last_selected_pos = -1
 
         for i in range(n):
@@ -451,9 +452,7 @@ class Winnowing:
                 fingerprints.add(hash_val)
                 positions[hash_val] = pos
         else:
-            from collections import deque
-
-            deq = deque()
+            deq: deque[int] = deque()
             last_selected_pos = -1
 
             for i in range(n):

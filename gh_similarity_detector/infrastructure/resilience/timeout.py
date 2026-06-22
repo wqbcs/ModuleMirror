@@ -8,6 +8,8 @@
 - 检测: 连接5s/读取120s/总180s
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 from typing import Dict
 
@@ -60,7 +62,7 @@ class TimeoutManager:
     为不同操作类型提供超时配置，支持自定义覆盖。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._configs: Dict[str, TimeoutConfig] = {
             "github_api": GITHUB_API_TIMEOUT,
             "db_query": DB_QUERY_TIMEOUT,

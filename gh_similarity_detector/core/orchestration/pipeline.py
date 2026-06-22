@@ -6,6 +6,8 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 import time
 from typing import List, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -88,7 +90,7 @@ class DetectionPipeline:
             检测结果列表
         """
         start_time = time.time()
-        results = []
+        results: List[DetectionResult] = []
 
         try:
             if progress_callback:
@@ -141,7 +143,7 @@ class DetectionPipeline:
                     )
                     candidate_sources = remaining
 
-            def _process_candidate(candidate_source: str) -> tuple:
+            def _process_candidate(candidate_source: str) -> tuple[str, Optional[DetectionResult], Optional[str]]:
                 try:
                     candidate_project = self.project_fetcher.fetch_project(candidate_source)
                     if candidate_project is None:

@@ -6,6 +6,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import time
 from pathlib import Path
 from typing import Dict, List, Any, Optional
@@ -41,7 +43,7 @@ def generate_visual_report(
     return str(output)
 
 
-def _extract_modules(results: List[Dict], project_names: Optional[List[str]]) -> List[str]:
+def _extract_modules(results: List[Dict[str, Any]], project_names: Optional[List[str]]) -> List[str]:
     modules = set()
     for r in results:
         src = r.get("source_project") or r.get("source_module", "")
@@ -58,7 +60,7 @@ def _extract_modules(results: List[Dict], project_names: Optional[List[str]]) ->
     return sorted(modules)
 
 
-def _build_matrix(results: List[Dict], modules: List[str]) -> List[List[float]]:
+def _build_matrix(results: List[Dict[str, Any]], modules: List[str]) -> List[List[float]]:
     n = len(modules)
     matrix = [[0.0] * n for _ in range(n)]
     idx = {m: i for i, m in enumerate(modules)}
@@ -78,7 +80,7 @@ def _build_matrix(results: List[Dict], modules: List[str]) -> List[List[float]]:
     return matrix
 
 
-def _build_dependency_graph(results: List[Dict], modules: List[str]) -> Dict[str, Any]:
+def _build_dependency_graph(results: List[Dict[str, Any]], modules: List[str]) -> Dict[str, Any]:
     idx = {m: i for i, m in enumerate(modules)}
     nodes = [{"id": i, "name": m, "group": 1} for i, m in enumerate(modules)]
     links = []

@@ -7,8 +7,10 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import time
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, Tuple, Any
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -41,7 +43,7 @@ class TokenBucket:
     tokens: float = 0.0
     last_refill: float = field(default_factory=time.monotonic)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.tokens == 0.0:
             self.tokens = float(self.max_tokens)
 
@@ -119,7 +121,7 @@ class TieredRateLimiter:
         operation: str,
         user_id: Optional[str] = None,
         endpoint: Optional[str] = None,
-    ) -> Tuple[bool, float, Dict]:
+    ) -> Tuple[bool, float, Dict[str, Any]]:
         global_bucket = self._buckets["__global__"]
         global_ok = global_bucket.try_consume()
         if not global_ok:
@@ -146,7 +148,7 @@ class TieredRateLimiter:
         operation: str,
         user_id: Optional[str] = None,
         endpoint: Optional[str] = None,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         bucket_key = self._get_bucket_key(operation, user_id, endpoint)
         bucket = self._buckets.get(bucket_key)
         rule = self.rules.get(

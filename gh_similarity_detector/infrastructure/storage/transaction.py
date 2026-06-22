@@ -7,8 +7,10 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import sqlite3
-from typing import List, Callable, Optional
+from typing import List, Callable, Optional, Generator
 from contextlib import contextmanager
 from dataclasses import dataclass
 
@@ -27,7 +29,7 @@ class TransactionGuard:
         self.conn = conn
 
     @contextmanager
-    def atomic(self, label: str = "unnamed"):
+    def atomic(self, label: str = "unnamed") -> Generator[sqlite3.Connection, None, None]:
         try:
             self.conn.execute("BEGIN IMMEDIATE")
             logger.debug(f"事务开始: {label}")
@@ -87,7 +89,7 @@ class TransactionGuard:
     def verify_integrity(self) -> bool:
         try:
             result = self.conn.execute("PRAGMA integrity_check").fetchone()
-            is_ok = result[0] == "ok"
+            is_ok = bool(result[0] == "ok")
             if not is_ok:
                 logger.error(f"数据库完整性检查失败: {result[0]}")
             return is_ok

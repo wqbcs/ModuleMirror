@@ -6,13 +6,16 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
-from typing import List, Dict, Set, Optional, Tuple
+from __future__ import annotations
+
+from typing import List, Dict, Set, Optional, Tuple, Any, Generator
 from pathlib import Path
 from contextlib import contextmanager
 
 from ...models.entities import Project, Module, FingerprintSet
 from ...utils.logger import logger
 from ._connection_pool import _ConnectionPool
+import sqlite3
 from .schema import SCHEMA_VERSION
 from .migrations import init_schema
 from .queries import Queries
@@ -44,7 +47,7 @@ class FingerprintDB:
         self._init_schema()
 
     @contextmanager
-    def _get_conn(self):
+    def _get_conn(self) -> Generator[sqlite3.Connection, None, None]:
         """获取数据库连接（从连接池）"""
         conn = self._pool.acquire()
         try:
@@ -80,19 +83,19 @@ class FingerprintDB:
     ) -> List[str]:
         return self._queries.find_modules_by_fingerprint(fingerprint, fp_type)
 
-    def get_module(self, module_id: str) -> Optional[Dict]:
+    def get_module(self, module_id: str) -> Optional[Dict[str, Any]]:
         return self._queries.get_module(module_id)
 
-    def get_project(self, project_id: str) -> Optional[Dict]:
+    def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
         return self._queries.get_project(project_id)
 
     def get_module_fingerprints(self, module_id: str, fp_type: str = "winnowing") -> Set[int]:
         return self._queries.get_module_fingerprints(module_id, fp_type)
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> Dict[str, Any]:
         return self._queries.get_stats()
 
-    def list_projects(self) -> List[Dict]:
+    def list_projects(self) -> List[Dict[str, Any]]:
         return self._queries.list_projects()
 
     def delete_project(self, project_id: str) -> bool:
@@ -108,7 +111,7 @@ class FingerprintDB:
     ) -> Dict[str, Set[int]]:
         return self._queries.get_all_project_fingerprints(exclude_project_id, fp_type)
 
-    def get_similarity_cache(self, source_module_id: str, target_module_id: str) -> Optional[Dict]:
+    def get_similarity_cache(self, source_module_id: str, target_module_id: str) -> Optional[Dict[str, Any]]:
         return self._queries.get_similarity_cache(source_module_id, target_module_id)
 
     def put_similarity_cache(
@@ -123,7 +126,7 @@ class FingerprintDB:
             source_module_id, target_module_id, similarity, winnowing_overlap, ast_similarity
         )
 
-    def batch_put_similarity_cache(self, entries: List[Dict]) -> None:
+    def batch_put_similarity_cache(self, entries: List[Dict[str, Any]]) -> None:
         return self._queries.batch_put_similarity_cache(entries)
 
     def clear_similarity_cache(self, older_than_days: Optional[int] = None) -> int:
@@ -134,10 +137,10 @@ class FingerprintDB:
     ) -> None:
         return self._queries.create_task(task_id, target_project, candidates, task_type)
 
-    def get_task(self, task_id: str) -> Optional[Dict]:
+    def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         return self._queries.get_task(task_id)
 
-    def list_tasks(self, status: Optional[str] = None) -> List[Dict]:
+    def list_tasks(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         return self._queries.list_tasks(status)
 
     def update_task(
@@ -181,12 +184,12 @@ class FingerprintDB:
         target_project: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         return self._queries.get_detection_history(target_project, limit, offset)
 
     def get_detection_trend(
         self,
         target_project: str,
         limit: int = 20,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         return self._queries.get_detection_trend(target_project, limit)

@@ -74,7 +74,7 @@ class PlagiarismDetector:
 
         aggregated = self._aggregate_by_source(all_matches)
 
-        timelines = self._analyze_timelines(target_local_path, aggregated.keys())
+        timelines = self._analyze_timelines(target_local_path, set(aggregated.keys()))
 
         results = []
         total_modules = sum(len(m) for m in target_modules.values())
@@ -124,7 +124,7 @@ class PlagiarismDetector:
 
         for file_path, modules in target_modules.items():
             for module in modules:
-                fp_set = target_fingerprints.get(module.id)
+                fp_set = target_fingerprints.get(module.id or "")
                 if fp_set is None or not fp_set.winnowing_fingerprints:
                     continue
 
@@ -149,7 +149,7 @@ class PlagiarismDetector:
 
                     if similarity >= self.config.similarity_threshold:
                         result = SimilarityResult(
-                            source_module_id=module.id,
+                            source_module_id=module.id or "",
                             target_module_id=candidate_id,
                             similarity=similarity,
                             winnowing_overlap=overlap,

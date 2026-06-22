@@ -7,6 +7,8 @@ SSE 适合单向推送进度，WebSocket 适合双向交互。
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import asyncio
 import json
 import time
@@ -55,13 +57,13 @@ class ProgressEvent:
 
 
 class ProgressBroadcaster:
-    def __init__(self):
-        self._sse_subscribers: Dict[str, Set[asyncio.Queue]] = {}
-        self._ws_subscribers: Dict[str, Set[asyncio.Queue]] = {}
+    def __init__(self) -> None:
+        self._sse_subscribers: Dict[str, Set[asyncio.Queue[ProgressEvent]]] = {}
+        self._ws_subscribers: Dict[str, Set[asyncio.Queue[ProgressEvent]]] = {}
         self._task_progress: Dict[str, ProgressEvent] = {}
 
-    def subscribe_sse(self, task_id: str) -> asyncio.Queue:
-        queue: asyncio.Queue = asyncio.Queue(maxsize=100)
+    def subscribe_sse(self, task_id: str) -> asyncio.Queue[ProgressEvent]:
+        queue: asyncio.Queue[ProgressEvent] = asyncio.Queue(maxsize=100)
         if task_id not in self._sse_subscribers:
             self._sse_subscribers[task_id] = set()
         self._sse_subscribers[task_id].add(queue)
@@ -76,22 +78,22 @@ class ProgressBroadcaster:
         logger.info(f"SSE 订阅: task={task_id}, 当前订阅数={len(self._sse_subscribers[task_id])}")
         return queue
 
-    def unsubscribe_sse(self, task_id: str, queue: asyncio.Queue) -> None:
+    def unsubscribe_sse(self, task_id: str, queue: asyncio.Queue[ProgressEvent]) -> None:
         if task_id in self._sse_subscribers:
             self._sse_subscribers[task_id].discard(queue)
             if not self._sse_subscribers[task_id]:
                 del self._sse_subscribers[task_id]
             logger.info(f"SSE 取消订阅: task={task_id}")
 
-    def subscribe_ws(self, task_id: str) -> asyncio.Queue:
-        queue: asyncio.Queue = asyncio.Queue(maxsize=100)
+    def subscribe_ws(self, task_id: str) -> asyncio.Queue[ProgressEvent]:
+        queue: asyncio.Queue[ProgressEvent] = asyncio.Queue(maxsize=100)
         if task_id not in self._ws_subscribers:
             self._ws_subscribers[task_id] = set()
         self._ws_subscribers[task_id].add(queue)
         logger.info(f"WebSocket 订阅: task={task_id}")
         return queue
 
-    def unsubscribe_ws(self, task_id: str, queue: asyncio.Queue) -> None:
+    def unsubscribe_ws(self, task_id: str, queue: asyncio.Queue[ProgressEvent]) -> None:
         if task_id in self._ws_subscribers:
             self._ws_subscribers[task_id].discard(queue)
             if not self._ws_subscribers[task_id]:

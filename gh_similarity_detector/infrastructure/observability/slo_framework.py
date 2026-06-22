@@ -6,8 +6,10 @@ SLI/SLO 框架
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import time
-from typing import Dict, List, Any, Callable
+from typing import Dict, List, Any, Callable, Optional
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from collections import deque
@@ -32,7 +34,7 @@ class SLOTarget:
     warning_threshold: float
     error_budget: float = 0.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.error_budget == 0.0:
             self.error_budget = 100.0 - self.target_percentage
 
@@ -49,9 +51,9 @@ class SLICollector:
     def __init__(self, definition: SLIDefinition, window_size: int = 1000):
         self.definition = definition
         self.window_size = window_size
-        self._measurements: deque = deque(maxlen=window_size)
+        self._measurements: deque[SLIMeasurement] = deque(maxlen=window_size)
 
-    def record(self, value: float, is_good: bool = None, metadata: Dict[str, str] = None) -> None:
+    def record(self, value: float, is_good: Optional[bool] = None, metadata: Optional[Dict[str, str]] = None) -> None:
         if is_good is None:
             is_good = value <= 100
 
@@ -79,7 +81,7 @@ class SLICollector:
         values = sorted(m.value for m in self._measurements)
         idx = int(len(values) * percentile / 100)
         idx = min(idx, len(values) - 1)
-        return values[idx]
+        return float(values[idx])
 
     def get_stats(self) -> Dict[str, float]:
         if not self._measurements:
@@ -99,10 +101,10 @@ class SLICollector:
 
 
 class SLOMonitor:
-    def __init__(self):
+    def __init__(self) -> None:
         self._sli_collectors: Dict[str, SLICollector] = {}
         self._slo_targets: Dict[str, SLOTarget] = {}
-        self._alert_handlers: List[Callable] = []
+        self._alert_handlers: List[Callable[..., Any]] = []
 
     def register_sli(self, definition: SLIDefinition) -> SLICollector:
         collector = SLICollector(definition)
@@ -114,11 +116,11 @@ class SLOMonitor:
         self._slo_targets[target.sli_name] = target
         logger.info(f"SLO 已注册: {target.sli_name} -> {target.target_percentage}%")
 
-    def add_alert_handler(self, handler: Callable) -> None:
+    def add_alert_handler(self, handler: Callable[..., Any]) -> None:
         self._alert_handlers.append(handler)
 
     def record(
-        self, sli_name: str, value: float, is_good: bool = None, metadata: Dict[str, str] = None
+        self, sli_name: str, value: float, is_good: Optional[bool] = None, metadata: Optional[Dict[str, str]] = None
     ) -> None:
         if sli_name not in self._sli_collectors:
             return
@@ -166,7 +168,7 @@ class SLOMonitor:
                 logger.error(f"告警处理器失败: {e}")
 
     def get_slo_report(self) -> Dict[str, Any]:
-        report = {
+        report: Dict[str, Any] = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "slis": {},
             "slos": {},

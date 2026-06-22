@@ -1,9 +1,4 @@
-"""
-CLI 命令行接口
-
-提供 gh-sim 命令行工具。
-参考 Cookiecutter 薄CLI模式：命令函数仅做参数解析→调用业务→格式化输出。
-"""
+from __future__ import annotations
 
 import click
 import sys
@@ -56,7 +51,7 @@ def _check_api_rate_limit(token: str) -> None:
 
 @click.group()
 @click.version_option(version="1.0.0", prog_name="gh-sim")
-def main():
+def main() -> None:
     """GitHub 项目代码相似度检测工具
 
     用于自我审视（发现可复用模块）和抄袭检测（追溯代码来源）。
@@ -102,10 +97,10 @@ def main():
 @click.option("--retry", type=int, default=0, help="失败候选项目重试次数（默认: 0）")
 def detect(
     target: str,
-    candidates: tuple,
+    candidates: tuple[str, ...],
     candidates_file: str,
     granularity: str,
-    language: tuple,
+    language: tuple[str, ...],
     threshold: float,
     output: str,
     report_format: str,
@@ -113,7 +108,7 @@ def detect(
     parallelism: int,
     checkpoint: str,
     retry: int,
-):
+) -> None:
     """执行自我审视检测
 
     检测目标项目与候选项目之间的相似模块。
@@ -187,8 +182,8 @@ def detect(
 @click.option("--output", "-o", default="./plagiarism_report", help="溯源报告输出路径")
 @click.option("--update-db", is_flag=True, default=False, help="检测同时将目标项目添加到指纹库")
 def plagiarism(
-    target: str, db: str, language: tuple, threshold: float, output: str, update_db: bool
-):
+    target: str, db: str, language: tuple[str, ...], threshold: float, output: str, update_db: bool
+) -> None:
     """执行抄袭溯源检测
 
     检测目标项目是否抄袭了指纹库中的项目代码。
@@ -258,7 +253,7 @@ def plagiarism(
 )
 @click.option("--max", "max_results", type=int, default=20, help="最大返回数")
 @click.option("--token", envvar="GITHUB_TOKEN", help="GitHub API Token")
-def search(query: str, language: str, sort: str, max_results: int, token: str):
+def search(query: str, language: str, sort: str, max_results: int, token: str) -> None:
     """搜索 GitHub 仓库
 
     根据关键词搜索相关项目，可作为 detect 命令的候选项目来源。
@@ -281,7 +276,7 @@ def search(query: str, language: str, sort: str, max_results: int, token: str):
 @click.option("--source", "-s", required=True, help="源项目目录路径")
 @click.option("--target", "-t", required=True, help="目标项目目录路径")
 @click.option("--extensions", "-e", multiple=True, default=[], help="文件扩展名过滤（如 .py .js）")
-def ncd(source: str, target: str, extensions: tuple):
+def ncd(source: str, target: str, extensions: tuple[str, ...]) -> None:
     """计算两项目整体相似度 (NCD)
 
     使用归一化压缩距离快速判断两个项目是否整体相似。
@@ -298,7 +293,7 @@ def ncd(source: str, target: str, extensions: tuple):
 @click.option("--file2", "-2", required=True, help="第二个文件路径")
 @click.option("--context", "-c", type=int, default=3, help="上下文行数（默认: 3）")
 @click.option("--unified", "-u", is_flag=True, help="输出 unified diff 格式")
-def diff(file1: str, file2: str, context: int, unified: bool):
+def diff(file1: str, file2: str, context: int, unified: bool) -> None:
     """对比两个文件的代码差异
 
     显示两段代码之间的行级差异，帮助理解相似模块的具体区别。
@@ -318,27 +313,27 @@ def diff(file1: str, file2: str, context: int, unified: bool):
     differ = CodeDiffer()
 
     if unified:
-        result = differ.format_unified_diff(code1, code2, file1, file2, context)
-        if result:
-            click.echo(result)
+        unified_result = differ.format_unified_diff(code1, code2, file1, file2, context)
+        if unified_result:
+            click.echo(unified_result)
         else:
             click.echo("两文件内容完全相同。")
     else:
-        result = differ.diff(code1, code2, file1, file2, context)
-        format_diff_result(result, file1, file2)
+        diff_result = differ.diff(code1, code2, file1, file2, context)
+        format_diff_result(diff_result, file1, file2)
 
 
 register_db_commands(main)
 
 
 @main.group()
-def config():
+def config() -> None:
     """配置管理"""
 
 
 @config.command("generate")
 @click.option("--output", "-o", default="gh-sim.yaml", help="输出文件路径")
-def config_generate(output: str):
+def config_generate(output: str) -> None:
     """生成默认配置文件"""
     cfg = DetectionConfig()
     cfg.to_yaml(output)
@@ -349,7 +344,7 @@ def config_generate(output: str):
 @click.option(
     "--file", "-f", "config_file", required=True, type=click.Path(exists=True), help="配置文件路径"
 )
-def config_validate(config_file: str):
+def config_validate(config_file: str) -> None:
     """验证配置文件"""
     try:
         cfg = DetectionConfig.from_yaml(config_file)
@@ -370,7 +365,7 @@ if __name__ == "__main__":
 
 @main.command()
 @click.option("--db", default="./fingerprint_db.sqlite", help="指纹库路径")
-def browse(db: str):
+def browse(db: str) -> None:
     """交互式浏览指纹库内容
 
     使用 Rich TUI 展示指纹库中的项目和模块信息。
@@ -400,7 +395,7 @@ def browse(db: str):
             proj_name = project.name if hasattr(project, "name") else str(project)
             proj_node = tree.add(f"📦 {proj_name}")
             try:
-                modules = fingerprint_db.get_project_modules(
+                modules = fingerprint_db.get_project_modules(  # type: ignore[attr-defined]
                     project.id if hasattr(project, "id") else project
                 )
                 for module in modules[:10]:
@@ -420,7 +415,7 @@ def browse(db: str):
 
 @main.command()
 @click.option("--db", default="./fingerprint_db.sqlite", help="指纹库路径")
-def dashboard(db: str):
+def dashboard(db: str) -> None:
     """显示检测仪表盘概览
 
     使用 Rich TUI 展示系统状态、指纹库统计和最近检测结果。
@@ -468,7 +463,7 @@ def dashboard(db: str):
     help="目标 shell 类型",
 )
 @click.option("--output", "-o", type=click.Path(), help="输出文件路径（默认输出到stdout）")
-def completion(shell: str, output: str):
+def completion(shell: str, output: str) -> None:
     """生成 shell 自动补全脚本
 
     用法:

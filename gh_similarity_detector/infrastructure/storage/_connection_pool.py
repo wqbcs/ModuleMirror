@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sqlite3
 import threading
 from queue import Queue, Empty
@@ -11,7 +13,7 @@ class _ConnectionPool:
 
     def __init__(self, db_path: str, pool_size: int = 5):
         self.db_path = db_path
-        self._pool: Queue = Queue(maxsize=pool_size)
+        self._pool: Queue[sqlite3.Connection] = Queue(maxsize=pool_size)
         self._pool_size = pool_size
         self._lock = threading.Lock()
         self._created = 0

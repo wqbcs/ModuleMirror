@@ -6,8 +6,10 @@ Numpy向量化加速版RollingHash
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import numpy as np
-from typing import List
+from typing import List, Optional
 
 try:
     import numpy as np
@@ -15,24 +17,17 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None
+    np = None  # type: ignore[assignment]
 
 from ...utils.hash import stable_hash
 
 
 class VectorizedRollingHash:
-    """向量化滚动哈希 (Numpy加速版)
-
-    对比原始RollingHash:
-    - 批量哈希计算：一次处理多个序列
-    - 向量化运算：避免Python循环开销
-    - SIMD友好：利用numpy底层优化
-
-    性能：单序列~1.5x加速，批量序列~3-5x加速
-    """
 
     DEFAULT_BASE = 257
     DEFAULT_MODULUS = 2**31 - 1
+
+    _base_powers: Optional[np.ndarray]
 
     def __init__(self, base: int = DEFAULT_BASE, modulus: int = DEFAULT_MODULUS):
         self.base = base
@@ -91,7 +86,7 @@ class VectorizedRollingHash:
             return [self._hash_sequence_pure(seq) for seq in sequences]
 
         max_len = max(len(seq) for seq in sequences) if sequences else 0
-        if max_len > len(self._base_powers):
+        if max_len > len(self._base_powers):  # type: ignore[arg-type]
             self._base_powers = self._precompute_powers(max_len * 2)
 
         results = []
@@ -130,8 +125,8 @@ class VectorizedRollingHash:
         for i in range(num_kgrams):
             kgram_hashes = hashes[i : i + k]
             powers = (
-                self._base_powers[k - 1 :: -1]
-                if k <= len(self._base_powers)
+                self._base_powers[k - 1 :: -1]  # type: ignore[index]
+                if k <= len(self._base_powers)  # type: ignore[arg-type]
                 else np.power(self.base, np.arange(k - 1, -1, -1), dtype=np.int64) % self.modulus
             )
             result[i] = np.sum(kgram_hashes * powers) % self.modulus

@@ -6,6 +6,8 @@
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 from typing import Dict, List, Set, Optional
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from tree_sitter import Node
@@ -130,7 +132,7 @@ class FingerprintGenerator:
         if total <= 1 or self.config.parallelism <= 1:
             for module in all_modules:
                 fp_set = self.generate_fingerprints(module)
-                fingerprints[module.id] = fp_set
+                fingerprints[module.id or ""] = fp_set
                 if getattr(self, "_last_cache_hit", False):
                     cache_hits += 1
         else:
@@ -146,7 +148,7 @@ class FingerprintGenerator:
                     module = future_to_module[future]
                     try:
                         fp_set = future.result()
-                        fingerprints[module.id] = fp_set
+                        fingerprints[module.id or ""] = fp_set
                         if getattr(self, "_last_cache_hit", False):
                             cache_hits += 1
                     except Exception as e:

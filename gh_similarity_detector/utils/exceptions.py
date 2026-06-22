@@ -5,7 +5,9 @@
 替代通用 Exception/ValueError，提供精确的错误分类和处理策略。
 """
 
-from typing import Optional, Dict, Any
+from __future__ import annotations
+
+from typing import Optional, Dict, Any, List
 
 from ..infrastructure.i18n import t
 
@@ -48,7 +50,7 @@ class InvalidThresholdError(ConfigurationError):
 
 
 class UnsupportedLanguageError(ConfigurationError):
-    def __init__(self, language: str, supported: list = None):
+    def __init__(self, language: str, supported: Optional[List[str]] = None):
         super().__init__(
             t("error.config.unsupported_language", language=language),
             {"language": language, "supported": supported or []},

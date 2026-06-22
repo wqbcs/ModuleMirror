@@ -7,6 +7,8 @@ OWASP API1: 对象级授权检查
 - 操作权限验证: read/write/admin分级
 """
 
+from __future__ import annotations
+
 from typing import Dict, Set
 from enum import Enum
 
@@ -41,7 +43,7 @@ class ProjectAuthorization:
     维护用户对项目的权限映射。
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._permissions: Dict[str, Dict[str, Permission]] = {}
 
     def grant(self, user_id: str, project_id: str, permission: Permission) -> None:

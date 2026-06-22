@@ -7,8 +7,10 @@ AST 深度比对验证器
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 import difflib
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Any
 from dataclasses import dataclass
 from collections import Counter
 
@@ -93,7 +95,7 @@ class ASTDeepComparator:
             else f"深度比对相似度 {min_sim:.1f}% 低于阈值 {threshold - self.VERIFY_TOLERANCE:.1f}%",
         )
 
-    def _parse(self, module: Module):
+    def _parse(self, module: Module) -> Any:
         parser = self.parser_manager.get_parser(module.language)
         if parser is None:
             return None
@@ -104,7 +106,7 @@ class ASTDeepComparator:
             return None
 
     @staticmethod
-    def _flatten_tree(node) -> List[Tuple[str, int]]:
+    def _flatten_tree(node: Any) -> List[Tuple[str, int]]:
         result = []
         stack = [node]
         while stack:

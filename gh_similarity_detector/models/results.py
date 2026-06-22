@@ -8,7 +8,7 @@ Author: GitHub 项目代码相似度检测工具
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import List, Optional, Dict
+from typing import Any, List, Optional, Dict
 from .enums import ReuseSuggestion, TimeRelation
 
 
@@ -35,7 +35,7 @@ class SimilarityResult:
     winnowing_union: int = 0
     ast_similarity: Optional[float] = None
     reuse_suggestion: ReuseSuggestion = ReuseSuggestion.NEED_REFACTOR
-    matched_code_snippet: Optional[Dict] = None
+    matched_code_snippet: Optional[Dict[str, Any]] = None
     detected_at: datetime = field(default_factory=datetime.now)
 
     def __str__(self) -> str:
@@ -89,7 +89,7 @@ class DetectionResult:
     source_project: str
     target_project: str
     matches: List[SimilarityResult]
-    statistics: Dict
+    statistics: Dict[str, Any]
 
     def format_summary(self) -> str:
         lines = [
@@ -158,7 +158,7 @@ class ReportStatistics:
             distribution=dist,
         )
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "total_matches": self.total_matches,
             "avg_similarity": round(self.avg_similarity, 2),
@@ -179,14 +179,14 @@ class ReportData:
     statistics: ReportStatistics = field(default_factory=ReportStatistics)
     generated_at: datetime = field(default_factory=datetime.now)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.results and self.statistics.total_matches == 0:
             all_matches = []
             for r in self.results:
                 all_matches.extend(r.matches)
             self.statistics = ReportStatistics.from_results(all_matches)
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         return {
             "source_project": self.source_project,
             "target_projects": self.target_projects,

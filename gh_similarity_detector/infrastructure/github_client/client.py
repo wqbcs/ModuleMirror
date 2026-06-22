@@ -6,10 +6,12 @@ GitHub API 客户端
 Author: GitHub 项目代码相似度检测工具
 """
 
+from __future__ import annotations
+
 import httpx
 import re
 import base64
-from typing import Optional, List, Dict, Any, Tuple
+from typing import Optional, List, Dict, Any, Tuple, cast
 from tenacity import retry, stop_after_attempt, wait_exponential
 
 from ...utils.logger import logger
@@ -143,11 +145,12 @@ class GitHubClient:
             仓库信息字典
         """
         key = f"{owner}/{repo}"
-        return await github_repo_fallback.execute(
+        result = await github_repo_fallback.execute(
             key=key,
             primary_fn=lambda: self._get_repo_info_primary(owner, repo),
             circuit=github_circuit,
         )
+        return cast(Optional[Dict[str, Any]], result)
 
     async def _get_repo_info_primary(self, owner: str, repo: str) -> Optional[Dict[str, Any]]:
         url = f"{self.API_BASE_URL}/repos/{owner}/{repo}"
@@ -155,7 +158,7 @@ class GitHubClient:
             response = await self._client.get(url)
             response.raise_for_status()
             github_circuit.record_success()
-            return response.json()
+            return cast(Dict[str, Any], response.json())
         except httpx.HTTPStatusError as e:
             self._handle_http_error(e, "获取仓库信息")
             return None
@@ -170,11 +173,12 @@ class GitHubClient:
     ) -> Optional[List[Dict[str, Any]]]:
         """获取仓库文件树（含Fallback兜底）"""
         key = f"{owner}/{repo}/{branch}"
-        return await github_tree_fallback.execute(
+        result = await github_tree_fallback.execute(
             key=key,
             primary_fn=lambda: self._get_tree_primary(owner, repo, branch),
             circuit=github_circuit,
         )
+        return cast(Optional[List[Dict[str, Any]]], result)
 
     async def _get_tree_primary(
         self, owner: str, repo: str, branch: str = "main"
@@ -184,7 +188,7 @@ class GitHubClient:
             response = await self._client.get(url)
             response.raise_for_status()
             data = response.json()
-            return data.get("tree", [])
+            return cast(List[Dict[str, Any]], data.get("tree", []))
         except httpx.HTTPStatusError as e:
             self._handle_http_error(e, "获取文件树")
             return None
@@ -198,11 +202,12 @@ class GitHubClient:
     ) -> Optional[str]:
         """获取文件内容（含Fallback兜底）"""
         key = f"{owner}/{repo}/{branch}/{path}"
-        return await github_file_fallback.execute(
+        result = await github_file_fallback.execute(
             key=key,
             primary_fn=lambda: self._get_file_content_primary(owner, repo, path, branch),
             circuit=github_circuit,
         )
+        return cast(Optional[str], result)
 
     async def _get_file_content_primary(
         self, owner: str, repo: str, path: str, branch: str = "main"
@@ -234,7 +239,7 @@ class GitHubClient:
         try:
             response = await self._client.get(url)
             response.raise_for_status()
-            return response.json()
+            return cast(Dict[str, Any], response.json())
         except Exception as e:
             logger.error(f"检查速率限制失败: {e}")
             return {}
@@ -251,13 +256,14 @@ class GitHubClient:
         """搜索 GitHub 仓库（含Fallback兜底）"""
         lang_suffix = f" language:{language}" if language else ""
         key = f"{query}{lang_suffix}/{sort}/{order}/{max_results}"
-        return await github_search_fallback.execute(
+        result = await github_search_fallback.execute(
             key=key,
             primary_fn=lambda: self._search_repositories_primary(
                 query, language, sort, order, max_results
             ),
             circuit=github_circuit,
         )
+        return cast(List[Dict[str, Any]], result)
 
     async def _search_repositories_primary(
         self,
@@ -280,7 +286,7 @@ class GitHubClient:
         }
 
         try:
-            response = await self._client.get(url, params=params)
+            response = await self._client.get(url, params=cast(Dict[str, str], params))
             response.raise_for_status()
             data = response.json()
             items = data.get("items", [])

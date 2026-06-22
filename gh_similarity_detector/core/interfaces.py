@@ -7,6 +7,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 from typing import Protocol, Dict, Set, List, Any, Optional
 from abc import abstractmethod
 
@@ -75,13 +77,13 @@ class ILogger(Protocol):
 
 class IMetrics(Protocol):
     @abstractmethod
-    def increment(self, name: str, value: int = 1, tags: Dict[str, str] = None) -> None: ...
+    def increment(self, name: str, value: int = 1, tags: Optional[Dict[str, str]] = None) -> None: ...
 
     @abstractmethod
-    def gauge(self, name: str, value: float, tags: Dict[str, str] = None) -> None: ...
+    def gauge(self, name: str, value: float, tags: Optional[Dict[str, str]] = None) -> None: ...
 
     @abstractmethod
-    def timing(self, name: str, value: float, tags: Dict[str, str] = None) -> None: ...
+    def timing(self, name: str, value: float, tags: Optional[Dict[str, str]] = None) -> None: ...
 
 
 class IConfiguration(Protocol):

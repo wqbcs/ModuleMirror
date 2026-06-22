@@ -7,6 +7,8 @@ polars比pandas快10x以上，内存占用更低。
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
@@ -16,7 +18,7 @@ try:
     HAS_POLARS = True
 except ImportError:
     HAS_POLARS = False
-    pl = None
+    pl = None  # type: ignore[assignment]
 
 from ...utils.logger import logger
 
@@ -35,10 +37,10 @@ class SimilarityDataFrame:
     - 报告数据导出
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         if not HAS_POLARS:
             raise ImportError("polars未安装，请运行: pip install polars")
-        self._df: Optional[pl.DataFrame] = None
+        self._df: Optional[Any] = None
 
     def from_results(self, results: List[Dict[str, Any]]) -> "SimilarityDataFrame":
         """从检测结果创建DataFrame
@@ -91,7 +93,7 @@ class SimilarityDataFrame:
             self._df = self._df.filter(pl.col("similarity") >= min_similarity)
         return self
 
-    def group_by_module(self) -> pl.DataFrame:
+    def group_by_module(self) -> Any:
         """按模块聚合统计
 
         Returns:
@@ -109,7 +111,7 @@ class SimilarityDataFrame:
             ]
         )
 
-    def top_similar_pairs(self, top_k: int = 100) -> pl.DataFrame:
+    def top_similar_pairs(self, top_k: int = 100) -> Any:
         """获取TopK相似模块对
 
         Args:
@@ -128,7 +130,7 @@ class SimilarityDataFrame:
             .head(top_k)
         )
 
-    def build_similarity_matrix(self) -> pl.DataFrame:
+    def build_similarity_matrix(self) -> Any:
         """构建相似度矩阵
 
         Returns:

@@ -14,6 +14,8 @@
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 from typing import Dict, List, Any, Optional, Set, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
@@ -144,7 +146,7 @@ class ASTNormalizer:
         functions = []
         lines = code.strip().split("\n")
         current_func = None
-        current_body = []
+        current_body: List[str] = []
 
         for line in lines:
             stripped = line.strip()
@@ -308,7 +310,7 @@ class CrossLanguageDetector:
         return jaccard * 0.5 + depth_factor * 0.25 + count_factor * 0.25
 
     def _extract_node_type_set(self, ir: IRNode) -> Set[str]:
-        result = set()
+        result: Set[str] = set()
         self._collect_types(ir, result)
         return result
 

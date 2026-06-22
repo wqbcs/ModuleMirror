@@ -9,7 +9,9 @@ CFG: 控制流图特征(分支+循环)
 Author: ModuleMirror
 """
 
-from typing import Dict, List, Any
+from __future__ import annotations
+
+from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
@@ -55,7 +57,7 @@ class MultiViewFeature:
         return structural_hash(combined)
 
     def fused_similarity(
-        self, other: "MultiViewFeature", weights: Dict[str, float] = None
+        self, other: "MultiViewFeature", weights: Optional[Dict[str, float]] = None
     ) -> float:
         w = weights or {"ast": 0.4, "dfg": 0.3, "cfg": 0.3}
 
@@ -251,7 +253,7 @@ class CFGViewExtractor:
 
 
 class MultiViewFusion:
-    def __init__(self):
+    def __init__(self) -> None:
         self._ast = ASTViewExtractor()
         self._dfg = DFGViewExtractor()
         self._cfg = CFGViewExtractor()
@@ -268,6 +270,6 @@ class MultiViewFusion:
         self,
         feature_a: MultiViewFeature,
         feature_b: MultiViewFeature,
-        weights: Dict[str, float] = None,
+        weights: Optional[Dict[str, float]] = None,
     ) -> float:
         return feature_a.fused_similarity(feature_b, weights)

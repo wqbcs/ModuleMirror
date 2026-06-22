@@ -4,8 +4,10 @@
 确保检测结果在相同输入下完全可重现：
 1. 确定性种子控制（替代 Python 随机化）
 2. 检测结果内容哈希（验证结果一致性）
-3. 检测请求去重（相同请求返回缓存结果）
+Author: ModuleMirror
 """
+
+from __future__ import annotations
 
 import hashlib
 import json
@@ -13,7 +15,7 @@ import os
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Union
 from dataclasses import dataclass
 
 from .logger import logger
@@ -76,7 +78,7 @@ def compute_result_hash(
     Returns:
         SHA256 哈希字符串
     """
-    match_data = []
+    match_data: List[Union[Dict[str, Any], str]] = []
     for m in matches:
         if hasattr(m, "__dict__"):
             d = {}
@@ -217,16 +219,17 @@ def compute_config_hash(config: Any) -> str:
     仅包含影响检测结果的字段。
     """
     if hasattr(config, "__dataclass_fields__"):
-        data = {}
+        data_norm: Union[Dict[str, Any], str] = {}
         for f_name in sorted(config.__dataclass_fields__):
             val = getattr(config, f_name)
-            data[f_name] = _normalize_value(val)
+            if isinstance(data_norm, dict):
+                data_norm[f_name] = _normalize_value(val)
     elif isinstance(config, dict):
-        data = {k: _normalize_value(v) for k, v in sorted(config.items())}
+        data_norm = {k: _normalize_value(v) for k, v in sorted(config.items())}
     else:
-        data = str(config)
+        data_norm = str(config)
 
-    payload = json.dumps(data, sort_keys=True, separators=(",", ":"))
+    payload = json.dumps(data_norm, sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 

@@ -7,6 +7,8 @@ SSE实时进度推送 - Server-Sent Events
 Author: ModuleMirror
 """
 
+from __future__ import annotations
+
 import asyncio
 from typing import AsyncGenerator, Any, Dict, List
 
@@ -16,14 +18,14 @@ try:
     HAS_SSE = True
 except ImportError:
     HAS_SSE = False
-    EventSourceResponse = None
+    EventSourceResponse = None  # type: ignore[assignment, misc]
 
 from ...utils.logger import logger
 from ...utils.json_utils import dumps as json_dumps
 
 
 class ProgressEvent:
-    def __init__(self):
+    def __init__(self) -> None:
         self._total = 0
         self._current = 0
         self._stage = "idle"
@@ -94,11 +96,11 @@ async def progress_generator(
     yield {"_result": results}
 
 
-def create_sse_response(generator: AsyncGenerator) -> Any:
+def create_sse_response(generator: AsyncGenerator[Dict[str, Any], None]) -> Any:
     if not HAS_SSE:
         raise ImportError("sse-starlette未安装，请运行: pip install sse-starlette")
 
-    async def wrapped():
+    async def wrapped() -> AsyncGenerator[Dict[str, Any], None]:
         async for data in generator:
             yield {"data": json_dumps(data, ensure_ascii=False)}
 
@@ -106,7 +108,7 @@ def create_sse_response(generator: AsyncGenerator) -> Any:
 
 
 class ProgressTracker:
-    def __init__(self):
+    def __init__(self) -> None:
         self._event = ProgressEvent()
         self._callbacks: List[Any] = []
 
@@ -145,7 +147,7 @@ class ProgressTracker:
 if not HAS_SSE:
 
     class MockEventSourceResponse:
-        def __init__(self, content):
+        def __init__(self, content: Any) -> None:
             self.content = content
 
-    EventSourceResponse = MockEventSourceResponse
+    EventSourceResponse = MockEventSourceResponse  # type: ignore[assignment, misc]

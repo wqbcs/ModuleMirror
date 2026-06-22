@@ -1,17 +1,13 @@
-"""
-CLI 输出格式化
-
-参考 Black output.py + report.py 模式，
-将输出渲染逻辑从 CLI 命令中分离出来。
-"""
+from __future__ import annotations
 
 import click
+from typing import Callable, Any
 
 
-def make_progress_callback():
+def make_progress_callback() -> Callable[[float], None]:
     bar_width = 40
 
-    def callback(progress: float):
+    def callback(progress: float) -> None:
         filled = int(bar_width * progress)
         bar = "█" * filled + "░" * (bar_width - filled)
         click.echo(f"\r进度: [{bar}] {progress * 100:.1f}%", nl=False)
@@ -29,7 +25,7 @@ def format_detection_header(target: str, candidate_count: int, granularity: str,
     click.echo()
 
 
-def format_detection_results(results: list) -> None:
+def format_detection_results(results: list[Any]) -> None:
     for result in results:
         click.echo()
         click.echo(f"{'=' * 60}")
@@ -66,7 +62,7 @@ def format_plagiarism_header(target: str, db: str, threshold: float) -> None:
     click.echo()
 
 
-def format_plagiarism_results(results: list) -> None:
+def format_plagiarism_results(results: list[Any]) -> None:
     if results:
         click.echo()
         click.echo(f"{'=' * 60}")
@@ -85,7 +81,7 @@ def format_plagiarism_results(results: list) -> None:
         click.echo("未发现疑似抄袭来源。")
 
 
-def format_search_results(results: list) -> None:
+def format_search_results(results: list[Any]) -> None:
     if not results:
         click.echo("未找到匹配的仓库。")
         return
@@ -103,7 +99,7 @@ def format_search_results(results: list) -> None:
             click.echo(f"     描述: {desc}")
 
 
-def format_diff_result(result, file1: str, file2: str) -> None:
+def format_diff_result(result: Any, file1: str, file2: str) -> None:
     click.echo(f"源: {file1} ({result.source_total} 行)")
     click.echo(f"目标: {file2} ({result.target_total} 行)")
     click.echo(f"相似率: {result.ratio * 100:.1f}%")
@@ -122,7 +118,7 @@ def format_diff_result(result, file1: str, file2: str) -> None:
         click.echo(f"{src_num} {tgt_num} {prefix}{line.content}")
 
 
-def format_api_rate_info(info: dict) -> None:
+def format_api_rate_info(info: dict[str, Any]) -> None:
     core = info.get("resources", {}).get("core", {})
     remaining = core.get("remaining")
     limit = core.get("limit")

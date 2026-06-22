@@ -8,6 +8,8 @@
 - 动态加载: 从entry_points或目录加载第三方插件
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Type
 from dataclasses import dataclass, field
@@ -150,7 +152,7 @@ class TypeScriptPlugin(LanguagePlugin):
 
 class GoPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_go as tsgo
+        import tree_sitter_go as tsgo  # type: ignore[import-not-found]
 
         return Language(tsgo.language())
 
@@ -166,7 +168,7 @@ class GoPlugin(LanguagePlugin):
 
 class RustPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_rust as tsrust
+        import tree_sitter_rust as tsrust  # type: ignore[import-not-found]
 
         return Language(tsrust.language())
 
@@ -182,7 +184,7 @@ class RustPlugin(LanguagePlugin):
 
 class CPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_c as tsc
+        import tree_sitter_c as tsc  # type: ignore[import-not-found]
 
         return Language(tsc.language())
 
@@ -198,7 +200,7 @@ class CPlugin(LanguagePlugin):
 
 class CppPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_cpp as tscpp
+        import tree_sitter_cpp as tscpp  # type: ignore[import-not-found]
 
         return Language(tscpp.language())
 
@@ -217,7 +219,7 @@ class CppPlugin(LanguagePlugin):
 
 class KotlinPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_kotlin as tskotlin
+        import tree_sitter_kotlin as tskotlin  # type: ignore[import-not-found]
 
         return Language(tskotlin.language())
 
@@ -236,7 +238,7 @@ class KotlinPlugin(LanguagePlugin):
 
 class ScalaPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_scala as tsscala
+        import tree_sitter_scala as tsscala  # type: ignore[import-not-found]
 
         return Language(tsscala.language())
 
@@ -255,7 +257,7 @@ class ScalaPlugin(LanguagePlugin):
 
 class PhpPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_php as tsphp
+        import tree_sitter_php as tsphp  # type: ignore[import-not-found]
 
         return Language(tsphp.language())
 
@@ -274,7 +276,7 @@ class PhpPlugin(LanguagePlugin):
 
 class RubyPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_ruby as tsruby
+        import tree_sitter_ruby as tsruby  # type: ignore[import-not-found]
 
         return Language(tsruby.language())
 
@@ -293,7 +295,7 @@ class RubyPlugin(LanguagePlugin):
 
 class SwiftPlugin(LanguagePlugin):
     def get_language(self) -> Language:
-        import tree_sitter_swift as tsswift
+        import tree_sitter_swift as tsswift  # type: ignore[import-not-found]
 
         return Language(tsswift.language())
 
@@ -313,7 +315,7 @@ class SwiftPlugin(LanguagePlugin):
 class PluginRegistry:
     """语言插件注册中心"""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._plugins: Dict[str, LanguagePlugin] = {}
         self._extension_map: Dict[str, str] = {}
 

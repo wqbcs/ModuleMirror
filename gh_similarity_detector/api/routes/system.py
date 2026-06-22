@@ -1,7 +1,11 @@
 """健康检查和搜索路由"""
 
+from __future__ import annotations
+
 import os
 import shutil
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Header
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -29,9 +33,9 @@ class SearchRequest(BaseModel):
 
 
 @router.get("/health")
-async def health():
+async def health() -> dict[str, Any]:
     """健康检查（含 DB/GitHub/磁盘/断路器/依赖状态）"""
-    result = {"status": "ok", "version": __version__}
+    result: dict[str, Any] = {"status": "ok", "version": __version__}
 
     db_status = "unavailable"
     if Path(DB_PATH).exists():
@@ -68,7 +72,7 @@ async def health():
 @router.post("/search")
 async def search_repositories(
     req: SearchRequest, x_github_token: Optional[str] = Header(None, alias="X-GitHub-Token")
-):
+) -> dict[str, Any]:
     """搜索 GitHub 仓库"""
     client = GitHubClient(token=x_github_token)
 
@@ -87,6 +91,6 @@ async def search_repositories(
 
 
 @router.get("/metrics")
-async def metrics():
+async def metrics() -> Response:
     """Prometheus指标端点"""
     return Response(content=get_metrics(), media_type=get_content_type())

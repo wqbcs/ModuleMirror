@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import sqlite3
+from typing import List, Tuple
 
 from ...utils.logger import logger
 from .schema import SCHEMA_VERSION
@@ -45,7 +48,7 @@ def run_migrations(conn: sqlite3.Connection) -> None:
             logger.info(f"数据库迁移完成: v{version}")
 
 
-def get_migrations() -> list:
+def get_migrations() -> List[Tuple[int, List[str]]]:
     return [
         (
             2,

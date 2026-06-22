@@ -1,9 +1,13 @@
+from __future__ import annotations
+
 import json
-from typing import List, Dict, Set, Optional, Tuple
+from typing import List, Dict, Set, Optional, Tuple, Any, Generator
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
+
+import sqlite3
 
 from ...models.entities import Project, Module, FingerprintSet
 from ...models.enums import FingerprintType
@@ -163,7 +167,7 @@ class Queries:
         self._db_path = db_path
 
     @contextmanager
-    def _get_conn(self):
+    def _get_conn(self) -> Generator[sqlite3.Connection, None, None]:
         conn = self._pool.acquire()
         try:
             yield conn
@@ -249,7 +253,7 @@ class Queries:
             )
             return [row[0] for row in cursor.fetchall()]
 
-    def get_module(self, module_id: str) -> Optional[Dict]:
+    def get_module(self, module_id: str) -> Optional[Dict[str, Any]]:
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_MODULE,
@@ -270,7 +274,7 @@ class Queries:
                 }
             return None
 
-    def get_project(self, project_id: str) -> Optional[Dict]:
+    def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_PROJECT,
@@ -298,7 +302,7 @@ class Queries:
             )
             return {row[0] for row in cursor.fetchall()}
 
-    def get_stats(self) -> Dict:
+    def get_stats(self) -> Dict[str, Any]:
         with self._get_conn() as conn:
             project_count = conn.execute(SQL_COUNT_PROJECTS).fetchone()[0]
 
@@ -312,7 +316,7 @@ class Queries:
                 "fingerprint_count": fp_count,
             }
 
-    def list_projects(self) -> List[Dict]:
+    def list_projects(self) -> List[Dict[str, Any]]:
         with self._get_conn() as conn:
             cursor = conn.execute(SQL_LIST_PROJECTS)
             return [
@@ -330,7 +334,7 @@ class Queries:
     def delete_project(self, project_id: str) -> bool:
         with self._get_conn() as conn:
             cursor = conn.execute(SQL_DELETE_PROJECT, (project_id,))
-            deleted = cursor.rowcount > 0
+            deleted = bool(cursor.rowcount > 0)
 
         if deleted:
             logger.info(f"项目已删除: {project_id}")
@@ -370,7 +374,7 @@ class Queries:
     ) -> Dict[str, Set[int]]:
         with self._get_conn() as conn:
             query = SQL_GET_ALL_PROJECT_FINGERPRINTS
-            params: list = [fp_type]
+            params: list[str | int] = [fp_type]
 
             if exclude_project_id:
                 query += SQL_GET_ALL_PROJECT_FINGERPRINTS_EXCLUDE_SUFFIX
@@ -386,7 +390,7 @@ class Queries:
 
             return result
 
-    def get_similarity_cache(self, source_module_id: str, target_module_id: str) -> Optional[Dict]:
+    def get_similarity_cache(self, source_module_id: str, target_module_id: str) -> Optional[Dict[str, Any]]:
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_SIMILARITY_CACHE,
@@ -423,7 +427,7 @@ class Queries:
                 ),
             )
 
-    def batch_put_similarity_cache(self, entries: List[Dict]) -> None:
+    def batch_put_similarity_cache(self, entries: List[Dict[str, Any]]) -> None:
         if not entries:
             return
         now = datetime.now().isoformat()
@@ -452,7 +456,7 @@ class Queries:
                 )
             else:
                 cursor = conn.execute(SQL_DELETE_SIMILARITY_CACHE_ALL)
-            return cursor.rowcount
+            return int(cursor.rowcount)
 
     def create_task(
         self, task_id: str, target_project: str, candidates: str, task_type: str = "detect"
@@ -469,7 +473,7 @@ class Queries:
                 ),
             )
 
-    def get_task(self, task_id: str) -> Optional[Dict]:
+    def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_DETECTION_TASK,
@@ -489,7 +493,7 @@ class Queries:
                 }
             return None
 
-    def list_tasks(self, status: Optional[str] = None) -> List[Dict]:
+    def list_tasks(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
         with self._get_conn() as conn:
             if status:
                 cursor = conn.execute(
@@ -519,14 +523,14 @@ class Queries:
         result_path: Optional[str] = None,
     ) -> bool:
         with self._get_conn() as conn:
-            sets = []
-            params = []
+            sets: list[str] = []
+            params: list[str | float] = []
             if status is not None:
                 sets.append("status = ?")
                 params.append(status)
             if progress is not None:
                 sets.append("progress = ?")
-                params.append(progress)
+                params.append(str(progress))
             if result_path is not None:
                 sets.append("result_path = ?")
                 params.append(result_path)
@@ -537,19 +541,19 @@ class Queries:
             cursor = conn.execute(
                 SQL_UPDATE_DETECTION_TASK_TEMPLATE.format(set_clause=", ".join(sets)), params
             )
-            return cursor.rowcount > 0
+            return bool(cursor.rowcount > 0)
 
     def delete_task(self, task_id: str) -> bool:
         with self._get_conn() as conn:
             cursor = conn.execute(SQL_DELETE_DETECTION_TASK, (task_id,))
-            return cursor.rowcount > 0
+            return bool(cursor.rowcount > 0)
 
     def export_to_json(self, output_path: str) -> int:
         with self._get_conn() as conn:
             projects = conn.execute(
                 SQL_EXPORT_SELECT_PROJECTS
             ).fetchall()
-            export_data = {
+            export_data: Dict[str, Any] = {
                 "schema_version": SCHEMA_VERSION,
                 "exported_at": datetime.now().isoformat(),
                 "projects": [],
@@ -655,14 +659,14 @@ class Queries:
                     duration_ms,
                 ),
             )
-            return cursor.lastrowid
+            return cursor.lastrowid if cursor.lastrowid is not None else 0
 
     def get_detection_history(
         self,
         target_project: Optional[str] = None,
         limit: int = 50,
         offset: int = 0,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         with self._get_conn() as conn:
             if target_project:
                 rows = conn.execute(
@@ -692,7 +696,7 @@ class Queries:
         self,
         target_project: str,
         limit: int = 20,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         with self._get_conn() as conn:
             rows = conn.execute(
                 SQL_GET_DETECTION_TREND,
