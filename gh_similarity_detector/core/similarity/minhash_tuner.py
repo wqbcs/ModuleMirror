@@ -70,8 +70,7 @@ def tune_minhash_params(
                     if not fps:
                         continue
                     mh = MinHash(num_perm=num_perm)
-                    for fp in fps:
-                        mh.update(str(fp).encode("utf8"))
+                    mh.update_batch([str(fp).encode("utf8") for fp in fps])
                     minhashes[module_id] = mh
                     forest.add(module_id, mh)
 

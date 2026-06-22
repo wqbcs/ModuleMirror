@@ -51,8 +51,7 @@ class MinHashLSHIndex:
 
     def _create_minhash(self, fingerprints: Set[int]) -> MinHash:
         mh = MinHash(num_perm=self._num_perm)
-        for fp in fingerprints:
-            mh.update(str(fp).encode("utf8"))
+        mh.update_batch([str(fp).encode("utf8") for fp in fingerprints])
         return mh
 
     def build(self, fingerprints: Dict[str, FingerprintSet]) -> None:
