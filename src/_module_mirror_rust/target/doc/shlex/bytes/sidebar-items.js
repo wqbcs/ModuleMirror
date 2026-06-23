@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"fn":["split","try_join","try_quote"],"struct":["Quoter","Shlex"]};

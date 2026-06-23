@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Env","VsVers"],"fn":["find","find_tool","find_tool_with_env","find_vs_version","find_windows_sdk","get_ucrt_dir"],"struct":["Sdk","Tool"],"trait":["EnvGetter"]};
