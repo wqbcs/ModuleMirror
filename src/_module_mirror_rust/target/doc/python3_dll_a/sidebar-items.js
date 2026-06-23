@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["PythonImplementation"],"fn":["generate_implib_for_target"],"struct":["ImportLibraryGenerator"]};

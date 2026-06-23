@@ -1,2 +1,0 @@
-window.ALL_CRATES = ["_module_mirror_rust","cc","cfg_if","crossbeam_deque","crossbeam_epoch","crossbeam_utils","either","find_msvc_tools","heck","indoc","libc","memoffset","murmur3","once_cell","proc_macro2","pyo3","pyo3_build_config","pyo3_ffi","pyo3_macros","pyo3_macros_backend","python3_dll_a","quote","rayon","rayon_core","shlex","syn","target_lexicon","unicode_ident","unindent"];
-//{"start":21,"fragment_lengths":[21,5,9,18,18,18,9,18,7,8,7,12,10,12,14,7,20,11,14,22,16,8,8,13,8,6,17,16,11]}
