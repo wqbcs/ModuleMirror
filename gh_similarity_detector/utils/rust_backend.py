@@ -5,14 +5,17 @@ Rust后端加速模块
 当Rust扩展不可用时，透明回退到Python实现。
 
 Rust扩展提供的加速:
-- stable_hash_rust: MurmurHash3 32位 (~10x)
-- stable_hash64_rust: MurmurHash3 64位 (~10x)
-- batch_stable_hash: 批量MurmurHash3 (~15x)
-- batch_stable_hash_parallel: rayon并行批量MurmurHash3 (~30x)
+- stable_hash_rust: MurmurHash3 32位
+- stable_hash64_rust: MurmurHash3 64位
+- batch_stable_hash: 批量MurmurHash3
+- batch_stable_hash_parallel: rayon并行批量MurmurHash3
 - PyRollingHash: Rabin-Karp滚动哈希 (~3.6x)
 - PyWinnowing: Winnowing指纹算法 (~5.7x)
-- PyMinHash: MinHash签名生成 (~10-20x)
-- PyMinHashLSH: MinHash LSH索引 (~10-50x)
+- PyMinHash: MinHash签名生成
+- PyMinHashLSH: MinHash LSH索引
+- jaccard_sorted: 双指针Jaccard (~5-20x)
+- jaccard_sorted_many_parallel: rayon并行批量Jaccard
+- PyInvertedIndex: Rust HashMap倒排索引
 
 Author: ModuleMirror
 """
@@ -24,6 +27,7 @@ from typing import List, Optional, Tuple, Union
 
 try:
     from _module_mirror_rust import (
+        PyInvertedIndex as _RustInvertedIndex,
         PyMinHash as _RustMinHash,
         PyMinHashLSH as _RustMinHashLSH,
         PyRollingHash as _RustRollingHash,
@@ -34,6 +38,11 @@ try:
         create_minhash_signatures_batch as _rust_create_minhash_signatures_batch,
         create_minhash_signatures_parallel as _rust_create_minhash_signatures_parallel,
         estimate_jaccard as _rust_estimate_jaccard,
+        find_duplicates as _rust_find_duplicates,
+        intersection_sorted as _rust_intersection_sorted,
+        jaccard_sorted as _rust_jaccard_sorted,
+        jaccard_sorted_many as _rust_jaccard_sorted_many,
+        jaccard_sorted_many_parallel as _rust_jaccard_sorted_many_parallel,
         stable_hash64_rust as _rust_stable_hash64,
         stable_hash_rust as _rust_stable_hash,
     )
@@ -42,6 +51,7 @@ try:
 except ImportError:
     HAS_RUST_BACKEND = False
 
+    _RustInvertedIndex = None  # type: ignore[assignment,misc]
     _RustMinHash = None  # type: ignore[assignment,misc]
     _RustMinHashLSH = None  # type: ignore[assignment,misc]
     _RustRollingHash = None  # type: ignore[assignment,misc]
@@ -52,6 +62,11 @@ except ImportError:
     _rust_create_minhash_signatures_batch = None  # type: ignore[assignment]
     _rust_create_minhash_signatures_parallel = None  # type: ignore[assignment]
     _rust_estimate_jaccard = None  # type: ignore[assignment]
+    _rust_find_duplicates = None  # type: ignore[assignment]
+    _rust_intersection_sorted = None  # type: ignore[assignment]
+    _rust_jaccard_sorted = None  # type: ignore[assignment]
+    _rust_jaccard_sorted_many = None  # type: ignore[assignment]
+    _rust_jaccard_sorted_many_parallel = None  # type: ignore[assignment]
     _rust_stable_hash64 = None  # type: ignore[assignment]
     _rust_stable_hash = None  # type: ignore[assignment]
 
