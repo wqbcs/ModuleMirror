@@ -16,6 +16,13 @@ Rust扩展提供的加速:
 - jaccard_sorted: 双指针Jaccard (~5-20x)
 - jaccard_sorted_many_parallel: rayon并行批量Jaccard
 - PyInvertedIndex: Rust HashMap倒排索引
+- cosine_similarity: simsimd SIMD余弦相似度 (~10-30x)
+- euclidean_distance: simsimd SIMD欧氏距离 (~10-30x)
+- l2_normalize: L2归一化
+- batch_cosine_similarity: rayon并行批量余弦
+- batch_cosine_similarity_parallel: rayon并行批量余弦
+- code2vec_embed: Code2Vec路径嵌入
+- vectors_to_lsh_hash: 向量LSH哈希
 
 Author: ModuleMirror
 """
@@ -23,6 +30,7 @@ Author: ModuleMirror
 from __future__ import annotations
 
 import hashlib
+import math
 from typing import List, Optional, Tuple, Union
 
 try:
@@ -32,19 +40,26 @@ try:
         PyMinHashLSH as _RustMinHashLSH,
         PyRollingHash as _RustRollingHash,
         PyWinnowing as _RustWinnowing,
+        batch_cosine_similarity as _rust_batch_cosine_similarity,
+        batch_cosine_similarity_parallel as _rust_batch_cosine_similarity_parallel,
         batch_stable_hash as _rust_batch_stable_hash,
         batch_stable_hash_parallel as _rust_batch_stable_hash_parallel,
+        code2vec_embed as _rust_code2vec_embed,
+        cosine_similarity as _rust_cosine_similarity,
         create_minhash_signature as _rust_create_minhash_signature,
         create_minhash_signatures_batch as _rust_create_minhash_signatures_batch,
         create_minhash_signatures_parallel as _rust_create_minhash_signatures_parallel,
         estimate_jaccard as _rust_estimate_jaccard,
+        euclidean_distance as _rust_euclidean_distance,
         find_duplicates as _rust_find_duplicates,
         intersection_sorted as _rust_intersection_sorted,
         jaccard_sorted as _rust_jaccard_sorted,
         jaccard_sorted_many as _rust_jaccard_sorted_many,
         jaccard_sorted_many_parallel as _rust_jaccard_sorted_many_parallel,
+        l2_normalize as _rust_l2_normalize,
         stable_hash64_rust as _rust_stable_hash64,
         stable_hash_rust as _rust_stable_hash,
+        vectors_to_lsh_hash as _rust_vectors_to_lsh_hash,
     )
 
     HAS_RUST_BACKEND = True
@@ -56,19 +71,26 @@ except ImportError:
     _RustMinHashLSH = None  # type: ignore[assignment,misc]
     _RustRollingHash = None  # type: ignore[assignment,misc]
     _RustWinnowing = None  # type: ignore[assignment,misc]
+    _rust_batch_cosine_similarity = None  # type: ignore[assignment]
+    _rust_batch_cosine_similarity_parallel = None  # type: ignore[assignment]
     _rust_batch_stable_hash = None  # type: ignore[assignment]
     _rust_batch_stable_hash_parallel = None  # type: ignore[assignment]
+    _rust_code2vec_embed = None  # type: ignore[assignment]
+    _rust_cosine_similarity = None  # type: ignore[assignment]
     _rust_create_minhash_signature = None  # type: ignore[assignment]
     _rust_create_minhash_signatures_batch = None  # type: ignore[assignment]
     _rust_create_minhash_signatures_parallel = None  # type: ignore[assignment]
     _rust_estimate_jaccard = None  # type: ignore[assignment]
+    _rust_euclidean_distance = None  # type: ignore[assignment]
     _rust_find_duplicates = None  # type: ignore[assignment]
     _rust_intersection_sorted = None  # type: ignore[assignment]
     _rust_jaccard_sorted = None  # type: ignore[assignment]
     _rust_jaccard_sorted_many = None  # type: ignore[assignment]
     _rust_jaccard_sorted_many_parallel = None  # type: ignore[assignment]
+    _rust_l2_normalize = None  # type: ignore[assignment]
     _rust_stable_hash64 = None  # type: ignore[assignment]
     _rust_stable_hash = None  # type: ignore[assignment]
+    _rust_vectors_to_lsh_hash = None  # type: ignore[assignment]
 
 _DEFAULT_SEED: int = 42
 
@@ -393,3 +415,138 @@ class MinHashLSH:
         if self._rust_impl is not None:
             return self._rust_impl.band_width
         return 0
+
+
+def cosine_similarity(a: List[float], b: List[float]) -> float:
+    if HAS_RUST_BACKEND:
+        try:
+            return _rust_cosine_similarity(a, b)  # type: ignore[operator]
+        except ValueError:
+            return 0.0
+    if len(a) != len(b):
+        return 0.0
+    dot = sum(x * y for x, y in zip(a, b))
+    na = math.sqrt(sum(x * x for x in a))
+    nb = math.sqrt(sum(y * y for y in b))
+    if na == 0 or nb == 0:
+        return 0.0
+    return dot / (na * nb)
+
+
+def euclidean_distance(a: List[float], b: List[float]) -> float:
+    if HAS_RUST_BACKEND:
+        try:
+            return _rust_euclidean_distance(a, b)  # type: ignore[operator]
+        except ValueError:
+            return 0.0
+    return math.sqrt(sum((x - y) ** 2 for x, y in zip(a, b)))
+
+
+def l2_normalize(v: List[float]) -> List[float]:
+    if HAS_RUST_BACKEND:
+        return _rust_l2_normalize(v)  # type: ignore[operator]
+    norm = math.sqrt(sum(x * x for x in v))
+    if norm == 0:
+        return v
+    return [x / norm for x in v]
+
+
+def batch_cosine_similarity(query: List[float], candidates: List[List[float]]) -> List[float]:
+    if HAS_RUST_BACKEND:
+        return _rust_batch_cosine_similarity(query, candidates)  # type: ignore[operator]
+    return [cosine_similarity(query, c) for c in candidates]
+
+
+def batch_cosine_similarity_parallel(query: List[float], candidates: List[List[float]]) -> List[float]:
+    if HAS_RUST_BACKEND:
+        return _rust_batch_cosine_similarity_parallel(query, candidates)  # type: ignore[operator]
+    return batch_cosine_similarity(query, candidates)
+
+
+def code2vec_embed(code: str, dimension: int = 128, max_paths: int = 200, path_length: int = 5) -> List[float]:
+    if HAS_RUST_BACKEND:
+        vector, _num_paths = _rust_code2vec_embed(code, dimension, max_paths, path_length)  # type: ignore[operator]
+        return vector
+    return _code2vec_embed_python(code, dimension, max_paths, path_length)
+
+
+def code2vec_embed_with_meta(code: str, dimension: int = 128, max_paths: int = 200, path_length: int = 5) -> Tuple[List[float], int]:
+    if HAS_RUST_BACKEND:
+        return _rust_code2vec_embed(code, dimension, max_paths, path_length)  # type: ignore[operator]
+    vector = _code2vec_embed_python(code, dimension, max_paths, path_length)
+    paths: list = []
+    lines = code.split("\n")
+    tokens = []
+    for i, line in enumerate(lines):
+        for tok in line.strip().split():
+            if tok and not tok.startswith("#"):
+                tokens.append((tok, i))
+    for i, (start_tok, start_line) in enumerate(tokens):
+        for j, (end_tok, end_line) in enumerate(tokens):
+            if i >= j:
+                continue
+            if end_line - start_line > path_length:
+                continue
+            mid = tokens[(i + j) // 2][0] if (i + j) // 2 < len(tokens) else ""
+            paths.append((start_tok, mid, end_tok))
+            if len(paths) >= max_paths:
+                break
+        if len(paths) >= max_paths:
+            break
+    return vector, len(paths)
+
+
+def _code2vec_embed_python(code: str, dimension: int, max_paths: int, path_length: int) -> List[float]:
+    paths: list = []
+    lines = code.split("\n")
+    tokens = []
+    for i, line in enumerate(lines):
+        for tok in line.strip().split():
+            if tok and not tok.startswith("#"):
+                tokens.append((tok, i))
+    for i, (start_tok, start_line) in enumerate(tokens):
+        for j, (end_tok, end_line) in enumerate(tokens):
+            if i >= j:
+                continue
+            if end_line - start_line > path_length:
+                continue
+            mid = tokens[(i + j) // 2][0] if (i + j) // 2 < len(tokens) else ""
+            paths.append((start_tok, mid, end_tok))
+            if len(paths) >= max_paths:
+                break
+        if len(paths) >= max_paths:
+            break
+    weights = []
+    seed = 42
+    for _ in range(dimension):
+        seed = (seed * 1103515245 + 12345) & 0x7FFFFFFF
+        weights.append((seed / 0x7FFFFFFF) - 0.5)
+    vector = [0.0] * dimension
+    if not paths:
+        for i in range(dimension):
+            vector[i] = weights[i] * 0.01
+    else:
+        for path in paths:
+            combined = "|".join(path)
+            h = int(hashlib.md5(combined.encode()).hexdigest(), 16)
+            for i in range(dimension):
+                angle = (h + i) * 0.618033988749895
+                vector[i] += math.sin(angle) * weights[i % len(weights)]
+        norm = math.sqrt(sum(v * v for v in vector))
+        if norm > 0:
+            vector = [v / norm for v in vector]
+    return vector
+
+
+def vectors_to_lsh_hash(vector: List[float], num_bands: int = 8, band_width: int = 4) -> List[str]:
+    if HAS_RUST_BACKEND:
+        return _rust_vectors_to_lsh_hash(vector, num_bands, band_width)  # type: ignore[operator]
+    hashes = []
+    for band_idx in range(num_bands):
+        start = band_idx * band_width
+        end = start + band_width
+        band = vector[start:end]
+        band_str = ",".join(f"{v:.4f}" for v in band)
+        h = hashlib.md5(band_str.encode()).hexdigest()[:8]
+        hashes.append(f"b{band_idx}:{h}")
+    return hashes

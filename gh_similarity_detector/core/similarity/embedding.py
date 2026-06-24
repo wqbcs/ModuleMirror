@@ -7,6 +7,11 @@
 - Code2VecEngine: AST路径注意力机制(轻量,参考tech-srl/code2vec)
 - CodeBERTEngine: Transformer预训练模型(重量,参考microsoft/CodeBERT)
 
+Rust加速:
+- cosine_similarity: simsimd SIMD加速 (~10-30x)
+- euclidean_distance: simsimd SIMD加速 (~10-30x)
+- code2vec_embed: Rust路径提取+向量计算
+
 Author: ModuleMirror
 """
 
@@ -19,6 +24,12 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass, field
 
 from ...utils.deps import DependencyRegistry
+from ...utils.rust_backend import (
+    cosine_similarity as _rust_cosine,
+    euclidean_distance as _rust_euclidean,
+    code2vec_embed_with_meta as _rust_code2vec_embed_with_meta,
+    HAS_RUST_BACKEND,
+)
 
 _numpy_available = DependencyRegistry.get_instance().is_available("numpy")
 if _numpy_available:
@@ -36,6 +47,8 @@ class CodeEmbedding:
     def cosine_similarity(self, other: "CodeEmbedding") -> float:
         if self.dimension != other.dimension:
             return 0.0
+        if HAS_RUST_BACKEND:
+            return _rust_cosine(self.vector, other.vector)
         if _numpy_available:
             a = np.array(self.vector, dtype=np.float64)
             b = np.array(other.vector, dtype=np.float64)
@@ -52,6 +65,8 @@ class CodeEmbedding:
         return float(dot / (na * nb))
 
     def euclidean_distance(self, other: "CodeEmbedding") -> float:
+        if HAS_RUST_BACKEND:
+            return _rust_euclidean(self.vector, other.vector)
         if _numpy_available:
             a = np.array(self.vector, dtype=np.float64)
             b = np.array(other.vector, dtype=np.float64)
@@ -143,6 +158,15 @@ class Code2VecEngine(EmbeddingEngine):
                 self._weights.append((seed / 0x7FFFFFFF) - 0.5)
 
     def embed(self, code: str, code_id: str = "") -> CodeEmbedding:
+        if HAS_RUST_BACKEND:
+            vector, num_paths = _rust_code2vec_embed_with_meta(code, self._dimension, self._max_paths, self._path_length)
+            return CodeEmbedding(
+                code_id=code_id or hashlib.md5(code.encode()).hexdigest()[:8],
+                vector=vector,
+                model_name="code2vec",
+                dimension=self._dimension,
+                metadata={"num_paths": num_paths},
+            )
         self._initialize_weights()
         paths = self._extract_ast_paths(code)
         vector = [0.0] * self._dimension

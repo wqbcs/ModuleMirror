@@ -14,11 +14,18 @@ from gh_similarity_detector.utils.rust_backend import (
     HAS_RUST_BACKEND,
     RollingHash,
     Winnowing,
+    batch_cosine_similarity,
+    batch_cosine_similarity_parallel,
     batch_stable_hash,
     batch_stable_hash_parallel,
+    code2vec_embed,
+    cosine_similarity,
+    euclidean_distance,
     is_rust_available,
+    l2_normalize,
     stable_hash,
     stable_hash64,
+    vectors_to_lsh_hash,
 )
 
 
@@ -203,3 +210,140 @@ class TestRustPythonConsistency:
         for item in tokens:
             hash_value = (hash_value * base + sh(item, 42)) % modulus
         assert result == hash_value
+
+
+class TestRustCosineSimilarity:
+    def test_identical_vectors(self) -> None:
+        v = [1.0, 2.0, 3.0]
+        assert cosine_similarity(v, v) == pytest.approx(1.0, abs=1e-5)
+
+    def test_orthogonal_vectors(self) -> None:
+        a = [1.0, 0.0]
+        b = [0.0, 1.0]
+        assert cosine_similarity(a, b) == pytest.approx(0.0, abs=1e-5)
+
+    def test_opposite_vectors(self) -> None:
+        a = [1.0, 0.0]
+        b = [-1.0, 0.0]
+        assert cosine_similarity(a, b) == pytest.approx(-1.0, abs=1e-5)
+
+    def test_different_lengths_returns_zero(self) -> None:
+        assert cosine_similarity([1.0, 2.0], [1.0]) == 0.0
+
+    def test_empty_vectors(self) -> None:
+        assert cosine_similarity([], []) == 0.0
+
+    def test_zero_vectors(self) -> None:
+        assert cosine_similarity([0.0, 0.0], [1.0, 2.0]) == 0.0
+
+    def test_general_case(self) -> None:
+        import math
+        a = [1.0, 2.0, 3.0]
+        b = [4.0, 5.0, 6.0]
+        dot = sum(x * y for x, y in zip(a, b))
+        na = math.sqrt(sum(x * x for x in a))
+        nb = math.sqrt(sum(y * y for y in b))
+        expected = dot / (na * nb)
+        assert cosine_similarity(a, b) == pytest.approx(expected, abs=1e-6)
+
+
+class TestRustEuclideanDistance:
+    def test_identical_vectors(self) -> None:
+        assert euclidean_distance([1.0, 2.0], [1.0, 2.0]) == pytest.approx(0.0, abs=1e-9)
+
+    def test_unit_distance(self) -> None:
+        assert euclidean_distance([0.0], [1.0]) == pytest.approx(1.0, abs=1e-9)
+
+    def test_2d_distance(self) -> None:
+        dist = euclidean_distance([0.0, 0.0], [3.0, 4.0])
+        assert dist == pytest.approx(5.0, abs=1e-6)
+
+    def test_empty_vectors(self) -> None:
+        assert euclidean_distance([], []) == pytest.approx(0.0, abs=1e-9)
+
+
+class TestRustL2Normalize:
+    def test_unit_vector(self) -> None:
+        result = l2_normalize([3.0, 4.0])
+        norm = sum(v * v for v in result) ** 0.5
+        assert norm == pytest.approx(1.0, abs=1e-9)
+
+    def test_zero_vector(self) -> None:
+        result = l2_normalize([0.0, 0.0])
+        assert result == [0.0, 0.0]
+
+    def test_preserves_direction(self) -> None:
+        v = [2.0, 0.0]
+        result = l2_normalize(v)
+        assert result[0] == pytest.approx(1.0, abs=1e-9)
+        assert result[1] == pytest.approx(0.0, abs=1e-9)
+
+
+class TestRustBatchCosineSimilarity:
+    def test_batch_matches_individual(self) -> None:
+        query = [1.0, 2.0, 3.0]
+        candidates = [[4.0, 5.0, 6.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0]]
+        batch = batch_cosine_similarity(query, candidates)
+        individual = [cosine_similarity(query, c) for c in candidates]
+        for b, i in zip(batch, individual):
+            assert b == pytest.approx(i, abs=1e-6)
+
+    def test_parallel_matches_sequential(self) -> None:
+        query = [1.0, 2.0, 3.0]
+        candidates = [[float(i), float(i + 1), float(i + 2)] for i in range(50)]
+        seq = batch_cosine_similarity(query, candidates)
+        par = batch_cosine_similarity_parallel(query, candidates)
+        for s, p in zip(seq, par):
+            assert s == pytest.approx(p, abs=1e-6)
+
+    def test_empty_candidates(self) -> None:
+        assert batch_cosine_similarity([1.0, 2.0], []) == []
+
+
+class TestRustCode2VecEmbed:
+    def test_returns_correct_dimension(self) -> None:
+        vector = code2vec_embed("def foo(): pass", dimension=64, max_paths=50, path_length=3)
+        assert len(vector) == 64
+
+    def test_deterministic(self) -> None:
+        code = "def hello(): return 42"
+        v1 = code2vec_embed(code, dimension=32, max_paths=100, path_length=5)
+        v2 = code2vec_embed(code, dimension=32, max_paths=100, path_length=5)
+        assert v1 == v2
+
+    def test_empty_code(self) -> None:
+        vector = code2vec_embed("", dimension=16, max_paths=50, path_length=3)
+        assert len(vector) == 16
+
+    def test_normalized(self) -> None:
+        vector = code2vec_embed("def foo(): return bar", dimension=32, max_paths=100, path_length=5)
+        if any(abs(v) > 1e-10 for v in vector):
+            norm = sum(v * v for v in vector) ** 0.5
+            assert norm == pytest.approx(1.0, abs=1e-6)
+
+
+class TestRustVectorsToLshHash:
+    def test_returns_correct_count(self) -> None:
+        vector = [0.1] * 32
+        hashes = vectors_to_lsh_hash(vector, num_bands=8, band_width=4)
+        assert len(hashes) == 8
+
+    def test_hash_format(self) -> None:
+        vector = [0.5] * 32
+        hashes = vectors_to_lsh_hash(vector, num_bands=4, band_width=8)
+        for h in hashes:
+            assert h.startswith("b")
+            assert ":" in h
+
+    def test_deterministic(self) -> None:
+        vector = [1.0, 2.0, 3.0, 4.0] * 8
+        h1 = vectors_to_lsh_hash(vector, num_bands=8, band_width=4)
+        h2 = vectors_to_lsh_hash(vector, num_bands=8, band_width=4)
+        assert h1 == h2
+
+    def test_different_vectors_different_hashes(self) -> None:
+        v1 = [1.0, 0.0] * 16
+        v2 = [0.0, 1.0] * 16
+        h1 = vectors_to_lsh_hash(v1, num_bands=8, band_width=4)
+        h2 = vectors_to_lsh_hash(v2, num_bands=8, band_width=4)
+        assert h1 != h2

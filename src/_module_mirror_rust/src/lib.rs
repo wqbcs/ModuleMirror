@@ -1,3 +1,4 @@
+mod embedding;
 mod lsh;
 mod minhash;
 mod rolling_hash;
@@ -92,6 +93,44 @@ fn find_duplicates(hash_array: Vec<i64>, module_ids: Vec<i32>) -> HashMap<i32, V
     simd_batch::find_duplicates_impl(hash_array, module_ids)
 }
 
+#[pyfunction]
+fn cosine_similarity(a: Vec<f64>, b: Vec<f64>) -> PyResult<f64> {
+    embedding::cosine_similarity_impl(a, b)
+}
+
+#[pyfunction]
+fn euclidean_distance(a: Vec<f64>, b: Vec<f64>) -> PyResult<f64> {
+    embedding::euclidean_distance_impl(a, b)
+}
+
+#[pyfunction]
+fn l2_normalize(v: Vec<f64>) -> Vec<f64> {
+    embedding::l2_normalize_impl(v)
+}
+
+#[pyfunction]
+fn batch_cosine_similarity(query: Vec<f64>, candidates: Vec<Vec<f64>>) -> PyResult<Vec<f64>> {
+    embedding::batch_cosine_similarity_impl(query, candidates)
+}
+
+#[pyfunction]
+fn batch_cosine_similarity_parallel(
+    query: Vec<f64>,
+    candidates: Vec<Vec<f64>>,
+) -> PyResult<Vec<f64>> {
+    embedding::batch_cosine_similarity_parallel_impl(query, candidates)
+}
+
+#[pyfunction]
+fn code2vec_embed(code: String, dimension: usize, max_paths: usize, path_length: usize) -> (Vec<f64>, usize) {
+    embedding::code2vec_embed_impl(code, dimension, max_paths, path_length)
+}
+
+#[pyfunction]
+fn vectors_to_lsh_hash(vector: Vec<f64>, num_bands: usize, band_width: usize) -> Vec<String> {
+    embedding::vectors_to_lsh_hash_impl(vector, num_bands, band_width)
+}
+
 use std::collections::HashMap;
 
 #[pymodule]
@@ -114,5 +153,12 @@ fn _module_mirror_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(intersection_sorted, m)?)?;
     m.add_function(wrap_pyfunction!(find_duplicates, m)?)?;
     m.add_class::<simd_batch::PyInvertedIndex>()?;
+    m.add_function(wrap_pyfunction!(cosine_similarity, m)?)?;
+    m.add_function(wrap_pyfunction!(euclidean_distance, m)?)?;
+    m.add_function(wrap_pyfunction!(l2_normalize, m)?)?;
+    m.add_function(wrap_pyfunction!(batch_cosine_similarity, m)?)?;
+    m.add_function(wrap_pyfunction!(batch_cosine_similarity_parallel, m)?)?;
+    m.add_function(wrap_pyfunction!(code2vec_embed, m)?)?;
+    m.add_function(wrap_pyfunction!(vectors_to_lsh_hash, m)?)?;
     Ok(())
 }
