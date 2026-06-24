@@ -2,7 +2,7 @@
 name = "module-mirror-rust"
 version = "0.1.0"
 edition = "2021"
-description = "Rust core extension for ModuleMirror — high-performance winnowing, rolling hash, and fingerprinting"
+description = "Rust core extension for ModuleMirror — high-performance winnowing, rolling hash, fingerprinting, and MinHash LSH"
 license = "MIT"
 
 [lib]
@@ -13,6 +13,8 @@ crate-type = ["cdylib", "rlib"]
 pyo3 = { version = "0.24", features = ["generate-import-lib"] }
 murmur3 = "0.5"
 rayon = "1.10"
+gaoya = "0.2"
+ahash = "0.8"
 
 [profile.release]
 lto = "fat"
