@@ -1,6 +1,6 @@
 [project]
 name = "gh-similarity-detector"
-version = "1.1.0"
+version = "2.0.0"
 description = "GitHub 项目代码相似度检测工具 - 用于自我审视和抄袭溯源"
 authors = [{name = "ModuleMirror Team", email = "modulemirror@example.com"}]
 license = {text = "MIT"}
@@ -65,7 +65,7 @@ gh-sim = "gh_similarity_detector.cli.main:main"
 
 [tool.poetry]
 name = "gh-similarity-detector"
-version = "1.1.0"
+version = "2.0.0"
 description = "GitHub 项目代码相似度检测工具 - 用于自我审视和抄袭溯源"
 authors = ["ModuleMirror Team <modulemirror@example.com>"]
 license = "MIT"
