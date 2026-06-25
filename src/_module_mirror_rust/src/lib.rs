@@ -4,6 +4,7 @@ mod lsh;
 mod minhash;
 mod rolling_hash;
 mod simd_batch;
+mod tokenizer;
 mod winnowing;
 
 use pyo3::prelude::*;
@@ -153,6 +154,11 @@ fn sequence_ratio(source: Vec<String>, target: Vec<String>) -> f64 {
     diff::sequence_ratio_impl(source, target)
 }
 
+#[pyfunction]
+fn tokenize(code: String, language: String) -> Vec<String> {
+    tokenizer::tokenize_impl(code, language)
+}
+
 use std::collections::HashMap;
 
 #[pymodule]
@@ -187,5 +193,6 @@ fn _module_mirror_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(sequence_ratio, m)?)?;
     m.add_class::<diff::PyDiffLine>()?;
     m.add_class::<diff::PyDiffResult>()?;
+    m.add_function(wrap_pyfunction!(tokenize, m)?)?;
     Ok(())
 }

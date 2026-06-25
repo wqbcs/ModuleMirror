@@ -19,6 +19,7 @@ from collections import deque
 from ...models.entities import FingerprintSet, Module
 from ...utils.rust_backend import RollingHash as _RustRollingHash
 from ...utils.rust_backend import Winnowing as _RustWinnowing
+from ...utils.rust_backend import rust_tokenize
 from ...utils.rust_backend import is_rust_available
 
 
@@ -220,15 +221,13 @@ class CodeTokenizer:
     }
 
     def tokenize(self, code: str, language: str = "python") -> List[str]:
-        """将代码转换为 token 序列
+        if is_rust_available():
+            result = rust_tokenize(code, language)
+            if result is not None:
+                return result
+        return self._tokenize_python(code, language)
 
-        Args:
-            code: 源代码
-            language: 编程语言
-
-        Returns:
-            token 序列
-        """
+    def _tokenize_python(self, code: str, language: str = "python") -> List[str]:
         keywords = self.KEYWORDS_MAP.get(language, set())
         tokens = []
         i = 0

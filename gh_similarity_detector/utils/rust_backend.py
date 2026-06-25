@@ -63,6 +63,7 @@ try:
         stable_hash64_rust as _rust_stable_hash64,
         stable_hash_rust as _rust_stable_hash,
         text_diff as _rust_text_diff,
+        tokenize as _rust_tokenize,
         unified_diff as _rust_unified_diff,
         vectors_to_lsh_hash as _rust_vectors_to_lsh_hash,
     )
@@ -99,6 +100,7 @@ except ImportError:
     _rust_stable_hash64 = None  # type: ignore[assignment]
     _rust_stable_hash = None  # type: ignore[assignment]
     _rust_text_diff = None  # type: ignore[assignment]
+    _rust_tokenize = None  # type: ignore[assignment]
     _rust_unified_diff = None  # type: ignore[assignment]
     _rust_vectors_to_lsh_hash = None  # type: ignore[assignment]
 
@@ -585,4 +587,10 @@ def rust_unified_diff(
 ) -> Optional[str]:
     if HAS_RUST_BACKEND:
         return _rust_unified_diff(source_code, target_code, source_name, target_name, context_lines)  # type: ignore[operator]
+    return None
+
+
+def rust_tokenize(code: str, language: str = "python") -> Optional[List[str]]:
+    if HAS_RUST_BACKEND:
+        return _rust_tokenize(code, language)  # type: ignore[operator]
     return None

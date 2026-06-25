@@ -24,6 +24,7 @@ from gh_similarity_detector.utils.rust_backend import (
     is_rust_available,
     l2_normalize,
     rust_text_diff,
+    rust_tokenize,
     rust_unified_diff,
     sequence_ratio,
     stable_hash,
@@ -434,3 +435,65 @@ class TestRustUnifiedDiff:
         result = rust_unified_diff("old\n", "new\n", "a.txt", "b.txt")
         assert result is not None
         assert "-" in result or "+" in result
+
+
+class TestRustTokenizer:
+    def test_python_function(self) -> None:
+        result = rust_tokenize("def hello(x): return x + 1", "python")
+        assert result is not None
+        assert result == ["def", "ID", "(", "ID", ")", ":", "return", "ID", "+", "NUM"]
+
+    def test_python_keywords(self) -> None:
+        result = rust_tokenize("if x: pass else: break", "python")
+        assert result is not None
+        assert "if" in result
+        assert "pass" in result
+        assert "else" in result
+        assert "break" in result
+
+    def test_python_skip_comments(self) -> None:
+        result = rust_tokenize("x = 1 # comment\ny = 2", "python")
+        assert result is not None
+        assert "#" not in str(result)
+        assert "comment" not in result
+
+    def test_python_skip_strings(self) -> None:
+        result = rust_tokenize('x = "hello world"', "python")
+        assert result is not None
+        assert "STR" in result
+        assert "hello" not in result
+
+    def test_identifiers_normalized(self) -> None:
+        result = rust_tokenize("foo bar baz", "python")
+        assert result is not None
+        assert result == ["ID", "ID", "ID"]
+
+    def test_numbers(self) -> None:
+        result = rust_tokenize("x = 42", "python")
+        assert result is not None
+        assert "NUM" in result
+
+    def test_two_char_ops(self) -> None:
+        result = rust_tokenize("x == y", "python")
+        assert result is not None
+        assert "==" in result
+
+    def test_java_comments(self) -> None:
+        result = rust_tokenize("int x; // comment", "java")
+        assert result is not None
+        assert "int" in result
+        assert "comment" not in result
+
+    def test_empty_code(self) -> None:
+        result = rust_tokenize("", "python")
+        assert result is not None
+        assert result == []
+
+    def test_matches_python_tokenizer(self) -> None:
+        from gh_similarity_detector.core.fingerprint.winnowing import CodeTokenizer
+        py_tok = CodeTokenizer()
+        code = "def foo(x, y):\n    return x + y * 2\n"
+        py_result = py_tok._tokenize_python(code, "python")
+        rust_result = rust_tokenize(code, "python")
+        assert rust_result is not None
+        assert rust_result == py_result
