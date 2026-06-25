@@ -30,7 +30,7 @@ jobs:
       - name: Build wheel
         run: maturin build --release --interpreter python${{ matrix.python-version }}
       - name: Upload wheel
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.os }}-py${{ matrix.python-version }}
           path: src/_module_mirror_rust/target/wheels/*.whl
