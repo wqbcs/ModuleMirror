@@ -4,7 +4,6 @@
 prompt
 prototype
 tests
-benchmark.py
 *.pyc
 __pycache__
 *.egg-info
@@ -19,3 +18,4 @@ htmlcov
 .coverage
 dist
 build
+src/_module_mirror_rust/target

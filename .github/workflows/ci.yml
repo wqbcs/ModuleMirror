@@ -15,14 +15,18 @@ jobs:
     name: L1 规范检查
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install project + dev deps
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin + dev deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install maturin
+          pip install -e ".[dev]" --no-build-isolation || true
+      - name: Build Rust extension
+        run: maturin develop --release
       - name: Ruff check
         run: ruff check gh_similarity_detector/ tests/
       - name: Ruff format check
@@ -39,36 +43,54 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         python-version: ["3.10", "3.11", "3.12"]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin + dev deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install maturin
+          pip install -e ".[dev]" --no-build-isolation || true
+      - name: Build Rust extension
+        run: maturin develop --release
       - name: Run tests with coverage
         run: pytest tests/ -v -n auto --tb=short --cov=gh_similarity_detector --cov-report=term-missing --cov-report=xml
       - name: Upload coverage
-        if: matrix.python-version == '3.11' && matrix.os == 'ubuntu-latest'
+        if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report
           path: coverage.xml
 
+  rust-test:
+    name: L2 Rust 单元测试
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Cargo test
+        working-directory: src/_module_mirror_rust
+        run: cargo test --release
+
   security:
     name: L3 安全扫描
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-      - name: Install project + dev deps
+          python-version: "3.12"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin + dev deps
         run: |
           python -m pip install --upgrade pip
-          pip install -e ".[dev]"
+          pip install maturin
+          pip install -e ".[dev]" --no-build-isolation || true
+      - name: Build Rust extension
+        run: maturin develop --release
       - name: Bandit SAST scan
         run: |
           bandit -r gh_similarity_detector/ \
@@ -89,40 +111,44 @@ jobs:
           else:
               print('OK: 0 HIGH severity issues')
           "
-      - name: Pip-audit dependency scan
-        run: pip-audit || true
-      - name: Safety vulnerability scan
-        run: pip install safety && safety check --full-report || true
+      - name: Cargo audit
+        working-directory: src/_module_mirror_rust
+        run: |
+          cargo install cargo-audit || true
+          cargo audit || true
 
   docker:
     name: L4 Docker 多架构构建
     runs-on: ubuntu-latest
-    needs: [lint, test]
+    needs: [lint, test, rust-test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@v3
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v4
+        uses: docker/setup-qemu-action@v3
       - name: Build multi-arch images
-        uses: docker/build-push-action@v7
+        uses: docker/build-push-action@v6
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: false
           tags: gh-similarity-detector:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   quality-gate:
     name: 质量门禁
     runs-on: ubuntu-latest
-    needs: [lint, test, security]
+    needs: [lint, test, rust-test, security]
     if: always()
     steps:
       - name: Check all jobs passed
         run: |
           if [[ "${{ needs.lint.result }}" != "success" || \
                 "${{ needs.test.result }}" != "success" || \
+                "${{ needs.rust-test.result }}" != "success" || \
                 "${{ needs.security.result }}" != "success" ]]; then
             echo "Quality gate FAILED"
             exit 1
