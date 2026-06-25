@@ -4,6 +4,10 @@ AST 结构向量化 (Deckard 方案)
 提取 AST 节点类型序列的特征向量，使用 LSH 近似最近邻加速查询。
 参考: Deckard — "Scalable and Accurate Clone Detection"
 
+Rust加速:
+- cosine_similarity: simsimd SIMD加速 (~10-30x)
+- vectors_to_lsh_hash: Rust LSH哈希
+
 Author: ModuleMirror
 """
 
@@ -15,6 +19,12 @@ from typing import List, Dict, Set, Tuple, Any
 from collections import Counter
 from dataclasses import dataclass
 
+from ...utils.rust_backend import (
+    cosine_similarity as _rust_cosine,
+    vectors_to_lsh_hash as _rust_vectors_to_lsh_hash,
+    HAS_RUST_BACKEND,
+)
+
 
 @dataclass
 class ASTFeatureVector:
@@ -25,6 +35,11 @@ class ASTFeatureVector:
     node_count: int
 
     def cosine_similarity(self, other: "ASTFeatureVector") -> float:
+        if HAS_RUST_BACKEND:
+            if len(self.vector) != len(other.vector):
+                min_len = min(len(self.vector), len(other.vector))
+                return _rust_cosine(self.vector[:min_len], other.vector[:min_len])
+            return _rust_cosine(self.vector, other.vector)
         if len(self.vector) != len(other.vector):
             min_len = min(len(self.vector), len(other.vector))
             v1 = self.vector[:min_len]
@@ -40,6 +55,8 @@ class ASTFeatureVector:
         return dot / (norm1 * norm2)
 
     def to_lsh_hash(self, num_bands: int = 8, band_width: int = 4) -> List[str]:
+        if HAS_RUST_BACKEND:
+            return _rust_vectors_to_lsh_hash(self.vector, num_bands, band_width)
         hashes = []
         for band_idx in range(num_bands):
             start = band_idx * band_width

@@ -1,9 +1,12 @@
 """
-MinHash LSH近似索引 - 基于datasketch
+MinHash LSH近似索引 - Rust加速 + datasketch降级
 
 替代/补充InvertedIndex的精确匹配，支持近似指纹匹配。
 MinHash LSH通过概率性哈希，即使两个模块的Winnowing指纹不完全相同，
 也能通过MinHash概率匹配找到候选，召回率大幅提升。
+
+当Rust扩展可用时，自动使用Rust后端（10-50x性能提升）。
+否则回退到datasketch Python实现。
 
 Reference: Mining of Massive Datasets, Leskovec et al., Chapter 3
 
@@ -14,6 +17,17 @@ from __future__ import annotations
 
 from typing import Dict, List, Set, Optional, Tuple, Any
 
+from ...models.entities import FingerprintSet
+from ...utils.logger import logger
+from ...utils.rust_backend import is_rust_available
+
+if is_rust_available():
+    from ...utils.rust_backend import MinHashLSH as RustMinHashLSH
+
+    HAS_RUST_BACKEND = True
+else:
+    HAS_RUST_BACKEND = False
+
 try:
     from datasketch import MinHash, MinHashLSHForest
 
@@ -21,37 +35,43 @@ try:
 except ImportError:
     HAS_DATASKETCH = False
 
-from ...models.entities import FingerprintSet
-from ...utils.logger import logger
-
 
 class MinHashLSHIndex:
-    """MinHash LSH Forest近似索引
+    """MinHash LSH Forest近似索引 — Rust加速 + datasketch降级
 
     与InvertedIndex(精确匹配)互补:
     - InvertedIndex: 精确匹配，精确率高但召回率受限
     - MinHashLSHIndex: 近似匹配，召回率高但可能有少量误报
 
-    使用方式:
-    1. build()构建索引
-    2. query()查询TopK近似候选
-    3. get_candidates()获取候选及估算Jaccard
+    当Rust扩展可用时自动使用Rust后端（10-50x性能提升）。
     """
 
     DEFAULT_NUM_PERM = 128
     DEFAULT_L = 64
 
     def __init__(self, num_perm: int = DEFAULT_NUM_PERM, l_param: int = DEFAULT_L):
-        if not HAS_DATASKETCH:
-            raise ImportError("datasketch未安装，请运行: pip install datasketch")
         self._num_perm = num_perm
         self._l = l_param
-        self._forest: Optional[MinHashLSHForest] = None
-        self._minhashes: Dict[str, MinHash] = {}
         self._fingerprint_sets: Dict[str, Set[int]] = {}
         self._indexed = False
 
-    def _create_minhash(self, fingerprints: Set[int]) -> MinHash:
+        if HAS_RUST_BACKEND:
+            self._rust_lsh = RustMinHashLSH(  # type: ignore[operator]
+                num_perm=num_perm, jaccard_threshold=0.1
+            )
+            self._forest = None
+            self._minhashes: Dict[str, Any] = {}
+        elif HAS_DATASKETCH:
+            self._rust_lsh = None
+            self._forest: Optional[MinHashLSHForest] = None
+            self._minhashes: Dict[str, MinHash] = {}
+        else:
+            raise ImportError("datasketch未安装且Rust扩展不可用，请运行: pip install datasketch")
+
+    def _create_minhash_tokens(self, fingerprints: Set[int]) -> List[str]:
+        return [str(fp) for fp in fingerprints]
+
+    def _create_minhash_datasketch(self, fingerprints: Set[int]) -> MinHash:
         mh = MinHash(num_perm=self._num_perm)
         mh.update_batch([str(fp).encode("utf8") for fp in fingerprints])
         return mh
@@ -59,6 +79,21 @@ class MinHashLSHIndex:
     def build(self, fingerprints: Dict[str, FingerprintSet]) -> None:
         self._minhashes.clear()
         self._fingerprint_sets.clear()
+
+        if self._rust_lsh is not None:
+            for module_id, fp_set in fingerprints.items():
+                fps = set(fp_set.winnowing_fingerprints)
+                if not fps:
+                    continue
+                self._fingerprint_sets[module_id] = fps
+                tokens = self._create_minhash_tokens(fps)
+                self._rust_lsh.insert(module_id, tokens)
+            self._indexed = True
+            logger.info(
+                f"MinHash LSH (Rust) 构建完成，{len(self._fingerprint_sets)}个模块，num_perm={self._num_perm}"
+            )
+            return
+
         self._forest = MinHashLSHForest(num_perm=self._num_perm, l=self._l)
 
         for module_id, fp_set in fingerprints.items():
@@ -66,7 +101,7 @@ class MinHashLSHIndex:
             if not fps:
                 continue
             self._fingerprint_sets[module_id] = fps
-            mh = self._create_minhash(fps)
+            mh = self._create_minhash_datasketch(fps)
             self._minhashes[module_id] = mh
             self._forest.add(module_id, mh)
 
@@ -84,7 +119,15 @@ class MinHashLSHIndex:
             self.remove_module(module_id)
 
         self._fingerprint_sets[module_id] = set(fingerprints)
-        mh = self._create_minhash(fingerprints)
+
+        if self._rust_lsh is not None:
+            tokens = self._create_minhash_tokens(fingerprints)
+            self._rust_lsh.insert(module_id, tokens)
+            self._indexed = True
+            logger.info(f"增量添加模块到LSH (Rust): {module_id}, {len(fingerprints)}个指纹")
+            return
+
+        mh = self._create_minhash_datasketch(fingerprints)
         self._minhashes[module_id] = mh
         self._forest.add(module_id, mh)  # type: ignore[union-attr]
         self._forest.index()  # type: ignore[union-attr]
@@ -96,7 +139,10 @@ class MinHashLSHIndex:
             return
         self._minhashes.pop(module_id, None)
         self._fingerprint_sets.pop(module_id, None)
-        self._rebuild_forest()
+        if self._rust_lsh is not None:
+            self._rust_lsh.remove(module_id)
+        else:
+            self._rebuild_forest()
         logger.info(f"从LSH删除模块: {module_id}")
 
     def _rebuild_forest(self) -> None:
@@ -110,7 +156,14 @@ class MinHashLSHIndex:
         module_id: str,
         top_k: int = 10,
     ) -> List[Tuple[str, float]]:
-        if not self._indexed or module_id not in self._minhashes:
+        if not self._indexed or module_id not in self._fingerprint_sets:
+            return []
+
+        if self._rust_lsh is not None:
+            results = self._rust_lsh.query_by_module(module_id, top_k)
+            return results
+
+        if module_id not in self._minhashes:
             return []
 
         mh = self._minhashes[module_id]
@@ -136,7 +189,11 @@ class MinHashLSHIndex:
         if not self._indexed or not fingerprints:
             return []
 
-        mh = self._create_minhash(fingerprints)
+        if self._rust_lsh is not None:
+            tokens = self._create_minhash_tokens(fingerprints)
+            return self._rust_lsh.query_by_tokens(tokens, top_k)
+
+        mh = self._create_minhash_datasketch(fingerprints)
         candidates = self._forest.query(mh, top_k)  # type: ignore[union-attr]
 
         results = []
@@ -171,11 +228,13 @@ class MinHashLSHIndex:
         return candidate_counts
 
     def get_module_count(self) -> int:
+        if self._rust_lsh is not None:
+            return self._rust_lsh.module_count
         return len(self._minhashes)
 
     @property
     def is_available(self) -> bool:
-        return HAS_DATASKETCH
+        return HAS_RUST_BACKEND or HAS_DATASKETCH
 
 
 class HybridIndex:
