@@ -31,10 +31,12 @@ from __future__ import annotations
 
 import hashlib
 import math
-from typing import List, Optional, Tuple, Union
+from typing import Any, List, Optional, Tuple, Union
 
 try:
     from _module_mirror_rust import (
+        PyDiffLine as _RustDiffLine,
+        PyDiffResult as _RustDiffResult,
         PyInvertedIndex as _RustInvertedIndex,
         PyMinHash as _RustMinHash,
         PyMinHashLSH as _RustMinHashLSH,
@@ -57,8 +59,11 @@ try:
         jaccard_sorted_many as _rust_jaccard_sorted_many,
         jaccard_sorted_many_parallel as _rust_jaccard_sorted_many_parallel,
         l2_normalize as _rust_l2_normalize,
+        sequence_ratio as _rust_sequence_ratio,
         stable_hash64_rust as _rust_stable_hash64,
         stable_hash_rust as _rust_stable_hash,
+        text_diff as _rust_text_diff,
+        unified_diff as _rust_unified_diff,
         vectors_to_lsh_hash as _rust_vectors_to_lsh_hash,
     )
 
@@ -66,6 +71,8 @@ try:
 except ImportError:
     HAS_RUST_BACKEND = False
 
+    _RustDiffLine = None  # type: ignore[assignment,misc]
+    _RustDiffResult = None  # type: ignore[assignment,misc]
     _RustInvertedIndex = None  # type: ignore[assignment,misc]
     _RustMinHash = None  # type: ignore[assignment,misc]
     _RustMinHashLSH = None  # type: ignore[assignment,misc]
@@ -88,8 +95,11 @@ except ImportError:
     _rust_jaccard_sorted_many = None  # type: ignore[assignment]
     _rust_jaccard_sorted_many_parallel = None  # type: ignore[assignment]
     _rust_l2_normalize = None  # type: ignore[assignment]
+    _rust_sequence_ratio = None  # type: ignore[assignment]
     _rust_stable_hash64 = None  # type: ignore[assignment]
     _rust_stable_hash = None  # type: ignore[assignment]
+    _rust_text_diff = None  # type: ignore[assignment]
+    _rust_unified_diff = None  # type: ignore[assignment]
     _rust_vectors_to_lsh_hash = None  # type: ignore[assignment]
 
 _DEFAULT_SEED: int = 42
@@ -550,3 +560,29 @@ def vectors_to_lsh_hash(vector: List[float], num_bands: int = 8, band_width: int
         h = hashlib.md5(band_str.encode()).hexdigest()[:8]
         hashes.append(f"b{band_idx}:{h}")
     return hashes
+
+
+def sequence_ratio(source: List[str], target: List[str]) -> float:
+    if HAS_RUST_BACKEND:
+        return _rust_sequence_ratio(source, target)  # type: ignore[operator]
+    import difflib
+    matcher = difflib.SequenceMatcher(None, source, target)
+    return matcher.ratio()
+
+
+def rust_text_diff(source_code: str, target_code: str, context_lines: int = 3) -> Optional[Any]:
+    if HAS_RUST_BACKEND:
+        return _rust_text_diff(source_code, target_code, context_lines)  # type: ignore[operator]
+    return None
+
+
+def rust_unified_diff(
+    source_code: str,
+    target_code: str,
+    source_name: str = "source",
+    target_name: str = "target",
+    context_lines: int = 3,
+) -> Optional[str]:
+    if HAS_RUST_BACKEND:
+        return _rust_unified_diff(source_code, target_code, source_name, target_name, context_lines)  # type: ignore[operator]
+    return None

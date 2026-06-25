@@ -1,3 +1,4 @@
+mod diff;
 mod embedding;
 mod lsh;
 mod minhash;
@@ -131,6 +132,27 @@ fn vectors_to_lsh_hash(vector: Vec<f64>, num_bands: usize, band_width: usize) ->
     embedding::vectors_to_lsh_hash_impl(vector, num_bands, band_width)
 }
 
+#[pyfunction]
+fn text_diff(source_code: String, target_code: String, context_lines: usize) -> diff::PyDiffResult {
+    diff::text_diff_impl(source_code, target_code, context_lines)
+}
+
+#[pyfunction]
+fn unified_diff(
+    source_code: String,
+    target_code: String,
+    source_name: String,
+    target_name: String,
+    context_lines: usize,
+) -> String {
+    diff::unified_diff_impl(source_code, target_code, source_name, target_name, context_lines)
+}
+
+#[pyfunction]
+fn sequence_ratio(source: Vec<String>, target: Vec<String>) -> f64 {
+    diff::sequence_ratio_impl(source, target)
+}
+
 use std::collections::HashMap;
 
 #[pymodule]
@@ -160,5 +182,10 @@ fn _module_mirror_rust(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(batch_cosine_similarity_parallel, m)?)?;
     m.add_function(wrap_pyfunction!(code2vec_embed, m)?)?;
     m.add_function(wrap_pyfunction!(vectors_to_lsh_hash, m)?)?;
+    m.add_function(wrap_pyfunction!(text_diff, m)?)?;
+    m.add_function(wrap_pyfunction!(unified_diff, m)?)?;
+    m.add_function(wrap_pyfunction!(sequence_ratio, m)?)?;
+    m.add_class::<diff::PyDiffLine>()?;
+    m.add_class::<diff::PyDiffResult>()?;
     Ok(())
 }

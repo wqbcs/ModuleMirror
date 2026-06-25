@@ -4,6 +4,9 @@ AST 深度比对验证器
 对高相似度结果进行 AST 节点级深度比对，
 消除哈希碰撞导致的误报。
 
+Rust加速:
+- sequence_ratio: similar crate Patience diff ratio (~5-15x)
+
 Author: GitHub 项目代码相似度检测工具
 """
 
@@ -17,6 +20,10 @@ from collections import Counter
 from ...models.entities import Module
 from ...infrastructure.parser.parser_manager import ParserManager
 from ...utils.logger import logger
+from ...utils.rust_backend import (
+    sequence_ratio as _rust_sequence_ratio,
+    HAS_RUST_BACKEND,
+)
 
 
 @dataclass
@@ -147,6 +154,9 @@ class ASTDeepComparator:
 
         source_strs = [f"{t}:{c}" for t, c in source_nodes]
         target_strs = [f"{t}:{c}" for t, c in target_nodes]
+
+        if HAS_RUST_BACKEND:
+            return _rust_sequence_ratio(source_strs, target_strs) * 100
 
         matcher = difflib.SequenceMatcher(None, source_strs, target_strs)
         return matcher.ratio() * 100

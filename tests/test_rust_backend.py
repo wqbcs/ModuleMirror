@@ -23,6 +23,9 @@ from gh_similarity_detector.utils.rust_backend import (
     euclidean_distance,
     is_rust_available,
     l2_normalize,
+    rust_text_diff,
+    rust_unified_diff,
+    sequence_ratio,
     stable_hash,
     stable_hash64,
     vectors_to_lsh_hash,
@@ -347,3 +350,87 @@ class TestRustVectorsToLshHash:
         h1 = vectors_to_lsh_hash(v1, num_bands=8, band_width=4)
         h2 = vectors_to_lsh_hash(v2, num_bands=8, band_width=4)
         assert h1 != h2
+
+
+class TestRustSequenceRatio:
+    def test_identical_sequences(self) -> None:
+        seq = ["a", "b", "c"]
+        assert sequence_ratio(seq, seq) == pytest.approx(1.0, abs=1e-5)
+
+    def test_completely_different(self) -> None:
+        assert sequence_ratio(["x", "y"], ["a", "b"]) == pytest.approx(0.0, abs=1e-5)
+
+    def test_empty_both(self) -> None:
+        assert sequence_ratio([], []) == pytest.approx(1.0, abs=1e-5)
+
+    def test_empty_one(self) -> None:
+        assert sequence_ratio(["a"], []) == pytest.approx(0.0, abs=1e-5)
+
+    def test_partial_match(self) -> None:
+        ratio = sequence_ratio(["a", "b", "c"], ["a", "x", "c"])
+        assert 0.0 < ratio < 1.0
+
+    def test_matches_difflib(self) -> None:
+        import difflib
+        source = ["function_definition:2", "if_statement:1", "return_statement:0"]
+        target = ["function_definition:2", "for_statement:1", "return_statement:0"]
+        rust_ratio = sequence_ratio(source, target)
+        py_ratio = difflib.SequenceMatcher(None, source, target).ratio()
+        assert rust_ratio == pytest.approx(py_ratio, abs=0.1)
+
+
+class TestRustTextDiff:
+    def test_identical_code(self) -> None:
+        result = rust_text_diff("hello\nworld", "hello\nworld")
+        assert result is not None
+        assert result.ratio == pytest.approx(1.0, abs=1e-5)
+        assert result.added == 0
+        assert result.removed == 0
+        assert result.unchanged == 2
+
+    def test_completely_different(self) -> None:
+        result = rust_text_diff("aaa\nbbb", "xxx\nyyy")
+        assert result is not None
+        assert result.ratio < 0.5
+        assert result.added > 0
+        assert result.removed > 0
+
+    def test_added_lines(self) -> None:
+        result = rust_text_diff("line1\nline2", "line1\nline2\nline3")
+        assert result is not None
+        assert result.added >= 1
+
+    def test_removed_lines(self) -> None:
+        result = rust_text_diff("line1\nline2\nline3", "line1\nline3")
+        assert result is not None
+        assert result.removed >= 1
+
+    def test_diff_line_fields(self) -> None:
+        result = rust_text_diff("hello\nworld", "hello\nearth")
+        assert result is not None
+        for line in result.lines:
+            assert hasattr(line, "tag")
+            assert hasattr(line, "content")
+            assert line.tag in ("equal", "add", "remove")
+
+    def test_empty_code(self) -> None:
+        result = rust_text_diff("", "")
+        assert result is not None
+        assert result.ratio == pytest.approx(1.0, abs=1e-5)
+
+
+class TestRustUnifiedDiff:
+    def test_produces_output(self) -> None:
+        result = rust_unified_diff("hello\nworld", "hello\nearth", "a.txt", "b.txt")
+        assert result is not None
+        assert len(result) > 0
+
+    def test_identical_code_no_diff(self) -> None:
+        result = rust_unified_diff("same\ncode", "same\ncode", "a.txt", "b.txt")
+        assert result is not None
+        assert "---" not in result or "+++" not in result
+
+    def test_diff_contains_markers(self) -> None:
+        result = rust_unified_diff("old\n", "new\n", "a.txt", "b.txt")
+        assert result is not None
+        assert "-" in result or "+" in result

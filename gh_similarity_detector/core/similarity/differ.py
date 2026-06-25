@@ -1,13 +1,23 @@
 """
 代码差异对比器
 
-使用 difflib 生成匹配代码之间的差异视图，
+使用 difflib/Rust(similar) 生成匹配代码之间的差异视图，
 帮助用户直观理解两段代码的异同。
+
+Rust加速:
+- text_diff: similar crate Patience/Histogram diff (~5-15x)
+- unified_diff: similar unified_diff格式化
 """
 
 import difflib
 from typing import List, Optional
 from dataclasses import dataclass
+
+from ...utils.rust_backend import (
+    rust_text_diff,
+    rust_unified_diff,
+    HAS_RUST_BACKEND,
+)
 
 
 @dataclass
@@ -45,18 +55,31 @@ class CodeDiffer:
         target_name: str = "target",
         context_lines: int = 3,
     ) -> DiffResult:
-        """计算两段代码的差异
+        if HAS_RUST_BACKEND:
+            rust_result = rust_text_diff(source_code, target_code, context_lines)
+            if rust_result is not None:
+                diff_lines = []
+                for line in rust_result.lines:
+                    diff_lines.append(
+                        DiffLine(
+                            tag=line.tag,
+                            content=line.content,
+                            source_line=line.source_line,
+                            target_line=line.target_line,
+                        )
+                    )
+                return DiffResult(
+                    source_name=source_name,
+                    target_name=target_name,
+                    lines=diff_lines,
+                    ratio=rust_result.ratio,
+                    source_total=rust_result.source_total,
+                    target_total=rust_result.target_total,
+                    added=rust_result.added,
+                    removed=rust_result.removed,
+                    unchanged=rust_result.unchanged,
+                )
 
-        Args:
-            source_code: 源代码
-            target_code: 目标代码
-            source_name: 源模块名
-            target_name: 目标模块名
-            context_lines: 上下文行数
-
-        Returns:
-            DiffResult
-        """
         source_lines = source_code.splitlines(keepends=True)
         target_lines = target_code.splitlines(keepends=True)
 
@@ -130,15 +153,10 @@ class CodeDiffer:
         target_name: str = "target",
         context_lines: int = 3,
     ) -> str:
-        """生成 unified diff 格式的差异
-
-        Args:
-            source_code: 源代码
-            target_code: 目标代码
-
-        Returns:
-            unified diff 文本
-        """
+        if HAS_RUST_BACKEND:
+            result = rust_unified_diff(source_code, target_code, source_name, target_name, context_lines)
+            if result is not None:
+                return result
         source_lines = source_code.splitlines(keepends=True)
         target_lines = target_code.splitlines(keepends=True)
 
