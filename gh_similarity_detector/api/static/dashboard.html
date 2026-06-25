@@ -1,332 +1,530 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ModuleMirror - 代码相似度检测仪表盘</title>
+    <title>ModuleMirror — Code Similarity Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
                     colors: {
-                        border: 'hsl(var(--mm-border))',
-                        input: 'hsl(var(--mm-border))',
-                        ring: 'hsl(var(--mm-ring))',
-                        primary: { DEFAULT: 'hsl(var(--mm-primary))', hover: 'hsl(var(--mm-primary-hover))', foreground: 'hsl(var(--mm-primary-foreground))' },
-                        secondary: { DEFAULT: 'hsl(var(--mm-secondary))', hover: 'hsl(var(--mm-secondary-hover))' },
-                        destructive: 'hsl(var(--mm-destructive))',
-                        muted: { DEFAULT: 'hsl(var(--mm-bg-secondary))', foreground: 'hsl(var(--mm-text-muted))' },
-                        accent: 'hsl(var(--mm-accent))',
-                        card: { DEFAULT: 'hsl(var(--mm-bg-card))', foreground: 'hsl(var(--mm-text))' },
-                        foreground: 'hsl(var(--mm-text))',
+                        canvas: '#050506',
+                        surface: '#0A0A0B',
+                        'surface-2': '#111113',
+                        border: 'rgba(255,255,255,0.06)',
+                        'border-hover': 'rgba(255,255,255,0.12)',
+                        fg: '#EDEDEF',
+                        muted: '#8A8F98',
+                        accent: '#6366F1',
+                        'accent-glow': 'rgba(99,102,241,0.15)',
+                        'accent-2': '#A855F7',
+                        success: '#22C55E',
+                        warning: '#F59E0B',
+                        danger: '#EF4444',
                     },
+                    fontFamily: {
+                        sans: ['Inter', 'SF Pro Display', 'system-ui', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'SF Mono', 'Fira Code', 'monospace'],
+                    },
+                    letterSpacing: { tight: '-0.02em' },
                 },
             },
         };
     </script>
-    <link rel="stylesheet" href="/static/css/variables.css">
-    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
-        @keyframes animate-in { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
-        .animate-in { animation: animate-in 0.2s ease-out; }
-        @keyframes slide-in-from-right { from { opacity: 0; transform: translateX(100%); } to { opacity: 1; transform: translateX(0); } }
-        .slide-in-from-right { animation: slide-in-from-right 0.3s ease-out; }
-        .gradient-hero { background: linear-gradient(135deg, hsl(var(--mm-primary)) 0%, hsl(280 70% 50%) 100%); }
-        .dark .gradient-hero { background: linear-gradient(135deg, hsl(var(--mm-primary)) 0%, hsl(280 50% 30%) 100%); }
+        *, *::before, *::after { box-sizing: border-box; }
+        body { background: #050506; font-family: 'Inter', system-ui, sans-serif; letter-spacing: -0.02em; }
+        .shimmer { position: relative; overflow: hidden; }
+        .shimmer::after {
+            content: ''; position: absolute; top: 0; left: -100%; width: 50%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.03), transparent);
+            animation: shimmer 3s ease-in-out infinite;
+        }
+        @keyframes shimmer { 0% { left: -100%; } 100% { left: 200%; } }
+        @keyframes fade-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes pulse-glow { 0%, 100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); } 50% { box-shadow: 0 0 20px 2px rgba(99,102,241,0.15); } }
+        .animate-in { animation: fade-in 0.3s ease-out forwards; }
+        .glow-ring { animation: pulse-glow 2s ease-in-out infinite; }
+        .card {
+            background: #0A0A0B; border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 12px; transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 0 30px -5px rgba(99,102,241,0.08); }
+        .stat-value { font-size: 2rem; font-weight: 700; line-height: 1; letter-spacing: -0.03em; background: linear-gradient(135deg, #EDEDEF 0%, #8A8F98 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 500; letter-spacing: 0; }
+        .badge-success { background: rgba(34,197,94,0.12); color: #22C55E; }
+        .badge-warning { background: rgba(245,158,11,0.12); color: #F59E0B; }
+        .badge-danger { background: rgba(239,68,68,0.12); color: #EF4444; }
+        .badge-muted { background: rgba(138,143,152,0.12); color: #8A8F98; }
+        .badge-accent { background: rgba(99,102,241,0.12); color: #6366F1; }
+        .btn-primary {
+            display: inline-flex; align-items: center; gap: 6px; padding: 0 16px; height: 36px;
+            background: #6366F1; color: white; border-radius: 8px; font-size: 13px; font-weight: 500;
+            border: none; cursor: pointer; transition: all 0.2s; box-shadow: 0 0 20px -3px rgba(99,102,241,0.3);
+        }
+        .btn-primary:hover { background: #5558E6; box-shadow: 0 0 25px -3px rgba(99,102,241,0.4); }
+        .btn-ghost {
+            display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+            width: 36px; height: 36px; background: transparent; color: #8A8F98;
+            border: 1px solid rgba(255,255,255,0.06); border-radius: 8px; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-ghost:hover { background: rgba(255,255,255,0.04); color: #EDEDEF; border-color: rgba(255,255,255,0.1); }
+        .progress-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+        .progress-fill { height: 100%; background: linear-gradient(90deg, #6366F1, #A855F7); border-radius: 2px; transition: width 0.4s ease; }
+        .diff-add { background: rgba(34,197,94,0.08); border-left: 2px solid #22C55E; padding: 2px 8px; }
+        .diff-remove { background: rgba(239,68,68,0.08); border-left: 2px solid #EF4444; padding: 2px 8px; }
+        .diff-equal { padding: 2px 8px; opacity: 0.5; }
+        .log-line { font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; }
+        .tab { padding: 6px 12px; font-size: 12px; font-weight: 500; color: #8A8F98; cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; }
+        .tab:hover { color: #EDEDEF; }
+        .tab-active { color: #EDEDEF; border-bottom-color: #6366F1; }
+        table { width: 100%; border-collapse: collapse; }
+        th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 500; color: #8A8F98; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid rgba(255,255,255,0.06); }
+        td { padding: 10px 12px; font-size: 13px; color: #EDEDEF; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        tr:hover td { background: rgba(255,255,255,0.02); }
+        input, select { background: #111113; border: 1px solid rgba(255,255,255,0.06); color: #EDEDEF; padding: 8px 12px; border-radius: 8px; font-size: 13px; outline: none; transition: border-color 0.2s; }
+        input:focus, select:focus { border-color: rgba(99,102,241,0.5); box-shadow: 0 0 0 3px rgba(99,102,241,0.1); }
+        .mermaid { background: transparent; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
     </style>
 </head>
-<body class="min-h-screen bg-muted/40 text-foreground">
-    <nav class="sticky top-0 z-40 border-b border-border bg-card/80 backdrop-blur-lg">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<body class="min-h-screen text-fg antialiased">
+    <nav class="sticky top-0 z-50 border-b border-border bg-canvas/80 backdrop-blur-xl">
+        <div class="max-w-[1400px] mx-auto px-6">
             <div class="flex h-14 items-center justify-between">
                 <div class="flex items-center gap-3">
-                    <div class="flex h-8 w-8 items-center justify-center rounded-lg gradient-hero">
+                    <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-accent to-accent-2 shadow-lg shadow-accent/20">
                         <svg class="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     </div>
-                    <span class="text-base font-semibold tracking-tight">ModuleMirror</span>
-                    <span class="hidden sm:inline-flex items-center rounded-full border border-border px-2 py-0.5 text-[10px] font-medium text-muted-foreground">v1.0</span>
+                    <span class="text-sm font-semibold tracking-tight text-fg">ModuleMirror</span>
+                    <span class="badge badge-accent">v2.0</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button onclick="MM.Toast.show('已刷新', {variant:'success'})" data-mm-tooltip="刷新数据" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border hover:bg-accent transition-all">
+                    <button onclick="refreshAll()" class="btn-ghost" title="刷新数据">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                     </button>
-                    <button onclick="MM.Theme.toggle()" data-mm-tooltip="切换主题" class="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border hover:bg-accent transition-all">
-                        <svg id="theme-icon-light" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-                        <svg id="theme-icon-dark" class="h-4 w-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 1v2m0 20v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m20 0h2M4.22 19.78l1.42-1.42m12.72-12.72l1.42-1.42"/></svg>
-                    </button>
-                    <button onclick="openDetectDialog()" class="inline-flex items-center gap-2 rounded-md bg-primary text-primary-foreground h-8 px-3 text-sm font-medium shadow-sm hover:bg-primary-hover transition-all">
+                    <button onclick="openDetectModal()" class="btn-primary">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                        <span class="hidden sm:inline">开始检测</span>
+                        <span>开始检测</span>
                     </button>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-        <section id="stats-section" class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div id="stat-card-projects"></div>
-            <div id="stat-card-modules"></div>
-            <div id="stat-card-fingerprints"></div>
-            <div id="stat-card-detections"></div>
+    <main class="max-w-[1400px] mx-auto px-6 py-8 space-y-6">
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in" style="animation-delay: 0ms">
+            <div class="card p-5 shimmer">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-medium text-muted uppercase tracking-wider">项目总数</span>
+                    <span class="text-accent text-lg">📦</span>
+                </div>
+                <div class="stat-value" id="stat-projects">0</div>
+            </div>
+            <div class="card p-5 shimmer" style="animation-delay: 50ms">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-medium text-muted uppercase tracking-wider">模块总数</span>
+                    <span class="text-accent-2 text-lg">📄</span>
+                </div>
+                <div class="stat-value" id="stat-modules">0</div>
+            </div>
+            <div class="card p-5 shimmer" style="animation-delay: 100ms">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-medium text-muted uppercase tracking-wider">指纹总数</span>
+                    <span class="text-warning text-lg">🔑</span>
+                </div>
+                <div class="stat-value" id="stat-fingerprints">0</div>
+            </div>
+            <div class="card p-5 shimmer" style="animation-delay: 150ms">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-xs font-medium text-muted uppercase tracking-wider">检测次数</span>
+                    <span class="text-success text-lg">🔍</span>
+                </div>
+                <div class="stat-value" id="stat-detections">0</div>
+            </div>
         </section>
 
-        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div class="lg:col-span-2 rounded-xl border border-border bg-card shadow-sm">
-                <div class="flex flex-col space-y-1.5 p-6 pb-4">
-                    <h3 class="font-semibold tracking-tight">检测进度</h3>
-                    <p class="text-sm text-muted-foreground">实时追踪当前检测任务执行状态</p>
-                </div>
-                <div class="px-6 pb-2">
-                    <div class="flex justify-between text-sm mb-2">
-                        <span id="progress-text" class="text-muted-foreground">等待开始...</span>
-                        <span id="progress-percent" class="font-medium text-foreground">0%</span>
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in" style="animation-delay: 200ms">
+            <div class="lg:col-span-2 card">
+                <div class="flex items-center justify-between p-5 pb-3">
+                    <div>
+                        <h3 class="text-sm font-semibold text-fg">检测进度</h3>
+                        <p class="text-xs text-muted mt-0.5">实时追踪当前检测任务执行状态</p>
                     </div>
-                    <div id="progress-bar-container"></div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs text-muted" id="progress-text">等待开始...</span>
+                        <span class="text-sm font-semibold text-accent" id="progress-percent">0%</span>
+                    </div>
                 </div>
-                <div class="px-6 pb-6">
-                    <div id="detection-log" class="rounded-lg border border-border bg-muted/30 p-3 h-48 overflow-y-auto font-mono text-xs text-muted-foreground space-y-1">
-                        <p class="text-muted-foreground/60">检测日志将在此显示...</p>
+                <div class="px-5 pb-3">
+                    <div class="progress-track">
+                        <div class="progress-fill" id="progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="px-5 pb-5">
+                    <div id="detection-log" class="rounded-lg border border-border bg-canvas p-3 h-44 overflow-y-auto">
+                        <p class="log-line text-muted/60">等待检测任务...</p>
                     </div>
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-card shadow-sm">
-                <div class="flex flex-col space-y-1.5 p-6 pb-4">
-                    <h3 class="font-semibold tracking-tight">系统状态</h3>
-                    <p class="text-sm text-muted-foreground">服务健康与性能指标</p>
+            <div class="card">
+                <div class="p-5 pb-3">
+                    <h3 class="text-sm font-semibold text-fg">系统状态</h3>
+                    <p class="text-xs text-muted mt-0.5">服务健康与性能指标</p>
                 </div>
-                <div class="px-6 pb-6 space-y-4" id="system-status">
+                <div class="px-5 pb-5 space-y-3">
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-muted-foreground">服务状态</span>
-                        <span id="health-badge"></span>
+                        <span class="text-xs text-muted">服务状态</span>
+                        <span id="health-badge"><span class="badge badge-muted">检查中</span></span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-muted-foreground">数据库</span>
-                        <span id="db-badge"></span>
+                        <span class="text-xs text-muted">数据库</span>
+                        <span id="db-badge"><span class="badge badge-muted">-</span></span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-muted-foreground">运行时间</span>
-                        <span id="uptime" class="text-sm font-medium">-</span>
+                        <span class="text-xs text-muted">版本</span>
+                        <span class="text-xs font-medium text-fg" id="sys-version">-</span>
                     </div>
                     <div class="flex items-center justify-between">
-                        <span class="text-sm text-muted-foreground">内存使用</span>
-                        <span id="memory" class="text-sm font-medium">-</span>
+                        <span class="text-xs text-muted">Rust加速</span>
+                        <span id="rust-badge"><span class="badge badge-muted">-</span></span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="rounded-xl border border-border bg-card shadow-sm">
-            <div class="flex items-center justify-between p-6 pb-4">
+        <section class="card animate-in" style="animation-delay: 300ms">
+            <div class="flex items-center justify-between p-5 pb-3">
                 <div>
-                    <h3 class="font-semibold tracking-tight">最近检测结果</h3>
-                    <p class="text-sm text-muted-foreground mt-1">相似度检测与克隆分析结果</p>
+                    <h3 class="text-sm font-semibold text-fg">相似度关系图</h3>
+                    <p class="text-xs text-muted mt-0.5">模块间相似度依赖关系（Mermaid）</p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <select id="result-filter" class="h-8 rounded-md border border-border bg-transparent px-2 text-sm" onchange="filterResults()">
+            </div>
+            <div class="px-5 pb-5">
+                <div id="mermaid-container" class="rounded-lg border border-border bg-canvas p-4 min-h-[200px] flex items-center justify-center">
+                    <p class="text-xs text-muted">执行检测后自动生成关系图</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="card animate-in" style="animation-delay: 350ms">
+            <div class="flex items-center justify-between p-5 pb-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-fg">检测结果</h3>
+                    <p class="text-xs text-muted mt-0.5">相似度检测与克隆分析结果</p>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="result-filter" class="h-8 text-xs" onchange="filterResults()">
                         <option value="all">全部</option>
-                        <option value="high">高相似度 (&ge;80%)</option>
+                        <option value="high">高相似度 (≥80%)</option>
                         <option value="medium">中相似度 (60-80%)</option>
-                        <option value="low">低相似度 (&lt;60%)</option>
+                        <option value="low">低相似度 (<60%)</option>
                     </select>
                 </div>
             </div>
-            <div id="results-container" class="px-6 pb-6"></div>
+            <div class="px-5 pb-5 overflow-x-auto">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>源项目</th>
+                            <th>目标项目</th>
+                            <th>相似度</th>
+                            <th>匹配数</th>
+                            <th>风险等级</th>
+                            <th>时间</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-tbody">
+                        <tr><td colspan="7" class="text-center text-muted py-8 text-sm">暂无检测结果</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section id="diff-section" class="card hidden animate-in">
+            <div class="flex items-center justify-between p-5 pb-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-fg">代码差异</h3>
+                    <p class="text-xs text-muted mt-0.5">行级代码对比视图</p>
+                </div>
+                <button onclick="document.getElementById('diff-section').classList.add('hidden')" class="btn-ghost">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="px-5 pb-5">
+                <div id="diff-view" class="rounded-lg border border-border bg-canvas p-3 overflow-x-auto font-mono text-xs max-h-[400px] overflow-y-auto"></div>
+            </div>
         </section>
     </main>
 
     <footer class="border-t border-border mt-8">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between text-xs text-muted-foreground">
-            <span>ModuleMirror &copy; 2024</span>
-            <span>Powered by Winnowing + AST</span>
+        <div class="max-w-[1400px] mx-auto px-6 py-4 flex items-center justify-between text-xs text-muted">
+            <span>ModuleMirror &copy; 2024-2026</span>
+            <span>Powered by Winnowing + AST + Rust</span>
         </div>
     </footer>
 
-    <script src="/static/js/components.js"></script>
+    <div id="detect-modal" class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div class="card w-full max-w-md mx-4 p-6 animate-in">
+            <h3 class="text-base font-semibold text-fg mb-4">代码相似度检测</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="text-xs font-medium text-muted mb-1.5 block">源项目路径</label>
+                    <input id="modal-source" class="w-full" placeholder="GitHub URL 或本地路径">
+                </div>
+                <div>
+                    <label class="text-xs font-medium text-muted mb-1.5 block">目标项目路径</label>
+                    <input id="modal-target" class="w-full" placeholder="GitHub URL 或本地路径">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="text-xs font-medium text-muted mb-1.5 block">语言</label>
+                        <select id="modal-language" class="w-full">
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                            <option value="javascript">JavaScript</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-muted mb-1.5 block">阈值 (%)</label>
+                        <input id="modal-threshold" class="w-full" type="number" value="70" min="0" max="100">
+                    </div>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 mt-6">
+                <button onclick="closeDetectModal()" class="h-9 px-4 text-sm text-muted hover:text-fg transition-colors">取消</button>
+                <button onclick="startDetection()" class="btn-primary">开始检测</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast-container" class="fixed top-16 right-6 z-[200] space-y-2"></div>
+
     <script>
-        const API_BASE = window.location.origin;
-        let _progressBar = null;
-        let _resultsTable = null;
+        const API = window.location.origin;
         let _allResults = [];
+        let _eventSource = null;
 
-        function initDashboard() {
-            MM.init();
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#6366F1',
+                primaryTextColor: '#EDEDEF',
+                primaryBorderColor: 'rgba(255,255,255,0.06)',
+                lineColor: '#8A8F98',
+                secondaryColor: '#1A1A2E',
+                tertiaryColor: '#0A0A0B',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: '12px',
+            },
+        });
 
-            document.getElementById('stat-card-projects').appendChild(
-                MM.Card.stats({ label: '项目总数', value: '0', icon: '&#128193;' })
-            );
-            document.getElementById('stat-card-modules').appendChild(
-                MM.Card.stats({ label: '模块总数', value: '0', icon: '&#128196;' })
-            );
-            document.getElementById('stat-card-fingerprints').appendChild(
-                MM.Card.stats({ label: '指纹总数', value: '0', icon: '&#128273;' })
-            );
-            document.getElementById('stat-card-detections').appendChild(
-                MM.Card.stats({ label: '检测次数', value: '0', icon: '&#128269;' })
-            );
-
-            _progressBar = MM.Progress.create({ value: 0 });
-            document.getElementById('progress-bar-container').appendChild(_progressBar);
-
-            _resultsTable = MM.Table.create({
-                headers: ['源项目', '目标项目', '相似度', '匹配数', '时间', '状态']
-            });
-            _resultsTable.setEmpty('暂无检测结果');
-            document.getElementById('results-container').appendChild(_resultsTable);
-
-            document.getElementById('health-badge').appendChild(MM.Badge.create('检查中', 'secondary'));
-            document.getElementById('db-badge').appendChild(MM.Badge.create('-', 'secondary'));
-
-            refreshStats();
-            setupThemeIcons();
+        function toast(msg, variant = 'default') {
+            const c = document.getElementById('toast-container');
+            const colors = { default: 'border-border', success: 'border-success/50', error: 'border-danger/50' };
+            const el = document.createElement('div');
+            el.className = `card px-4 py-2.5 text-sm text-fg animate-in border ${colors[variant] || colors.default}`;
+            el.textContent = msg;
+            c.appendChild(el);
+            setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, 3000);
         }
 
-        function setupThemeIcons() {
-            const update = () => {
-                const dark = MM.Theme.isDark();
-                document.getElementById('theme-icon-light').classList.toggle('hidden', dark);
-                document.getElementById('theme-icon-dark').classList.toggle('hidden', !dark);
-            };
-            update();
-            const observer = new MutationObserver(update);
-            observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
-        }
-
-        async function refreshStats() {
-            try {
-                const response = await fetch(`${API_BASE}/health`);
-                const data = await response.json();
-
-                const statCards = document.querySelectorAll('#stats-section [class*="text-2xl"]');
-                if (data.database) {
-                    statCards[0].textContent = data.database.projects || 0;
-                    statCards[1].textContent = data.database.modules || 0;
-                    statCards[2].textContent = data.database.fingerprints || 0;
-                }
-
-                const healthBadge = document.getElementById('health-badge');
-                healthBadge.innerHTML = '';
-                healthBadge.appendChild(MM.Badge.create(data.status || 'unknown', data.status === 'healthy' ? 'success' : 'destructive'));
-
-                const dbBadge = document.getElementById('db-badge');
-                dbBadge.innerHTML = '';
-                if (data.database) {
-                    dbBadge.appendChild(MM.Badge.create('connected', 'success'));
-                } else {
-                    dbBadge.appendChild(MM.Badge.create('disconnected', 'destructive'));
-                }
-
-                if (data.version) {
-                    document.getElementById('uptime').textContent = `v${data.version}`;
-                }
-
-                addLog('统计信息已刷新');
-            } catch (error) {
-                const healthBadge = document.getElementById('health-badge');
-                healthBadge.innerHTML = '';
-                healthBadge.appendChild(MM.Badge.create('error', 'destructive'));
-                addLog('错误: 无法获取统计信息 - ' + error.message);
-            }
-        }
-
-        function openDetectDialog() {
-            MM.Dialog.open({
-                title: '代码相似度检测',
-                content: `<div class="space-y-3"><div><label class="text-sm font-medium mb-1 block">源项目</label><input id="dialog-source" class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="GitHub URL 或本地路径"></div><div><label class="text-sm font-medium mb-1 block">目标项目</label><input id="dialog-target" class="flex h-9 w-full rounded-md border border-border bg-transparent px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" placeholder="GitHub URL 或本地路径"></div></div>`,
-                confirmText: '开始检测',
-                onConfirm: () => {
-                    const source = document.getElementById('dialog-source').value;
-                    const target = document.getElementById('dialog-target').value;
-                    if (source && target) startDetection(source, target);
-                }
-            });
-        }
-
-        async function startDetection(source, target) {
-            addLog(`开始检测: ${source} ↔ ${target}`);
-            updateProgress(0, '初始化...');
-            MM.Toast.show('检测已启动', { variant: 'default' });
-
-            try {
-                const response = await fetch(`${API_BASE}/detect`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ source, targets: [target] })
-                });
-                const results = await response.json();
-                updateProgress(100, '检测完成');
-                MM.Toast.show('检测完成', { variant: 'success' });
-                addLog(`检测完成: 发现 ${results.length} 个结果`);
-
-                const statCards = document.querySelectorAll('#stats-section [class*="text-2xl"]');
-                statCards[3].textContent = parseInt(statCards[3].textContent) + 1;
-
-                if (results && results.length > 0) {
-                    _allResults = results;
-                    renderResults(results);
-                }
-            } catch (error) {
-                addLog('检测失败: ' + error.message);
-                updateProgress(0, '检测失败');
-                MM.Toast.show('检测失败: ' + error.message, { variant: 'error' });
-            }
-        }
-
-        function updateProgress(percent, text) {
-            if (_progressBar) _progressBar.setValue(percent);
-            document.getElementById('progress-percent').textContent = percent + '%';
-            document.getElementById('progress-text').textContent = text;
-        }
-
-        function addLog(message) {
+        function addLog(msg) {
             const log = document.getElementById('detection-log');
-            const time = new Date().toLocaleTimeString();
-            const line = document.createElement('p');
-            line.textContent = `[${time}] ${message}`;
-            log.appendChild(line);
+            const t = new Date().toLocaleTimeString();
+            const p = document.createElement('p');
+            p.className = 'log-line text-muted';
+            p.innerHTML = `<span class="text-accent/60">[${t}]</span> ${msg}`;
+            log.appendChild(p);
             log.scrollTop = log.scrollHeight;
         }
 
+        function setProgress(pct, text) {
+            document.getElementById('progress-bar').style.width = pct + '%';
+            document.getElementById('progress-percent').textContent = pct + '%';
+            document.getElementById('progress-text').textContent = text;
+        }
+
+        async function refreshAll() {
+            try {
+                const r = await fetch(`${API}/health`);
+                const d = await r.json();
+                document.getElementById('stat-projects').textContent = d.database?.projects ?? 0;
+                document.getElementById('stat-modules').textContent = d.database?.modules ?? 0;
+                document.getElementById('stat-fingerprints').textContent = d.database?.fingerprints ?? 0;
+                document.getElementById('health-badge').innerHTML = `<span class="badge ${d.status === 'healthy' ? 'badge-success' : 'badge-danger'}">${d.status === 'healthy' ? '运行中' : '异常'}</span>`;
+                document.getElementById('db-badge').innerHTML = `<span class="badge ${d.database ? 'badge-success' : 'badge-danger'}">${d.database ? '已连接' : '断开'}</span>`;
+                document.getElementById('sys-version').textContent = d.version ? `v${d.version}` : '-';
+                document.getElementById('rust-badge').innerHTML = `<span class="badge badge-accent">已启用</span>`;
+                addLog('统计信息已刷新');
+            } catch (e) {
+                document.getElementById('health-badge').innerHTML = '<span class="badge badge-danger">离线</span>';
+                addLog('无法连接到服务');
+            }
+        }
+
+        function openDetectModal() {
+            const m = document.getElementById('detect-modal');
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+        }
+
+        function closeDetectModal() {
+            const m = document.getElementById('detect-modal');
+            m.classList.add('hidden');
+            m.classList.remove('flex');
+        }
+
+        async function startDetection() {
+            const source = document.getElementById('modal-source').value;
+            const target = document.getElementById('modal-target').value;
+            const language = document.getElementById('modal-language').value;
+            const threshold = parseInt(document.getElementById('modal-threshold').value) || 70;
+            if (!source || !target) { toast('请填写项目路径', 'error'); return; }
+            closeDetectModal();
+            addLog(`开始检测: ${source} ↔ ${target}`);
+            setProgress(5, '初始化检测...');
+            toast('检测已启动');
+
+            try {
+                const r = await fetch(`${API}/detect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source, targets: [target], language, threshold }),
+                });
+                const results = await r.json();
+                setProgress(100, '检测完成');
+                toast('检测完成', 'success');
+                addLog(`检测完成: 发现 ${Array.isArray(results) ? results.length : 0} 个结果`);
+                const det = document.getElementById('stat-detections');
+                det.textContent = parseInt(det.textContent) + 1;
+                if (Array.isArray(results) && results.length > 0) {
+                    _allResults = results;
+                    renderResults(results);
+                    renderMermaidGraph(results);
+                }
+            } catch (e) {
+                addLog('检测失败: ' + e.message);
+                setProgress(0, '检测失败');
+                toast('检测失败: ' + e.message, 'error');
+            }
+        }
+
         function renderResults(results) {
-            _resultsTable.clearRows();
-            results.forEach(result => {
-                const similarity = result.statistics?.avg_similarity || 0;
-                const badge = MM.Badge.create(
-                    similarity.toFixed(1) + '%',
-                    similarity >= 80 ? 'destructive' : similarity >= 60 ? 'warning' : 'success'
-                );
-                const statusBadge = MM.Badge.create(
-                    similarity >= 80 ? '高风险' : similarity >= 60 ? '中风险' : '低风险',
-                    similarity >= 80 ? 'destructive' : similarity >= 60 ? 'warning' : 'success'
-                );
-                _resultsTable.addRow([
-                    result.source_project || '-',
-                    result.target_project || '-',
-                    badge,
-                    result.matches?.length || 0,
-                    new Date().toLocaleString(),
-                    statusBadge
-                ]);
+            const tb = document.getElementById('results-tbody');
+            tb.innerHTML = '';
+            results.forEach((r, idx) => {
+                const sim = r.statistics?.avg_similarity ?? r.similarity ?? 0;
+                const matches = r.matches?.length ?? r.match_count ?? 0;
+                const risk = sim >= 80 ? 'high' : sim >= 60 ? 'medium' : 'low';
+                const riskLabel = sim >= 80 ? '高风险' : sim >= 60 ? '中风险' : '低风险';
+                const riskBadge = sim >= 80 ? 'badge-danger' : sim >= 60 ? 'badge-warning' : 'badge-success';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="font-medium">${r.source_project ?? r.source ?? '-'}</td>
+                    <td>${r.target_project ?? r.target ?? '-'}</td>
+                    <td><span class="font-mono font-medium ${sim >= 80 ? 'text-danger' : sim >= 60 ? 'text-warning' : 'text-success'}">${sim.toFixed(1)}%</span></td>
+                    <td class="font-mono">${matches}</td>
+                    <td><span class="badge ${riskBadge}">${riskLabel}</span></td>
+                    <td class="text-muted text-xs">${new Date().toLocaleString()}</td>
+                    <td><button onclick="viewDiff(${idx})" class="text-accent hover:text-accent-2 text-xs font-medium transition-colors">查看差异</button></td>
+                `;
+                tb.appendChild(tr);
             });
         }
 
         function filterResults() {
-            const filter = document.getElementById('result-filter').value;
+            const f = document.getElementById('result-filter').value;
             if (!_allResults.length) return;
             const filtered = _allResults.filter(r => {
-                const sim = r.statistics?.avg_similarity || 0;
-                if (filter === 'high') return sim >= 80;
-                if (filter === 'medium') return sim >= 60 && sim < 80;
-                if (filter === 'low') return sim < 60;
+                const sim = r.statistics?.avg_similarity ?? r.similarity ?? 0;
+                if (f === 'high') return sim >= 80;
+                if (f === 'medium') return sim >= 60 && sim < 80;
+                if (f === 'low') return sim < 60;
                 return true;
             });
             renderResults(filtered);
         }
 
-        initDashboard();
+        async function viewDiff(idx) {
+            const r = _allResults[idx];
+            if (!r) return;
+            const src = r.source_project ?? r.source ?? '';
+            const tgt = r.target_project ?? r.target ?? '';
+            try {
+                const resp = await fetch(`${API}/detect`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ source: src, targets: [tgt], diff: true }),
+                });
+                const data = await resp.json();
+                const diffView = document.getElementById('diff-view');
+                if (data.diff_lines) {
+                    diffView.innerHTML = data.diff_lines.map(l =>
+                        `<div class="diff-${l.tag}"><span class="text-muted mr-3">${l.source_line ?? l.target_line ?? ''}</span>${l.content}</div>`
+                    ).join('');
+                } else {
+                    diffView.innerHTML = '<p class="text-muted text-center py-4">差异数据不可用</p>';
+                }
+                document.getElementById('diff-section').classList.remove('hidden');
+            } catch (e) {
+                toast('无法加载差异视图', 'error');
+            }
+        }
+
+        async function renderMermaidGraph(results) {
+            if (!results || !results.length) return;
+            let graphDef = 'graph LR\n';
+            const nodes = new Set();
+            results.forEach(r => {
+                const src = r.source_project ?? r.source ?? 'A';
+                const tgt = r.target_project ?? r.target ?? 'B';
+                const sim = r.statistics?.avg_similarity ?? r.similarity ?? 0;
+                const sId = src.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+                const tId = tgt.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20);
+                if (!nodes.has(sId)) { graphDef += `    ${sId}["${src.substring(0, 30)}"]\n`; nodes.add(sId); }
+                if (!nodes.has(tId)) { graphDef += `    ${tId}["${tgt.substring(0, 30)}"]\n`; nodes.add(tId); }
+                const color = sim >= 80 ? '#EF4444' : sim >= 60 ? '#F59E0B' : '#22C55E';
+                graphDef += `    ${sId} -->|"${sim.toFixed(1)}%"| ${tId}\n`;
+            });
+            const container = document.getElementById('mermaid-container');
+            try {
+                const { svg } = await mermaid.render('mermaid-graph', graphDef);
+                container.innerHTML = svg;
+            } catch (e) {
+                container.innerHTML = `<p class="text-xs text-muted">图表渲染失败: ${e.message}</p>`;
+            }
+        }
+
+        function setupSSE() {
+            if (_eventSource) _eventSource.close();
+            try {
+                _eventSource = new EventSource(`${API}/tasks/events`);
+                _eventSource.onmessage = (e) => {
+                    try {
+                        const d = JSON.parse(e.data);
+                        if (d.progress !== undefined) setProgress(d.progress, d.message ?? '处理中...');
+                        if (d.log) addLog(d.log);
+                    } catch {}
+                };
+                _eventSource.onerror = () => { if (_eventSource) _eventSource.close(); };
+            } catch {}
+        }
+
+        refreshAll();
+        setupSSE();
     </script>
 </body>
 </html>
