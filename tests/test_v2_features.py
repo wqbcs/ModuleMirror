@@ -5,6 +5,8 @@ WebSocket + SARIF + TaskQueue 测试
 from __future__ import annotations
 
 import asyncio
+import hashlib
+import hmac
 import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
@@ -29,6 +31,10 @@ from gh_similarity_detector.infrastructure.lifecycle.task_queue import (
 )
 from gh_similarity_detector.models.results import DetectionResult, SimilarityResult
 from gh_similarity_detector.models.enums import ReuseSuggestion
+from gh_similarity_detector.api.routes.webhook import (
+    verify_github_signature,
+    WebhookEvent,
+)
 
 
 class TestProgressBroadcaster:
@@ -364,3 +370,62 @@ class TestTaskQueue:
         assert len(execution_order) == 3
         assert execution_order == ["urgent", "normal", "low"]
         await q.stop()
+
+
+class TestGitHubWebhook:
+    def test_verify_signature_valid(self):
+        payload = b'{"ref":"refs/heads/main"}'
+        secret = "mysecret"
+        sig = "sha256=" + hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+        assert verify_github_signature(payload, sig, secret) is True
+
+    def test_verify_signature_invalid(self):
+        payload = b'{"ref":"refs/heads/main"}'
+        assert verify_github_signature(payload, "sha256=invalid", "mysecret") is False
+
+    def test_verify_signature_no_header(self):
+        payload = b'{"ref":"refs/heads/main"}'
+        assert verify_github_signature(payload, "", "mysecret") is False
+
+    def test_verify_signature_no_secret(self):
+        payload = b'{"ref":"refs/heads/main"}'
+        assert verify_github_signature(payload, "", "") is True
+
+    def test_webhook_event_push(self):
+        payload = {
+            "ref": "refs/heads/main",
+            "repository": {"full_name": "user/repo", "clone_url": "https://github.com/user/repo.git", "html_url": "https://github.com/user/repo"},
+            "sender": {"login": "testuser"},
+        }
+        event = WebhookEvent(payload, "push")
+        assert event.is_push is True
+        assert event.is_pull_request is False
+        assert event.repo_full_name == "user/repo"
+        assert event.branch == "main"
+        assert event.sender == "testuser"
+
+    def test_webhook_event_pr(self):
+        payload = {
+            "action": "opened",
+            "pull_request": {"number": 42},
+            "repository": {"full_name": "user/repo", "clone_url": "https://github.com/user/repo.git"},
+            "sender": {"login": "testuser"},
+        }
+        event = WebhookEvent(payload, "pull_request")
+        assert event.is_push is False
+        assert event.is_pull_request is True
+        assert event.pr_number == 42
+        assert event.pr_action == "opened"
+
+    def test_webhook_event_to_dict(self):
+        payload = {
+            "ref": "refs/heads/feature",
+            "repository": {"full_name": "org/project", "clone_url": "https://github.com/org/project.git", "html_url": "https://github.com/org/project"},
+            "sender": {"login": "dev"},
+        }
+        event = WebhookEvent(payload, "push")
+        d = event.to_dict()
+        assert d["event_type"] == "push"
+        assert d["repository"] == "org/project"
+        assert d["branch"] == "feature"
+        assert d["sender"] == "dev"

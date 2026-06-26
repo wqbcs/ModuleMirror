@@ -28,6 +28,7 @@ from .routes import (
     system_router,
     history_router,
     ws_router,
+    webhook_router,
 )
 from ..utils.logger import logger
 from ..infrastructure.lifecycle.graceful_shutdown import graceful_shutdown
@@ -120,6 +121,7 @@ app.include_router(reports_router)
 app.include_router(system_router)
 app.include_router(history_router)
 app.include_router(ws_router)
+app.include_router(webhook_router)
 
 _static_dir = Path(__file__).parent / "static"
 if _static_dir.exists():
