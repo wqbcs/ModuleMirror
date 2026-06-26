@@ -8,8 +8,9 @@ import asyncio
 import hashlib
 import hmac
 import json
+import time
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+
 
 import pytest
 
@@ -17,7 +18,6 @@ from gh_similarity_detector.infrastructure.observability.progress_stream import 
     ProgressBroadcaster,
     ProgressEvent,
     ProgressEventType,
-    sse_stream,
 )
 from gh_similarity_detector.infrastructure.reports.sarif_export import (
     generate_sarif_report,
@@ -34,6 +34,12 @@ from gh_similarity_detector.models.enums import ReuseSuggestion
 from gh_similarity_detector.api.routes.webhook import (
     verify_github_signature,
     WebhookEvent,
+)
+from gh_similarity_detector.infrastructure.security.auth import (
+    AuthManager,
+    UserRole,
+    TokenBlacklist,
+    APIKeyStore,
 )
 
 
@@ -205,7 +211,7 @@ class TestSarifExport:
     def test_sarif_write_to_file(self, tmp_path):
         results = self._make_results()
         out = str(tmp_path / "report.sarif")
-        content = generate_sarif_report(results, output_path=out)
+        generate_sarif_report(results, output_path=out)
         assert Path(out).exists()
         data = json.loads(Path(out).read_text(encoding="utf-8"))
         assert data["version"] == "2.1.0"
@@ -429,3 +435,94 @@ class TestGitHubWebhook:
         assert d["repository"] == "org/project"
         assert d["branch"] == "feature"
         assert d["sender"] == "dev"
+
+
+class TestJWTAuth:
+    def test_create_and_verify_token(self):
+        mgr = AuthManager(secret="test-secret")
+        token = mgr.create_token(subject="user1", role=UserRole.ADMIN)
+        payload = mgr.verify_token(token)
+        assert payload is not None
+        assert payload.sub == "user1"
+        assert payload.role == UserRole.ADMIN
+
+    def test_verify_invalid_token(self):
+        mgr = AuthManager(secret="test-secret")
+        assert mgr.verify_token("invalid.token.here") is None
+
+    def test_verify_expired_token(self):
+        mgr = AuthManager(secret="test-secret")
+        import jwt as pyjwt
+        expired = pyjwt.encode(
+            {"sub": "u1", "role": "user", "exp": 0, "iat": 0, "iss": "modulemirror"},
+            "test-secret",
+            algorithm="HS256",
+        )
+        assert mgr.verify_token(expired) is None
+
+    def test_refresh_token(self):
+        mgr = AuthManager(secret="test-secret")
+        token = mgr.create_token(subject="user1", role=UserRole.USER)
+        new_token = mgr.refresh_token(token)
+        assert new_token is not None
+        payload = mgr.verify_token(new_token)
+        assert payload is not None
+        assert payload.sub == "user1"
+
+    def test_revoke_token(self):
+        mgr = AuthManager(secret="test-secret")
+        token = mgr.create_token(subject="user1", role=UserRole.USER)
+        assert mgr.revoke_token(token) is True
+        assert mgr.verify_token(token) is None
+
+    def test_token_blacklist(self):
+        bl = TokenBlacklist()
+        bl.revoke("jti1", time.time() + 3600)
+        assert bl.is_revoked("jti1") is True
+        assert bl.is_revoked("jti2") is False
+
+
+class TestAPIKeyStore:
+    def test_create_and_verify_key(self):
+        store = APIKeyStore()
+        key_id, raw_key = store.create_key(name="test-key", role=UserRole.USER)
+        assert key_id.startswith("mm_")
+        assert raw_key.startswith("mmk_")
+        record = store.verify_key(raw_key)
+        assert record is not None
+        assert record.name == "test-key"
+        assert record.role == UserRole.USER
+
+    def test_verify_invalid_key(self):
+        store = APIKeyStore()
+        assert store.verify_key("mmk_invalid_key") is None
+
+    def test_revoke_key(self):
+        store = APIKeyStore()
+        key_id, raw_key = store.create_key(name="revoke-me", role=UserRole.ADMIN)
+        store.revoke_key(key_id)
+        assert store.verify_key(raw_key) is None
+
+    def test_list_keys(self):
+        store = APIKeyStore()
+        store.create_key(name="k1", role=UserRole.USER)
+        store.create_key(name="k2", role=UserRole.ADMIN)
+        keys = store.list_keys()
+        assert len(keys) == 2
+
+    def test_expired_key(self):
+        store = APIKeyStore()
+        key_id, raw_key = store.create_key(
+            name="expired", role=UserRole.USER, expires_at=time.time() - 1
+        )
+        assert store.verify_key(raw_key) is None
+
+
+class TestUserRole:
+    def test_permissions(self):
+        assert UserRole.ADMIN.can_write is True
+        assert UserRole.ADMIN.can_admin is True
+        assert UserRole.USER.can_write is True
+        assert UserRole.USER.can_admin is False
+        assert UserRole.READONLY.can_write is False
+        assert UserRole.READONLY.can_admin is False
