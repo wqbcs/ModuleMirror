@@ -48,6 +48,7 @@ from gh_similarity_detector.infrastructure.storage.migrations import (
     run_migrations,
     rollback_migration,
 )
+from gh_similarity_detector.config.hot_reload import ConfigReloader
 
 
 class TestProgressBroadcaster:
@@ -649,3 +650,60 @@ class TestMigrations:
         result = rollback_migration(conn, target_version=current)
         assert result is False
         conn.close()
+
+
+class TestConfigReloader:
+    def test_load_missing_config(self, tmp_path):
+        r = ConfigReloader(config_path=str(tmp_path / "missing.yaml"))
+        data = r.load_config()
+        assert data == {}
+
+    def test_load_valid_config(self, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text("threshold: 85.0\nlanguage: [python]\n", encoding="utf-8")
+        r = ConfigReloader(config_path=str(config_path))
+        data = r.load_config()
+        assert data["threshold"] == 85.0
+        assert data["language"] == ["python"]
+
+    def test_callback_on_change(self, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text("key: value1\n", encoding="utf-8")
+        changes = []
+        r = ConfigReloader(config_path=str(config_path))
+        r.on_change(lambda cfg: changes.append(cfg.copy()))
+        r.load_config()
+        assert len(changes) == 0
+        config_path.write_text("key: value2\n", encoding="utf-8")
+        r.force_reload()
+        assert len(changes) == 1
+        assert changes[0]["key"] == "value2"
+
+    def test_force_reload(self, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text("a: 1\n", encoding="utf-8")
+        r = ConfigReloader(config_path=str(config_path))
+        r.load_config()
+        config_path.write_text("a: 2\n", encoding="utf-8")
+        data = r.force_reload()
+        assert data["a"] == 2
+        assert r.reload_count >= 1
+
+    def test_stats(self, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text("x: y\n", encoding="utf-8")
+        r = ConfigReloader(config_path=str(config_path), poll_interval=2.0)
+        r.load_config()
+        stats = r.stats
+        assert stats["config_exists"] is True
+        assert stats["poll_interval"] == 2.0
+        assert stats["is_running"] is False
+
+    def test_start_stop(self, tmp_path):
+        config_path = tmp_path / "config.yaml"
+        config_path.write_text("z: 1\n", encoding="utf-8")
+        r = ConfigReloader(config_path=str(config_path), poll_interval=0.1)
+        r.start()
+        assert r.is_running is True
+        r.stop()
+        assert r.is_running is False

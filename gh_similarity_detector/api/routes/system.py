@@ -17,6 +17,7 @@ from ...infrastructure.storage.migrations import get_migration_status
 from ...infrastructure.github_client.client import GitHubClient, RateLimitError
 from ...infrastructure.observability.metrics import get_metrics, get_content_type
 from ...infrastructure.resilience.circuit_breaker import github_circuit
+from ...config.hot_reload import config_reloader
 from ...utils.logger import logger
 from ...utils.deps import DependencyRegistry
 from ... import __version__
@@ -137,3 +138,24 @@ async def migration_status() -> dict[str, Any]:
     finally:
         fp_db._pool.release(conn)
     return status
+
+
+@router.get(
+    "/config/reload",
+    summary="配置热重载状态",
+    description="返回配置文件热重载状态和统计信息",
+)
+async def config_reload_status() -> dict[str, Any]:
+    """获取配置热重载状态"""
+    return config_reloader.stats
+
+
+@router.post(
+    "/config/reload",
+    summary="手动触发配置重载",
+    description="强制重新加载配置文件",
+)
+async def trigger_config_reload() -> dict[str, Any]:
+    """手动触发配置热重载"""
+    config = config_reloader.force_reload()
+    return {"status": "reloaded", "config_keys": list(config.keys()), "reload_count": config_reloader.reload_count}
