@@ -16,7 +16,11 @@ router = APIRouter(prefix="/history", tags=["history"])
 DB_PATH = os.getenv("MODULEMIRROR_DB_PATH", "./fingerprint_db.sqlite")
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="列出检测历史记录",
+    responses={404: {"description": "指纹库不存在"}},
+)
 async def list_detection_history(
     target_project: Optional[str] = None,
     limit: int = Query(default=50, ge=1, le=200),
@@ -29,7 +33,11 @@ async def list_detection_history(
     return fp_db.get_detection_history(target_project=target_project, limit=limit, offset=offset)  # type: ignore[return-value]
 
 
-@router.get("/trend/{target_project}")
+@router.get(
+    "/trend/{target_project}",
+    summary="获取项目检测趋势",
+    responses={404: {"description": "指纹库不存在"}},
+)
 async def get_detection_trend(
     target_project: str,
     limit: int = Query(default=20, ge=1, le=100),

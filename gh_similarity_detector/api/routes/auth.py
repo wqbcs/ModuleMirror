@@ -21,16 +21,36 @@ API_KEY_ENV = "MODULEMIRROR_API_KEY"
 class LoginRequest(BaseModel):
     api_key: str
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"api_key": "mm_ak_xxxxxxxxxxxxxxxx"}]
+        }
+    }
+
 
 class TokenResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     expires_in: int
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"access_token": "eyJhbGciOiJIUzI1NiIs...", "token_type": "bearer", "expires_in": 3600}
+            ]
+        }
+    }
+
 
 class APIKeyCreateRequest(BaseModel):
     name: str
     role: str = "user"
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"name": "ci-pipeline", "role": "admin"}]
+        }
+    }
 
 
 class APIKeyResponse(BaseModel):
@@ -39,10 +59,24 @@ class APIKeyResponse(BaseModel):
     name: str
     role: str
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"key_id": "mm_ak_abc123", "raw_key": "mm_ak_xxxxxxxxxxxxxxxx", "name": "ci-pipeline", "role": "admin"}
+            ]
+        }
+    }
+
 
 class RevokeRequest(BaseModel):
     token: Optional[str] = None
     key_id: Optional[str] = None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [{"token": "eyJhbGciOiJIUzI1NiIs..."}, {"key_id": "mm_ak_abc123"}]
+        }
+    }
 
 
 def _get_current_user(
@@ -97,7 +131,12 @@ def require_write(user: TokenPayload = Depends(_get_current_user)) -> TokenPaylo
     return user
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post(
+    "/login",
+    response_model=TokenResponse,
+    summary="API Key换取JWT Token",
+    responses={401: {"description": "API Key无效或已过期"}},
+)
 async def login(req: LoginRequest) -> TokenResponse:
     """使用 API Key 换取 JWT Token"""
     record = auth_manager.verify_api_key(req.api_key)
@@ -128,7 +167,12 @@ async def login(req: LoginRequest) -> TokenResponse:
     raise HTTPException(status_code=401, detail="API Key 无效或已过期")
 
 
-@router.post("/refresh", response_model=TokenResponse)
+@router.post(
+    "/refresh",
+    response_model=TokenResponse,
+    summary="刷新JWT Token",
+    responses={401: {"description": "Token无效或已过期"}},
+)
 async def refresh_token(
     authorization: Optional[str] = Header(None, alias="Authorization"),
 ) -> TokenResponse:
@@ -148,7 +192,14 @@ async def refresh_token(
     )
 
 
-@router.post("/revoke")
+@router.post(
+    "/revoke",
+    summary="吊销Token或API Key",
+    responses={
+        400: {"description": "吊销失败或未提供标识"},
+        401: {"description": "未提供有效认证凭证"},
+    },
+)
 async def revoke_token_or_key(
     req: RevokeRequest,
     user: TokenPayload = Depends(_get_current_user),
@@ -167,7 +218,15 @@ async def revoke_token_or_key(
     raise HTTPException(status_code=400, detail="需要提供 token 或 key_id")
 
 
-@router.post("/api-keys", response_model=APIKeyResponse)
+@router.post(
+    "/api-keys",
+    response_model=APIKeyResponse,
+    summary="创建API Key（需要管理员权限）",
+    responses={
+        401: {"description": "未提供有效认证凭证"},
+        403: {"description": "需要管理员权限"},
+    },
+)
 async def create_api_key(
     req: APIKeyCreateRequest,
     user: TokenPayload = Depends(require_admin),
@@ -183,7 +242,11 @@ async def create_api_key(
     )
 
 
-@router.get("/api-keys")
+@router.get(
+    "/api-keys",
+    summary="列出所有API Key",
+    responses={401: {"description": "未提供有效认证凭证"}},
+)
 async def list_api_keys(
     user: TokenPayload = Depends(_get_current_user),
 ) -> dict[str, Any]:
@@ -192,7 +255,15 @@ async def list_api_keys(
     return {"api_keys": keys, "total": len(keys)}
 
 
-@router.delete("/api-keys/{key_id}")
+@router.delete(
+    "/api-keys/{key_id}",
+    summary="吊销API Key（需要管理员权限）",
+    responses={
+        401: {"description": "未提供有效认证凭证"},
+        403: {"description": "需要管理员权限"},
+        404: {"description": "API Key不存在"},
+    },
+)
 async def revoke_api_key(
     key_id: str,
     user: TokenPayload = Depends(require_admin),
@@ -203,7 +274,11 @@ async def revoke_api_key(
     raise HTTPException(status_code=404, detail=f"API Key 不存在: {key_id}")
 
 
-@router.get("/me")
+@router.get(
+    "/me",
+    summary="获取当前认证用户信息",
+    responses={401: {"description": "未提供有效认证凭证"}},
+)
 async def get_current_user(
     user: TokenPayload = Depends(_get_current_user),
 ) -> dict[str, Any]:

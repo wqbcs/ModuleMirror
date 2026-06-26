@@ -116,7 +116,14 @@ class WebhookEvent:
         }
 
 
-@router.post("/github")
+@router.post(
+    "/github",
+    summary="接收GitHub Webhook事件",
+    responses={
+        400: {"description": "无效的JSON负载"},
+        403: {"description": "签名验证失败"},
+    },
+)
 async def github_webhook(
     request: Request,
     x_github_event: Optional[str] = Header(None, alias="X-GitHub-Event"),
@@ -196,7 +203,11 @@ async def _handle_pull_request(event: WebhookEvent) -> Dict[str, Any]:
     }
 
 
-@router.get("/github/config")
+@router.get(
+    "/github/config",
+    summary="获取Webhook配置信息",
+    description="返回GitHub Webhook配置指南和当前状态",
+)
 async def webhook_config() -> Dict[str, Any]:
     """获取 Webhook 配置信息"""
     return {

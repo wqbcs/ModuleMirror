@@ -206,7 +206,11 @@ async def _dashboard_sender(
             subscribed_tasks.discard(task_id)
 
 
-@router.get("/tasks/{task_id}/stream")
+@router.get(
+    "/tasks/{task_id}/stream",
+    summary="SSE任务进度推送",
+    description="单向推送任务进度（兼容不支持WebSocket的客户端），Content-Type: text/event-stream",
+)
 async def sse_task_progress(
     task_id: str,
 ) -> StreamingResponse:

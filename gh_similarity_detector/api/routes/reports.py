@@ -12,7 +12,11 @@ from pathlib import Path
 router = APIRouter(prefix="/reports", tags=["reports"])
 
 
-@router.get("")
+@router.get(
+    "",
+    summary="列出所有检测报告",
+    description="扫描报告目录，返回所有检测报告文件列表",
+)
 async def list_reports(
     report_dir: str = Query(default="./report"),
 ) -> dict[str, Any]:
@@ -44,7 +48,15 @@ def _safe_report_path(report_dir: str, report_id: str) -> Path:
     return target
 
 
-@router.get("/{report_id}", response_model=None)
+@router.get(
+    "/{report_id}",
+    response_model=None,
+    summary="获取报告内容",
+    responses={
+        400: {"description": "不支持的报告格式"},
+        404: {"description": "报告不存在"},
+    },
+)
 async def get_report(
     report_id: str,
     report_dir: str = Query(default="./report"),
@@ -66,7 +78,11 @@ async def get_report(
     raise HTTPException(status_code=400, detail=f"不支持的报告格式: {target.suffix}")
 
 
-@router.get("/{report_id}/summary")
+@router.get(
+    "/{report_id}/summary",
+    summary="获取报告摘要",
+    responses={404: {"description": "报告不存在"}},
+)
 async def get_report_summary(
     report_id: str,
     report_dir: str = Query(default="./report"),
@@ -84,7 +100,12 @@ async def get_report_summary(
     return {"path": str(target), "size": target.stat().st_size}
 
 
-@router.get("/visual/latest")
+@router.get(
+    "/visual/latest",
+    summary="获取最新可视化报告",
+    description="返回最新的D3.js热力图+依赖图可视化报告HTML",
+    responses={404: {"description": "可视化报告不存在"}},
+)
 async def get_visual_report(
     report_dir: str = Query(default="./report"),
 ) -> HTMLResponse:

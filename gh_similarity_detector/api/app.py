@@ -68,16 +68,27 @@ GitHub 项目代码相似度检测工具 REST API。
 - **search**: GitHub 仓库搜索
 - **db**: 指纹库管理（统计/列表/添加/删除）
 - **history**: 检测历史趋势
+- **reports**: 检测报告（JSON/HTML/Markdown/SARIF）
 - **system**: 系统健康检查 + Prometheus metrics
+- **auth**: JWT Token + API Key 认证管理
+- **webhook**: GitHub Webhook 集成（push/PR自动检测）
+- **websocket**: 实时进度推送（WS/SSE双通道）
 
 ## 认证
-若设置了环境变量 `MODULEMIRROR_API_KEY`，则所有请求需携带 `X-API-Key` 请求头。
+支持三种认证方式（优先级从高到低）：
+1. **JWT Bearer Token**: 通过 `/auth/login` 获取，请求头 `Authorization: Bearer <token>`
+2. **API Key**: 通过 `/auth/api-keys` 创建，请求头 `X-API-Key: mm_xxx`
+3. **静态 API Key**: 环境变量 `MODULEMIRROR_API_KEY`，向后兼容
 
 ## 弹性模式
 - Circuit Breaker: GitHub API 连续失败时断开电路
 - Fallback: 电路断开时自动从本地缓存读取
 - Rate Limiter: 请求速率限制
 - Graceful Shutdown: SIGTERM 触发优雅关闭，排空进行中请求
+
+## 实时进度
+- WebSocket: `ws://host/ws/tasks/{task_id}/progress` 或 `ws://host/ws/dashboard`
+- SSE: `GET /tasks/{task_id}/stream`（兼容不支持WebSocket的客户端）
 """,
     version=__version__,
     openapi_url="/openapi.json",
@@ -89,14 +100,22 @@ GitHub 项目代码相似度检测工具 REST API。
     },
     license_info={
         "name": "MIT",
+        "identifier": "MIT",
     },
+    servers=[
+        {"url": "/", "description": "当前服务器"},
+        {"url": "http://localhost:8000", "description": "本地开发"},
+    ],
     openapi_tags=[
-        {"name": "detect", "description": "代码相似度检测"},
-        {"name": "db", "description": "指纹库管理"},
-        {"name": "tasks", "description": "异步检测任务"},
-        {"name": "reports", "description": "检测报告"},
-        {"name": "system", "description": "系统运维（健康检查/metrics）"},
+        {"name": "detection", "description": "代码相似度检测（detect/ncd/plagiarism/quality-gate）"},
+        {"name": "db", "description": "指纹库管理（统计/列表/添加/删除）"},
+        {"name": "tasks", "description": "异步检测任务（创建/查询/删除/进度）"},
+        {"name": "reports", "description": "检测报告（JSON/HTML/Markdown/SARIF）"},
+        {"name": "system", "description": "系统运维（健康检查/metrics/搜索）"},
         {"name": "history", "description": "检测历史趋势"},
+        {"name": "auth", "description": "认证管理（JWT Token/API Key/用户信息）"},
+        {"name": "webhook", "description": "GitHub Webhook 集成（push/PR自动检测）"},
+        {"name": "websocket", "description": "实时进度推送（WebSocket/SSE双通道）"},
     ],
 )
 

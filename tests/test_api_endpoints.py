@@ -373,7 +373,7 @@ class TestTasksEndpoints:
                     "candidates": ["repo2"],
                 },
             )
-        assert resp.status_code == 200
+        assert resp.status_code == 201
         data = resp.json()
         assert data["status"] == "pending"
         assert data["progress"] == 0.0

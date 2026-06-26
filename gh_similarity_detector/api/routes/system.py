@@ -32,7 +32,11 @@ class SearchRequest(BaseModel):
     max_results: int = 20
 
 
-@router.get("/health")
+@router.get(
+    "/health",
+    summary="系统健康检查",
+    description="返回系统状态，包含DB/GitHub/磁盘/断路器/依赖状态",
+)
 async def health() -> dict[str, Any]:
     """健康检查（含 DB/GitHub/磁盘/断路器/依赖状态）"""
     result: dict[str, Any] = {"status": "ok", "version": __version__}
@@ -69,7 +73,14 @@ async def health() -> dict[str, Any]:
     return result
 
 
-@router.post("/search")
+@router.post(
+    "/search",
+    summary="搜索GitHub仓库",
+    responses={
+        429: {"description": "GitHub API限流"},
+        500: {"description": "搜索失败"},
+    },
+)
 async def search_repositories(
     req: SearchRequest, x_github_token: Optional[str] = Header(None, alias="X-GitHub-Token")
 ) -> dict[str, Any]:
@@ -90,7 +101,11 @@ async def search_repositories(
     return {"results": results, "total": len(results)}
 
 
-@router.get("/metrics")
+@router.get(
+    "/metrics",
+    summary="Prometheus指标端点",
+    description="返回Prometheus格式的系统指标数据",
+)
 async def metrics() -> Response:
     """Prometheus指标端点"""
     return Response(content=get_metrics(), media_type=get_content_type())

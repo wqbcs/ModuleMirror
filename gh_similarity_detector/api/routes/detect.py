@@ -44,11 +44,42 @@ class DetectResponse(BaseModel):
     results: List[dict[str, Any]]
     total_matches: int
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "results": [
+                        {
+                            "source_module": "repo1/src/utils.py:parse_config",
+                            "target_module": "repo2/lib/config.py:parse_config",
+                            "similarity": 85.3,
+                            "reuse_suggestion": "reuse_candidate",
+                            "snippet": "def parse_config(path): ...",
+                        }
+                    ],
+                    "total_matches": 1,
+                }
+            ]
+        }
+    }
+
 
 class NcdRequest(BaseModel):
     source_dir: str
     target_dir: str
     extensions: List[str] | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "source_dir": "/path/to/project-a",
+                    "target_dir": "/path/to/project-b",
+                    "extensions": [".py", ".js"],
+                }
+            ]
+        }
+    }
 
 
 class NcdResponse(BaseModel):
@@ -56,8 +87,24 @@ class NcdResponse(BaseModel):
     source: str
     target: str
 
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {"similarity": 0.72, "source": "project-a", "target": "project-b"}
+            ]
+        }
+    }
 
-@router.post("/detect", response_model=DetectResponse)
+
+@router.post(
+    "/detect",
+    response_model=DetectResponse,
+    summary="执行代码相似度检测",
+    responses={
+        400: {"description": "请求参数无效"},
+        500: {"description": "检测引擎内部错误"},
+    },
+)
 async def detect(req: DetectRequest) -> DetectResponse:
     """执行自我审视检测"""
     granularity_map = {
@@ -99,7 +146,12 @@ async def detect(req: DetectRequest) -> DetectResponse:
     return DetectResponse(results=all_matches, total_matches=len(all_matches))
 
 
-@router.post("/ncd", response_model=NcdResponse)
+@router.post(
+    "/ncd",
+    response_model=NcdResponse,
+    summary="计算NCD压缩距离相似度",
+    responses={400: {"description": "源目录或目标目录不存在"}},
+)
 async def compute_ncd(req: NcdRequest) -> NcdResponse:
     """计算 NCD 压缩距离相似度"""
     source = Path(req.source_dir).resolve()
@@ -138,7 +190,14 @@ class PlagiarismRequest(BaseModel):
     }
 
 
-@router.post("/plagiarism")
+@router.post(
+    "/plagiarism",
+    summary="执行抄袭溯源检测",
+    responses={
+        400: {"description": "请求参数无效"},
+        500: {"description": "检测引擎内部错误"},
+    },
+)
 async def detect_plagiarism(req: PlagiarismRequest) -> dict[str, Any]:
     """执行抄袭溯源检测，将源项目与嫌疑项目对比并追踪代码来源"""
     config = DetectionConfig(
@@ -176,7 +235,11 @@ class QualityGateRequest(BaseModel):
     }
 
 
-@router.post("/quality-gate")
+@router.post(
+    "/quality-gate",
+    summary="评估质量门禁",
+    responses={400: {"description": "请求参数无效"}},
+)
 async def evaluate_quality_gate(req: QualityGateRequest) -> dict[str, Any]:
     """评估检测结果是否通过质量门禁"""
     from ...core.quality_gate import (

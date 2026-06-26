@@ -40,7 +40,13 @@ class TaskResponse(BaseModel):
     created_at: Optional[str] = None
 
 
-@router.post("", response_model=TaskResponse)
+@router.post(
+    "",
+    response_model=TaskResponse,
+    summary="创建异步检测任务",
+    status_code=201,
+    responses={400: {"description": "请求参数无效"}},
+)
 async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks) -> TaskResponse:
     """创建异步检测任务"""
     task_id = str(uuid.uuid4())
@@ -107,7 +113,11 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
     )
 
 
-@router.get("", response_model=List[TaskResponse])
+@router.get(
+    "",
+    response_model=List[TaskResponse],
+    summary="列出所有检测任务",
+)
 async def list_tasks(
     status: Optional[str] = None,
 ) -> list[TaskResponse]:
@@ -128,7 +138,11 @@ async def list_tasks(
     ]
 
 
-@router.get("/{task_id}")
+@router.get(
+    "/{task_id}",
+    summary="获取任务详情",
+    responses={404: {"description": "任务不存在或指纹库不存在"}},
+)
 async def get_task(
     task_id: str,
 ) -> dict[str, Any]:
@@ -142,7 +156,11 @@ async def get_task(
     return task
 
 
-@router.delete("/{task_id}")
+@router.delete(
+    "/{task_id}",
+    summary="删除任务",
+    responses={404: {"description": "任务不存在或指纹库不存在"}},
+)
 async def delete_task(
     task_id: str,
 ) -> dict[str, str]:
