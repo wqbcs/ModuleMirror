@@ -42,6 +42,12 @@ from gh_similarity_detector.infrastructure.security.auth import (
     APIKeyStore,
 )
 from gh_similarity_detector.infrastructure.security.ip_filter import IPFilter
+from gh_similarity_detector.infrastructure.storage.migrations import (
+    get_migrations,
+    get_migration_status,
+    run_migrations,
+    rollback_migration,
+)
 
 
 class TestProgressBroadcaster:
@@ -572,3 +578,74 @@ class TestIPFilter:
         stats = f.stats
         assert stats["whitelist_count"] == 1
         assert stats["blacklist_count"] == 1
+
+
+class TestMigrations:
+    def test_get_migrations_has_versions(self):
+        migrations = get_migrations()
+        assert len(migrations) >= 2
+        versions = [v for v, _, _ in migrations]
+        assert 2 in versions
+        assert 3 in versions
+
+    def test_migration_status_fresh_db(self, tmp_path):
+        import sqlite3
+        db_path = str(tmp_path / "test.db")
+        conn = sqlite3.connect(db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '0')")
+        conn.commit()
+        status = get_migration_status(conn)
+        assert status["current_version"] == 0
+        assert status["latest_version"] >= 3
+        assert status["is_up_to_date"] is False
+        conn.close()
+
+    def test_run_migrations_creates_tables(self, tmp_path):
+        import sqlite3
+        from gh_similarity_detector.infrastructure.storage.schema import CREATE_PROJECTS
+        db_path = str(tmp_path / "test.db")
+        conn = sqlite3.connect(db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '0')")
+        conn.execute(CREATE_PROJECTS)
+        conn.commit()
+        run_migrations(conn)
+        row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
+        assert int(row[0]) >= 3
+        tables = [r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()]
+        assert "api_keys" in tables
+        assert "audit_log" in tables
+        conn.close()
+
+    def test_rollback_migration(self, tmp_path):
+        import sqlite3
+        from gh_similarity_detector.infrastructure.storage.schema import CREATE_PROJECTS
+        db_path = str(tmp_path / "test.db")
+        conn = sqlite3.connect(db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '0')")
+        conn.execute(CREATE_PROJECTS)
+        conn.commit()
+        run_migrations(conn)
+        result = rollback_migration(conn, target_version=2)
+        assert result is True
+        row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
+        assert int(row[0]) == 2
+        conn.close()
+
+    def test_rollback_noop_when_already_at_target(self, tmp_path):
+        import sqlite3
+        from gh_similarity_detector.infrastructure.storage.schema import CREATE_PROJECTS
+        db_path = str(tmp_path / "test.db")
+        conn = sqlite3.connect(db_path)
+        conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL)")
+        conn.execute("INSERT INTO meta (key, value) VALUES ('schema_version', '0')")
+        conn.execute(CREATE_PROJECTS)
+        conn.commit()
+        run_migrations(conn)
+        row = conn.execute("SELECT value FROM meta WHERE key = 'schema_version'").fetchone()
+        current = int(row[0])
+        result = rollback_migration(conn, target_version=current)
+        assert result is False
+        conn.close()

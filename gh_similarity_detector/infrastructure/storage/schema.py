@@ -1,4 +1,4 @@
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 CREATE_META = """
     CREATE TABLE IF NOT EXISTS meta (
@@ -120,6 +120,50 @@ INDEX_HISTORY_CREATED = """
     ON detection_history(created_at)
 """
 
+CREATE_API_KEYS = """
+    CREATE TABLE IF NOT EXISTS api_keys (
+        key_id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        role TEXT NOT NULL DEFAULT 'user',
+        key_hash TEXT NOT NULL,
+        created_at REAL NOT NULL,
+        expires_at REAL,
+        revoked_at REAL,
+        last_used_at REAL
+    )
+"""
+
+CREATE_AUDIT_LOG = """
+    CREATE TABLE IF NOT EXISTS audit_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT NOT NULL,
+        subject TEXT,
+        detail TEXT,
+        ip_address TEXT,
+        timestamp REAL NOT NULL
+    )
+"""
+
+INDEX_API_KEYS_HASH = """
+    CREATE INDEX IF NOT EXISTS idx_api_keys_hash
+    ON api_keys(key_hash)
+"""
+
+INDEX_API_KEYS_REVOKED = """
+    CREATE INDEX IF NOT EXISTS idx_api_keys_revoked
+    ON api_keys(revoked_at)
+"""
+
+INDEX_AUDIT_TIMESTAMP = """
+    CREATE INDEX IF NOT EXISTS idx_audit_timestamp
+    ON audit_log(timestamp)
+"""
+
+INDEX_AUDIT_ACTION = """
+    CREATE INDEX IF NOT EXISTS idx_audit_action
+    ON audit_log(action)
+"""
+
 ALL_DDL = [
     CREATE_META,
     CREATE_PROJECTS,
@@ -135,4 +179,10 @@ ALL_DDL = [
     CREATE_DETECTION_HISTORY,
     INDEX_HISTORY_TARGET,
     INDEX_HISTORY_CREATED,
+    CREATE_API_KEYS,
+    CREATE_AUDIT_LOG,
+    INDEX_API_KEYS_HASH,
+    INDEX_API_KEYS_REVOKED,
+    INDEX_AUDIT_TIMESTAMP,
+    INDEX_AUDIT_ACTION,
 ]

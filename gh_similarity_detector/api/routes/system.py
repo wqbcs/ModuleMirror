@@ -13,6 +13,7 @@ from typing import Optional
 from pathlib import Path
 
 from ...infrastructure.storage.fingerprint_db import FingerprintDB
+from ...infrastructure.storage.migrations import get_migration_status
 from ...infrastructure.github_client.client import GitHubClient, RateLimitError
 from ...infrastructure.observability.metrics import get_metrics, get_content_type
 from ...infrastructure.resilience.circuit_breaker import github_circuit
@@ -117,3 +118,22 @@ async def search_repositories(
 async def metrics() -> Response:
     """Prometheus指标端点"""
     return Response(content=get_metrics(), media_type=get_content_type())
+
+
+@router.get(
+    "/migrations",
+    summary="数据库迁移状态",
+    description="返回当前数据库schema版本和迁移状态",
+    responses={404: {"description": "指纹库不存在"}},
+)
+async def migration_status() -> dict[str, Any]:
+    """获取数据库迁移状态"""
+    if not Path(DB_PATH).exists():
+        raise HTTPException(status_code=404, detail="指纹库不存在")
+    fp_db = FingerprintDB(DB_PATH)
+    conn = fp_db._pool.acquire()
+    try:
+        status = get_migration_status(conn)
+    finally:
+        fp_db._pool.release(conn)
+    return status
