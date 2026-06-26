@@ -33,6 +33,7 @@ from .routes import (
 )
 from ..utils.logger import logger
 from ..infrastructure.lifecycle.graceful_shutdown import graceful_shutdown
+from ..infrastructure.security.ip_filter import ip_filter
 
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -125,13 +126,25 @@ if RATE_LIMIT_ENABLED:
 
 CORS_ORIGINS = os.getenv("MODULEMIRROR_CORS_ORIGINS", "").split(",")
 CORS_ORIGINS = [o.strip() for o in CORS_ORIGINS if o.strip()]
+CORS_ALLOW_CREDENTIALS = os.getenv("MODULEMIRROR_CORS_CREDENTIALS", "false").lower() == "true"
+MAX_REQUEST_BODY_SIZE = int(os.getenv("MODULEMIRROR_MAX_BODY_SIZE_MB", "10")) * 1024 * 1024
+ADMIN_PATHS = {"/auth/api-keys", "/auth/revoke"}
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS if CORS_ORIGINS else [],
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "DELETE"],
-    allow_headers=["X-GitHub-Token", "X-API-Key", "X-Request-ID", "Content-Type"],
+    allow_credentials=CORS_ALLOW_CREDENTIALS,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "X-GitHub-Token",
+        "X-API-Key",
+        "X-Request-ID",
+        "Content-Type",
+        "Authorization",
+        "X-Hub-Signature-256",
+        "X-GitHub-Event",
+        "X-GitHub-Delivery",
+    ],
 )
 
 app.include_router(detect_router)
@@ -188,6 +201,27 @@ async def security_headers_and_auth(request: Request, call_next: Callable[[Reque
     request_id = request.headers.get("X-Request-ID") or str(uuid.uuid4())
     request.state.request_id = request_id
 
+    client_ip = request.client.host if request.client else "unknown"
+    is_admin = request.url.path in ADMIN_PATHS or request.url.path.startswith("/auth/api-keys")
+    allowed, reason = ip_filter.check(client_ip, is_admin_endpoint=is_admin)
+    if not allowed:
+        graceful_shutdown.end_request()
+        logger.warning(f"IP过滤拒绝: ip={client_ip}, reason={reason}, path={request.url.path}")
+        return Response(
+            content=f'{{"detail":"Forbidden: {reason}"}}',
+            status_code=403,
+            media_type="application/json",
+        )
+
+    content_length = request.headers.get("content-length")
+    if content_length and int(content_length) > MAX_REQUEST_BODY_SIZE:
+        graceful_shutdown.end_request()
+        return Response(
+            content='{"detail":"Request body too large"}',
+            status_code=413,
+            media_type="application/json",
+        )
+
     api_key = os.getenv(API_KEY_ENV)
     if api_key:
         provided = request.headers.get("X-API-Key")
@@ -204,5 +238,6 @@ async def security_headers_and_auth(request: Request, call_next: Callable[[Reque
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Cache-Control"] = "no-store"
     response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
     graceful_shutdown.end_request()
     return response

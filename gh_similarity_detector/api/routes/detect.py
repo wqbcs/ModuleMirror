@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from typing import List
 from pathlib import Path
@@ -16,6 +16,14 @@ from ...infrastructure.engines.ncd import NCD
 from ...utils.logger import logger
 
 router = APIRouter(tags=["detection"])
+
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+
+    _limiter = Limiter(key_func=get_remote_address)
+except ImportError:
+    _limiter = None
 
 
 class DetectRequest(BaseModel):
@@ -102,10 +110,11 @@ class NcdResponse(BaseModel):
     summary="执行代码相似度检测",
     responses={
         400: {"description": "请求参数无效"},
+        429: {"description": "请求频率超限"},
         500: {"description": "检测引擎内部错误"},
     },
 )
-async def detect(req: DetectRequest) -> DetectResponse:
+async def detect(req: DetectRequest, request: Request) -> DetectResponse:
     """执行自我审视检测"""
     granularity_map = {
         "file": ModuleType.FILE,

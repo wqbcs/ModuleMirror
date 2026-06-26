@@ -6,7 +6,7 @@ import os
 import shutil
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, HTTPException, Header, Request
 from fastapi.responses import Response
 from pydantic import BaseModel
 from typing import Optional
@@ -23,6 +23,14 @@ from ... import __version__
 router = APIRouter(tags=["system"])
 
 DB_PATH = os.getenv("MODULEMIRROR_DB_PATH", "./fingerprint_db.sqlite")
+
+try:
+    from slowapi import Limiter
+    from slowapi.util import get_remote_address
+
+    _limiter = Limiter(key_func=get_remote_address)
+except ImportError:
+    _limiter = None
 
 
 class SearchRequest(BaseModel):
@@ -82,7 +90,7 @@ async def health() -> dict[str, Any]:
     },
 )
 async def search_repositories(
-    req: SearchRequest, x_github_token: Optional[str] = Header(None, alias="X-GitHub-Token")
+    req: SearchRequest, request: Request, x_github_token: Optional[str] = Header(None, alias="X-GitHub-Token")
 ) -> dict[str, Any]:
     """搜索 GitHub 仓库"""
     client = GitHubClient(token=x_github_token)

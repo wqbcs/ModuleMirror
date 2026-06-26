@@ -41,6 +41,7 @@ from gh_similarity_detector.infrastructure.security.auth import (
     TokenBlacklist,
     APIKeyStore,
 )
+from gh_similarity_detector.infrastructure.security.ip_filter import IPFilter
 
 
 class TestProgressBroadcaster:
@@ -526,3 +527,48 @@ class TestUserRole:
         assert UserRole.USER.can_admin is False
         assert UserRole.READONLY.can_write is False
         assert UserRole.READONLY.can_admin is False
+
+
+class TestIPFilter:
+    def test_empty_whitelist_allows_all(self):
+        f = IPFilter()
+        ok, _ = f.check("1.2.3.4")
+        assert ok is True
+
+    def test_blacklist_blocks(self):
+        f = IPFilter(blacklist={"10.0.0.1"})
+        ok, reason = f.check("10.0.0.1")
+        assert ok is False
+        assert "封禁" in reason
+
+    def test_whitelist_restricts(self):
+        f = IPFilter(whitelist={"192.168.1.0/24"})
+        ok, _ = f.check("192.168.1.100")
+        assert ok is True
+        ok, _ = f.check("10.0.0.1")
+        assert ok is False
+
+    def test_blacklist_overrides_whitelist(self):
+        f = IPFilter(whitelist={"10.0.0.0/8"}, blacklist={"10.0.0.1"})
+        ok, _ = f.check("10.0.0.1")
+        assert ok is False
+
+    def test_admin_whitelist(self):
+        f = IPFilter(admin_whitelist={"10.0.0.0/8"})
+        ok, _ = f.check("10.0.0.5", is_admin_endpoint=True)
+        assert ok is True
+        ok, _ = f.check("192.168.1.1", is_admin_endpoint=True)
+        assert ok is False
+
+    def test_cidr_matching(self):
+        f = IPFilter(blacklist={"172.16.0.0/12"})
+        ok, _ = f.check("172.16.5.100")
+        assert ok is False
+        ok, _ = f.check("172.32.0.1")
+        assert ok is True
+
+    def test_stats(self):
+        f = IPFilter(whitelist={"10.0.0.0/8"}, blacklist={"192.168.1.1"})
+        stats = f.stats
+        assert stats["whitelist_count"] == 1
+        assert stats["blacklist_count"] == 1
