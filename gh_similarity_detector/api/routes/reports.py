@@ -6,7 +6,7 @@ import json
 from typing import Any, Union
 
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, JSONResponse
 from pathlib import Path
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -22,7 +22,7 @@ async def list_reports(
         return {"reports": []}
     reports = []
     for f in sorted(rdir.rglob("*"), key=lambda p: p.stat().st_mtime, reverse=True):
-        if f.suffix in (".html", ".json", ".md"):
+        if f.suffix in (".html", ".json", ".md", ".sarif"):
             reports.append(
                 {
                     "name": f.name,
@@ -54,6 +54,10 @@ async def get_report(
     if target.suffix == ".json":
         with open(target, "r", encoding="utf-8") as f:
             return json.load(f)  # type: ignore[no-any-return]
+    elif target.suffix == ".sarif":
+        with open(target, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return JSONResponse(content=data, media_type="application/sarif+json")
     elif target.suffix in (".html", ".md"):
         content = target.read_text(encoding="utf-8")
         if target.suffix == ".html":

@@ -49,6 +49,7 @@ class ReportFormat(Enum):
     JSON = "json"
     HTML = "html"
     MARKDOWN = "markdown"
+    SARIF = "sarif"
 
     def __str__(self) -> str:
         return self.value

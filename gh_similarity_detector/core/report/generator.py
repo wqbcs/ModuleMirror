@@ -67,6 +67,8 @@ class ReportGenerator:
             content = self._generate_html_report(results)
         elif self.config.report_format == ReportFormat.MARKDOWN:
             content = self._generate_markdown_report(results)
+        elif self.config.report_format == ReportFormat.SARIF:
+            return self._generate_sarif_report(results, output_path)
         else:
             content = self._generate_markdown_report(results)
 
@@ -262,3 +264,17 @@ class ReportGenerator:
         if len(lines) <= max_lines:
             return code
         return "\n".join(lines[:max_lines]) + f"\n... (截断，共 {len(lines)} 行)"
+
+    def _generate_sarif_report(
+        self, results: List[DetectionResult], output_path: Optional[str] = None
+    ) -> str:
+        from ...infrastructure.reports.sarif_export import generate_sarif_report
+
+        if output_path is None:
+            output_path = str(self.config.output_path)
+
+        path = Path(output_path)
+        if not path.suffix or path.suffix == ".json":
+            path = path.with_suffix(".sarif")
+
+        return generate_sarif_report(results, output_path=str(path))

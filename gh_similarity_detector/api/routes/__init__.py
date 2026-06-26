@@ -6,6 +6,7 @@ from .tasks import router as tasks_router
 from .reports import router as reports_router
 from .system import router as system_router
 from .history import router as history_router
+from .ws import router as ws_router
 
 __all__ = [
     "detect_router",
@@ -14,4 +15,5 @@ __all__ = [
     "reports_router",
     "system_router",
     "history_router",
+    "ws_router",
 ]
