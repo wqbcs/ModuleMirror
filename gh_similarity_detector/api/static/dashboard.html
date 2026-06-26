@@ -315,6 +315,8 @@
         const API = window.location.origin;
         let _allResults = [];
         let _eventSource = null;
+        let _ws = null;
+        let _wsReconnectTimer = null;
 
         mermaid.initialize({
             startOnLoad: false,
@@ -508,23 +510,75 @@
             }
         }
 
-        function setupSSE() {
-            if (_eventSource) _eventSource.close();
+        function connectWebSocket(taskId) {
+            if (_ws) { _ws.close(); _ws = null; }
+            const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const url = taskId
+                ? `${proto}//${location.host}/ws/tasks/${taskId}/progress`
+                : `${proto}//${location.host}/ws/dashboard`;
             try {
-                _eventSource = new EventSource(`${API}/tasks/events`);
-                _eventSource.onmessage = (e) => {
+                _ws = new WebSocket(url);
+                _ws.onopen = () => { addLog('WebSocket 已连接'); };
+                _ws.onmessage = (e) => {
                     try {
                         const d = JSON.parse(e.data);
-                        if (d.progress !== undefined) setProgress(d.progress, d.message ?? '处理中...');
-                        if (d.log) addLog(d.log);
+                        handleProgressEvent(d);
                     } catch {}
                 };
+                _ws.onclose = () => {
+                    addLog('WebSocket 已断开，5秒后重连...');
+                    _wsReconnectTimer = setTimeout(() => connectWebSocket(taskId), 5000);
+                };
+                _ws.onerror = () => { _ws.close(); };
+            } catch (e) {
+                addLog('WebSocket 连接失败，回退到 SSE');
+                setupSSE(taskId);
+            }
+        }
+
+        function handleProgressEvent(d) {
+            if (d.event_type === 'heartbeat' || d.event_type === 'pong') return;
+            if (d.event_type === 'progress' && d.progress !== undefined) {
+                setProgress(Math.round(d.progress * 100), d.message ?? '处理中...');
+            }
+            if (d.event_type === 'completed') {
+                setProgress(100, '检测完成');
+                toast('检测完成', 'success');
+                refreshAll();
+            }
+            if (d.event_type === 'error') {
+                toast('检测失败: ' + (d.message ?? ''), 'error');
+                setProgress(0, '检测失败');
+            }
+            if (d.event_type === 'cancelled') {
+                toast('检测已取消', 'default');
+                setProgress(0, '已取消');
+            }
+            if (d.message) addLog(d.message);
+        }
+
+        function setupSSE(taskId) {
+            if (_eventSource) _eventSource.close();
+            const url = taskId
+                ? `${API}/tasks/${taskId}/stream`
+                : `${API}/tasks/stream`;
+            try {
+                _eventSource = new EventSource(url);
+                _eventSource.addEventListener('progress', (e) => {
+                    try { handleProgressEvent(JSON.parse(e.data)); } catch {}
+                });
+                _eventSource.addEventListener('completed', (e) => {
+                    try { handleProgressEvent(JSON.parse(e.data)); } catch {}
+                });
+                _eventSource.addEventListener('error', (e) => {
+                    try { handleProgressEvent(JSON.parse(e.data)); } catch {}
+                });
                 _eventSource.onerror = () => { if (_eventSource) _eventSource.close(); };
             } catch {}
         }
 
         refreshAll();
-        setupSSE();
+        connectWebSocket(null);
     </script>
 </body>
 </html>
