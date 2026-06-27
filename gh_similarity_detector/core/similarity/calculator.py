@@ -16,6 +16,7 @@ from ...models.entities import Module, FingerprintSet
 from ...models.results import SimilarityResult
 from ...models.enums import ReuseSuggestion
 from .ast_comparator import ASTDeepComparator
+from .adaptive_fusion import AdaptiveFusionEngine
 from ...utils.logger import logger
 from ...config.config import DetectionConfig
 
@@ -117,8 +118,6 @@ class InvertedIndex:
 
 
 class SimilarityCalculator:
-    WINNOWING_WEIGHT = 0.6
-    AST_WEIGHT = 0.4
     AST_VERIFY_THRESHOLD = 90
     MIN_OVERLAP_THRESHOLD = 1
 
@@ -127,6 +126,9 @@ class SimilarityCalculator:
         self.inverted_index = InvertedIndex()
         self.ast_comparator = ASTDeepComparator(languages=config.supported_languages)
         self._cache_db = similarity_cache_db
+        self._fusion_engine = AdaptiveFusionEngine(
+            threshold=float(config.similarity_threshold),
+        )
 
     def calculate_similarities(
         self,
@@ -266,6 +268,10 @@ class SimilarityCalculator:
 
             combined_similarity = self._combine_similarities(similarity, ast_similarity)
 
+            view_scores: Dict[str, float] = {"winnowing": similarity}
+            if ast_similarity > 0:
+                view_scores["ast"] = ast_similarity
+
             if (
                 source_module.source_code
                 and candidate_module_map
@@ -277,9 +283,12 @@ class SimilarityCalculator:
                         source_module.source_code, cand_mod.source_code
                     )
                     if continuity > 0:
+                        view_scores["continuity"] = continuity
                         combined_similarity = self._combine_with_continuity(
                             similarity, ast_similarity, continuity
                         )
+
+            self._fusion_engine.record_observation(view_scores, combined_similarity)
 
             if combined_similarity >= self.config.similarity_threshold:
                 matched_snippet: Optional[Dict[str, Any]] = None
@@ -342,13 +351,11 @@ class SimilarityCalculator:
         return (intersection / union * 100) if union > 0 else 0.0
 
     def _combine_similarities(self, winnowing_sim: float, ast_sim: float) -> float:
-        """组合 Winnowing 和 AST 相似度
-
-        使用加权平均：Winnowing 权重 0.6，AST 权重 0.4
-        """
+        """组合 Winnowing 和 AST 相似度（使用自适应融合引擎）"""
+        view_scores: Dict[str, float] = {"winnowing": winnowing_sim}
         if ast_sim > 0:
-            return winnowing_sim * self.WINNOWING_WEIGHT + ast_sim * self.AST_WEIGHT
-        return winnowing_sim
+            view_scores["ast"] = ast_sim
+        return self._fusion_engine.compute_fused_similarity(view_scores)
 
     @staticmethod
     def compute_token_continuity(source_code: str, target_code: str, k: int = 5) -> float:
@@ -397,18 +404,13 @@ class SimilarityCalculator:
         ast_sim: float,
         continuity: float,
     ) -> float:
-        """组合 Winnowing + AST + Token 连续性三维度相似度
-
-        权重：Winnowing 0.5, AST 0.3, Continuity 0.2
-        仅当 continuity > 0 时纳入
-        """
-        if ast_sim > 0 and continuity > 0:
-            return winnowing_sim * 0.5 + ast_sim * 0.3 + continuity * 0.2
+        """组合 Winnowing + AST + Token 连续性三维度相似度（使用自适应融合引擎）"""
+        view_scores: Dict[str, float] = {"winnowing": winnowing_sim}
         if ast_sim > 0:
-            return winnowing_sim * self.WINNOWING_WEIGHT + ast_sim * self.AST_WEIGHT
+            view_scores["ast"] = ast_sim
         if continuity > 0:
-            return winnowing_sim * 0.75 + continuity * 0.25
-        return winnowing_sim
+            view_scores["continuity"] = continuity
+        return self._fusion_engine.compute_fused_similarity(view_scores)
 
     @staticmethod
     def _generate_suggestion(similarity: float, threshold: float = 90) -> ReuseSuggestion:
