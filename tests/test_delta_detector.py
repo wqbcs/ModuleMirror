@@ -5,6 +5,7 @@
 from gh_similarity_detector.core.delta_detector import (
     DeltaDetector,
     DeltaResult,
+    GitDeltaDetector,
 )
 
 
@@ -13,7 +14,7 @@ class TestDeltaDetector:
         h1 = DeltaDetector.compute_file_hash("hello world")
         h2 = DeltaDetector.compute_file_hash("hello world")
         assert h1 == h2
-        assert len(h1) == 64
+        assert isinstance(h1, int)
 
     def test_compute_file_hash_different(self):
         h1 = DeltaDetector.compute_file_hash("hello")
@@ -45,8 +46,8 @@ class TestDeltaDetector:
 
     def test_detect_deleted(self):
         detector = DeltaDetector()
-        detector.record_file_hash("a.py", "hash_a")
-        detector.record_file_hash("b.py", "hash_b")
+        detector.record_file_hash("a.py", DeltaDetector.compute_file_hash("hash_a"))
+        detector.record_file_hash("b.py", DeltaDetector.compute_file_hash("hash_b"))
         files = {"a.py": "code_a"}
         result = detector.detect_delta(files)
         assert result.deleted == ["b.py"]
@@ -57,7 +58,7 @@ class TestDeltaDetector:
         h_b = DeltaDetector.compute_file_hash("code_b")
         detector.record_file_hash("a.py", h_a)
         detector.record_file_hash("b.py", h_b)
-        detector.record_file_hash("c.py", "old_hash")
+        detector.record_file_hash("c.py", DeltaDetector.compute_file_hash("old_hash"))
         files = {"a.py": "code_a", "b.py": "code_b_new", "d.py": "code_d"}
         result = detector.detect_delta(files)
         assert "a.py" in result.unchanged
@@ -73,19 +74,19 @@ class TestDeltaDetector:
 
     def test_update_hashes_with_deletion(self):
         detector = DeltaDetector()
-        detector.record_file_hash("a.py", "hash_a")
-        detector.record_file_hash("b.py", "hash_b")
+        detector.record_file_hash("a.py", DeltaDetector.compute_file_hash("hash_a"))
+        detector.record_file_hash("b.py", DeltaDetector.compute_file_hash("hash_b"))
         detector.update_hashes({"a.py": "code_a"}, ["b.py"])
         assert detector.get_file_hash("a.py") is not None
         assert detector.get_file_hash("b.py") is None
 
     def test_snapshot_round_trip(self):
         detector = DeltaDetector()
-        detector.record_file_hash("a.py", "hash_a")
+        detector.record_file_hash("a.py", DeltaDetector.compute_file_hash("hash_a"))
         snapshot = detector.get_snapshot()
         detector2 = DeltaDetector()
         detector2.load_snapshot(snapshot)
-        assert detector2.get_file_hash("a.py") == "hash_a"
+        assert detector2.get_file_hash("a.py") == DeltaDetector.compute_file_hash("hash_a")
 
 
 class TestDeltaResult:
@@ -109,7 +110,7 @@ class TestDeltaResult:
 class TestGetChangedModules:
     def test_affected_modules(self):
         detector = DeltaDetector()
-        detector.record_file_hash("a.py", "old_hash")
+        detector.record_file_hash("a.py", DeltaDetector.compute_file_hash("old_content"))
         files = {"a.py": "new_content"}
         modules = {"a.py": ["mod1", "mod2"], "b.py": ["mod3"]}
         affected = detector.get_changed_modules(files, modules)
@@ -119,8 +120,41 @@ class TestGetChangedModules:
 
     def test_deleted_file_modules(self):
         detector = DeltaDetector()
-        detector.record_file_hash("a.py", "hash_a")
+        detector.record_file_hash("a.py", DeltaDetector.compute_file_hash("hash_a"))
         files = {}
         modules = {"a.py": ["mod1"]}
         affected = detector.get_changed_modules(files, modules)
         assert "mod1" in affected
+
+
+class TestGitDeltaDetector:
+    def test_get_current_commit(self):
+        import os
+        repo_path = os.getenv("MODULEMIRROR_REPO_PATH", ".")
+        detector = GitDeltaDetector(repo_path)
+        commit = detector.get_current_commit()
+        if os.path.exists(os.path.join(repo_path, ".git")):
+            assert commit is not None
+            assert len(commit) == 40
+
+    def test_get_diff_files_returns_delta_result(self):
+        import os
+        repo_path = os.getenv("MODULEMIRROR_REPO_PATH", ".")
+        if not os.path.exists(os.path.join(repo_path, ".git")):
+            return
+        detector = GitDeltaDetector(repo_path)
+        result = detector.get_diff_files()
+        assert isinstance(result, DeltaResult)
+
+    def test_get_commit_log(self):
+        import os
+        repo_path = os.getenv("MODULEMIRROR_REPO_PATH", ".")
+        if not os.path.exists(os.path.join(repo_path, ".git")):
+            return
+        detector = GitDeltaDetector(repo_path)
+        commits = detector.get_commit_log(max_count=5)
+        assert isinstance(commits, list)
+        if commits:
+            assert "sha" in commits[0]
+            assert "author" in commits[0]
+            assert "message" in commits[0]
