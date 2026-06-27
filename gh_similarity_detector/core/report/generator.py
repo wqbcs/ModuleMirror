@@ -69,6 +69,8 @@ class ReportGenerator:
             content = self._generate_markdown_report(results)
         elif self.config.report_format == ReportFormat.SARIF:
             return self._generate_sarif_report(results, output_path)
+        elif self.config.report_format == ReportFormat.PDF:
+            return self._generate_pdf_report(results, output_path)
         else:
             content = self._generate_markdown_report(results)
 
@@ -278,3 +280,17 @@ class ReportGenerator:
             path = path.with_suffix(".sarif")
 
         return generate_sarif_report(results, output_path=str(path))
+
+    def _generate_pdf_report(
+        self, results: List[DetectionResult], output_path: Optional[str] = None
+    ) -> str:
+        from ...infrastructure.reports.pdf_export import generate_pdf_report
+
+        if output_path is None:
+            output_path = str(self.config.output_path)
+
+        path = Path(output_path)
+        if not path.suffix or path.suffix != ".pdf":
+            path = path.with_suffix(".pdf")
+
+        return generate_pdf_report(results, output_path=str(path))

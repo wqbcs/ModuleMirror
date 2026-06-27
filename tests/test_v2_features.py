@@ -49,6 +49,12 @@ from gh_similarity_detector.infrastructure.storage.migrations import (
     rollback_migration,
 )
 from gh_similarity_detector.config.hot_reload import ConfigReloader
+from gh_similarity_detector.infrastructure.reports.pdf_export import (
+    generate_pdf_report,
+    HAS_FPDF2,
+    _similarity_level,
+    _similarity_color,
+)
 
 
 class TestProgressBroadcaster:
@@ -707,3 +713,87 @@ class TestConfigReloader:
         assert r.is_running is True
         r.stop()
         assert r.is_running is False
+
+
+class TestPDFExport:
+    @pytest.fixture
+    def sample_results(self):
+        from gh_similarity_detector.models.results import DetectionResult, SimilarityResult
+        from gh_similarity_detector.models.enums import ReuseSuggestion
+        return [
+            DetectionResult(
+                source_project="repo-a",
+                target_project="repo-b",
+                matches=[
+                    SimilarityResult(
+                        source_module_id="repo-a/src/utils.py:parse",
+                        target_module_id="repo-b/lib/utils.py:parse",
+                        similarity=85.5,
+                        winnowing_overlap=12,
+                        winnowing_union=15,
+                        reuse_suggestion=ReuseSuggestion.REFERENCE_ADAPT,
+                    ),
+                    SimilarityResult(
+                        source_module_id="repo-a/src/core.py:process",
+                        target_module_id="repo-b/src/main.py:process",
+                        similarity=72.3,
+                        winnowing_overlap=8,
+                        winnowing_union=12,
+                        reuse_suggestion=ReuseSuggestion.NEED_REFACTOR,
+                    ),
+                ],
+                statistics={"avg_similarity": 78.9, "max_similarity": 85.5, "count_90": 0, "count_80": 1, "count_70": 2},
+            ),
+        ]
+
+    def test_similarity_level(self):
+        assert _similarity_level(95) == "critical"
+        assert _similarity_level(85) == "high"
+        assert _similarity_level(75) == "medium"
+        assert _similarity_level(55) == "low"
+        assert _similarity_level(30) == "none"
+
+    def test_similarity_color(self):
+        color = _similarity_color(95)
+        assert len(color) == 3
+        assert all(0 <= c <= 255 for c in color)
+
+    @pytest.mark.skipif(not HAS_FPDF2, reason="fpdf2 not installed")
+    def test_generate_pdf_report(self, sample_results, tmp_path):
+        output = generate_pdf_report(sample_results, output_path=str(tmp_path / "test_report.pdf"))
+        assert output.endswith(".pdf")
+        assert Path(output).exists()
+        assert Path(output).stat().st_size > 1000
+
+    @pytest.mark.skipif(not HAS_FPDF2, reason="fpdf2 not installed")
+    def test_generate_pdf_empty_results(self, tmp_path):
+        output = generate_pdf_report([], output_path=str(tmp_path / "empty_report.pdf"))
+        assert output.endswith(".pdf")
+        assert Path(output).exists()
+
+    @pytest.mark.skipif(not HAS_FPDF2, reason="fpdf2 not installed")
+    def test_generate_pdf_many_matches(self, tmp_path):
+        from gh_similarity_detector.models.results import DetectionResult, SimilarityResult
+        from gh_similarity_detector.models.enums import ReuseSuggestion
+        matches = [
+            SimilarityResult(
+                source_module_id=f"repo-a/mod_{i}",
+                target_module_id=f"repo-b/mod_{i}",
+                similarity=50.0 + i * 2,
+                winnowing_overlap=5 + i,
+                winnowing_union=10 + i,
+                reuse_suggestion=ReuseSuggestion.DIRECT_REUSE,
+            )
+            for i in range(25)
+        ]
+        results = [
+            DetectionResult(
+                source_project="big-repo-a",
+                target_project="big-repo-b",
+                matches=matches,
+                statistics={"avg_similarity": 75.0, "max_similarity": 98.0, "count_90": 5, "count_80": 10, "count_70": 10},
+            ),
+        ]
+        output = generate_pdf_report(results, output_path=str(tmp_path / "big_report.pdf"))
+        assert Path(output).exists()
+        assert Path(output).stat().st_size > 5000

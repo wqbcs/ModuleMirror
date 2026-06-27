@@ -6,7 +6,7 @@ import json
 from typing import Any, Union
 
 from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import HTMLResponse, PlainTextResponse, JSONResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse, JSONResponse, FileResponse
 from pathlib import Path
 
 router = APIRouter(prefix="/reports", tags=["reports"])
@@ -75,6 +75,8 @@ async def get_report(
         if target.suffix == ".html":
             return HTMLResponse(content=content)
         return PlainTextResponse(content=content)
+    elif target.suffix == ".pdf":
+        return FileResponse(str(target), media_type="application/pdf", filename=target.name)
     raise HTTPException(status_code=400, detail=f"不支持的报告格式: {target.suffix}")
 
 

@@ -50,6 +50,7 @@ class ReportFormat(Enum):
     HTML = "html"
     MARKDOWN = "markdown"
     SARIF = "sarif"
+    PDF = "pdf"
 
     def __str__(self) -> str:
         return self.value
