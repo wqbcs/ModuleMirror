@@ -39,6 +39,14 @@ from ..similarity.cross_language_pipeline import (
 from ..similarity.sbp_filter import SBPFilter
 from ..rules.engine import RuleEngine, RuleAction
 from ..lineage import CloneLineageTracker, LineageNode
+from ..quality_gate import (
+    QualityGate,
+    GateCondition,
+    ConditionOperator,
+    extract_detection_metrics,
+    create_default_gate,
+    create_strict_gate,
+)
 
 
 class DetectionPipeline:
@@ -792,3 +800,48 @@ class DetectionPipeline:
                 self._lineage_tracker.add_clone_relation(
                     source_node, target_node, match.similarity
                 )
+
+    def evaluate_quality(
+        self,
+        results: List[DetectionResult],
+        gate_name: str = "default",
+        custom_conditions: Optional[List[Dict[str, Any]]] = None,
+    ) -> Dict[str, Any]:
+        """评估检测结果的代码质量门禁
+
+        Args:
+            results: 检测结果列表
+            gate_name: 门禁名称 (default/strict/custom)
+            custom_conditions: 自定义条件列表
+
+        Returns:
+            门禁评估结果
+        """
+        result_dicts = []
+        for r in results:
+            result_dicts.append({
+                "source_project": r.source_project,
+                "target_project": r.target_project,
+                "statistics": r.statistics,
+                "matches": [{"similarity": m.similarity} for m in r.matches],
+            })
+
+        metrics = extract_detection_metrics(result_dicts)
+
+        if gate_name == "strict":
+            gate = create_strict_gate()
+        elif gate_name == "custom" and custom_conditions:
+            conditions = []
+            for c in custom_conditions:
+                conditions.append(GateCondition(
+                    metric=c.get("metric", "max_similarity"),
+                    threshold=c.get("threshold", 80.0),
+                    operator=ConditionOperator(c.get("operator", "less_than")),
+                    description=c.get("description", ""),
+                ))
+            gate = QualityGate(name="custom", conditions=conditions)
+        else:
+            gate = create_default_gate()
+
+        gate_result = gate.evaluate(metrics)
+        return gate_result.to_dict()
