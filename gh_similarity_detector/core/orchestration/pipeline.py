@@ -48,6 +48,10 @@ from ..quality_gate import (
     create_strict_gate,
 )
 from ..similarity.semantic_diff import SemanticDiffer
+from ..similarity.polars_df import SimilarityDataFrame
+from ..comparison.batch_detector import BatchDetector, BatchTask
+from ..comparison.multi_repo import MultiRepositoryComparator
+from ..comparison.result_comparator import ResultComparator
 
 
 class DetectionPipeline:
@@ -864,4 +868,191 @@ class DetectionPipeline:
         return {
             "total_changes": len(changes),
             "changes": [c.to_dict() for c in changes],
+        }
+
+    def analyze_with_dataframe(
+        self,
+        target_source: str,
+        candidate_sources: List[str],
+        min_similarity: float = 0.7,
+        top_k: int = 100,
+        export_format: Optional[str] = None,
+        export_path: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """使用Polars DataFrame分析检测结果
+
+        Args:
+            target_source: 目标项目来源
+            candidate_sources: 候选项目来源列表
+            min_similarity: 最小相似度阈值
+            top_k: TopK数量
+            export_format: 导出格式(csv/json)，None则不导出
+            export_path: 导出路径
+
+        Returns:
+            DataFrame分析结果
+        """
+        results = self.detect(target_source, candidate_sources)
+        raw_results = []
+        for r in results:
+            raw_results.append({
+                "source_module": r.source_project,
+                "target_module": r.target_project,
+                "matches": [
+                    {
+                        "similarity": getattr(m, "similarity", 0.0),
+                        "source_file": getattr(m, "source_file", ""),
+                        "target_file": getattr(m, "target_file", ""),
+                    }
+                    for m in r.matches
+                ],
+            })
+
+        sdf = SimilarityDataFrame()
+        sdf.from_results(raw_results)
+        sdf.filter_by_threshold(min_similarity)
+
+        stats = sdf.statistics()
+        top_pairs = sdf.top_similar_pairs(top_k)
+        grouped = sdf.group_by_module()
+
+        exported = ""
+        if export_format and export_path:
+            if export_format == "csv":
+                exported = sdf.export_csv(export_path)
+            elif export_format == "json":
+                exported = sdf.export_json(export_path)
+
+        return {
+            "statistics": stats,
+            "top_pairs": top_pairs.to_dicts() if top_pairs.height > 0 else [],
+            "grouped": grouped.to_dicts() if grouped.height > 0 else [],
+            "exported_path": exported,
+        }
+
+    @staticmethod
+    def batch_detect_from_file(
+        file_path: str,
+        default_candidates: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """从文件加载批量检测任务
+
+        Args:
+            file_path: 任务文件路径(txt/csv/json)
+            default_candidates: 默认候选项目
+
+        Returns:
+            加载的任务信息
+        """
+        tasks = BatchDetector.load_tasks(file_path)
+        return {
+            "total_tasks": len(tasks),
+            "tasks": [
+                {"target": t.target, "candidates": t.candidates}
+                for t in tasks
+            ],
+            "default_candidates": default_candidates,
+        }
+
+    def execute_batch(
+        self,
+        tasks: List[Dict[str, Any]],
+        default_candidates: Optional[List[str]] = None,
+        update_db: bool = False,
+    ) -> Dict[str, Any]:
+        """执行批量检测
+
+        Args:
+            tasks: 任务列表 [{"target": "...", "candidates": [...]}]
+            default_candidates: 默认候选项目
+            update_db: 是否更新指纹库
+
+        Returns:
+            批量检测结果
+        """
+        batch_tasks = [
+            BatchTask(
+                target=t.get("target", ""),
+                candidates=t.get("candidates", []),
+            )
+            for t in tasks
+            if t.get("target")
+        ]
+        detector = BatchDetector(self)
+        result = detector.execute(batch_tasks, default_candidates, update_db)
+
+        return {
+            "total_tasks": result.total_tasks,
+            "completed": result.completed,
+            "failed": result.failed,
+            "errors": result.errors,
+        }
+
+    def compare_multi_repo(
+        self,
+        mode: str,
+        targets: List[str],
+        candidates: Optional[List[str]] = None,
+        max_workers: int = 2,
+        update_db: bool = False,
+    ) -> Dict[str, Any]:
+        """多仓库对比检测
+
+        Args:
+            mode: 对比模式(one_to_many/many_to_many/matrix)
+            targets: 目标项目列表
+            candidates: 候选项目列表
+            max_workers: 并行度
+            update_db: 是否更新指纹库
+
+        Returns:
+            多仓库对比结果
+        """
+        comparator = MultiRepositoryComparator(self)
+
+        if mode == "one_to_many":
+            if not targets or not candidates:
+                return {"error": "one_to_many模式需要targets[0]和candidates"}
+            result = comparator.one_to_many(
+                targets[0], candidates, update_db=update_db,
+            )
+        elif mode == "many_to_many":
+            if not targets or not candidates:
+                return {"error": "many_to_many模式需要targets和candidates"}
+            result = comparator.many_to_many(
+                targets, candidates, update_db=update_db, max_workers=max_workers,
+            )
+        elif mode == "matrix":
+            if not targets or len(targets) < 2:
+                return {"error": "matrix模式需要至少2个项目"}
+            result = comparator.matrix(
+                targets, update_db=update_db, max_workers=max_workers,
+            )
+        else:
+            return {"error": f"不支持的模式: {mode}，支持 one_to_many/many_to_many/matrix"}
+
+        return result.summary()
+
+    @staticmethod
+    def compare_results(
+        old_results: List[Any],
+        new_results: List[Any],
+        significance_threshold: float = 1.0,
+    ) -> Dict[str, Any]:
+        """对比两次检测结果差异
+
+        Args:
+            old_results: 之前的检测结果列表
+            new_results: 当前的检测结果列表
+            significance_threshold: 显著变化阈值
+
+        Returns:
+            对比结果摘要
+        """
+        comparator = ResultComparator(significance_threshold=significance_threshold)
+        comparisons = comparator.compare_batch(old_results, new_results)
+
+        return {
+            "total_comparisons": len(comparisons),
+            "comparisons": [c.summary() for c in comparisons],
         }
