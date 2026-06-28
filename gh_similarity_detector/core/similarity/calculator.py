@@ -17,6 +17,7 @@ from ...models.results import SimilarityResult
 from ...models.enums import ReuseSuggestion
 from .ast_comparator import ASTDeepComparator
 from .adaptive_fusion import AdaptiveFusionEngine
+from .behavior_features import BehaviorExtractor
 from ...utils.logger import logger
 from ...config.config import DetectionConfig
 
@@ -129,6 +130,7 @@ class SimilarityCalculator:
         self._fusion_engine = AdaptiveFusionEngine(
             threshold=float(config.similarity_threshold),
         )
+        self._behavior_extractor = BehaviorExtractor()
 
     def calculate_similarities(
         self,
@@ -285,7 +287,8 @@ class SimilarityCalculator:
                     if continuity > 0:
                         view_scores["continuity"] = continuity
                         combined_similarity = self._combine_with_continuity(
-                            similarity, ast_similarity, continuity
+                            similarity, ast_similarity, continuity,
+                            source_module.source_code, cand_mod.source_code,
                         )
 
             self._fusion_engine.record_observation(view_scores, combined_similarity)
@@ -403,13 +406,24 @@ class SimilarityCalculator:
         winnowing_sim: float,
         ast_sim: float,
         continuity: float,
+        source_code: Optional[str] = None,
+        target_code: Optional[str] = None,
     ) -> float:
-        """组合 Winnowing + AST + Token 连续性三维度相似度（使用自适应融合引擎）"""
+        """组合 Winnowing + AST + Token 连续性 + 行为特征 多维度相似度（使用自适应融合引擎）"""
         view_scores: Dict[str, float] = {"winnowing": winnowing_sim}
         if ast_sim > 0:
             view_scores["ast"] = ast_sim
         if continuity > 0:
             view_scores["continuity"] = continuity
+        if source_code and target_code:
+            try:
+                sig_a = self._behavior_extractor.extract(source_code)
+                sig_b = self._behavior_extractor.extract(target_code)
+                behavior_sim = sig_a.similarity(sig_b) * 100
+                if behavior_sim > 0:
+                    view_scores["behavior"] = behavior_sim
+            except Exception:
+                pass
         return self._fusion_engine.compute_fused_similarity(view_scores)
 
     @staticmethod

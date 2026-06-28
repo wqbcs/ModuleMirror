@@ -135,4 +135,4 @@ class TestEndToEndDetection:
             source_modules, target_modules, source_fps, target_fps
         )
         assert len(results) >= 1
-        assert results[0].similarity == 100.0
+        assert abs(results[0].similarity - 100.0) < 0.01

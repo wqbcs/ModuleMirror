@@ -21,9 +21,10 @@ from typing import Any, Dict, Optional
 from dataclasses import dataclass
 
 _DEFAULT_WEIGHTS: Dict[str, float] = {
-    "winnowing": 0.5,
-    "ast": 0.3,
+    "winnowing": 0.4,
+    "ast": 0.25,
     "continuity": 0.2,
+    "behavior": 0.15,
 }
 
 _EXTENDED_WEIGHTS: Dict[str, float] = {
