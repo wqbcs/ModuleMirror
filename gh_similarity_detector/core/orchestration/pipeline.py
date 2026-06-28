@@ -52,6 +52,7 @@ from ..similarity.polars_df import SimilarityDataFrame
 from ..comparison.batch_detector import BatchDetector, BatchTask
 from ..comparison.multi_repo import MultiRepositoryComparator
 from ..comparison.result_comparator import ResultComparator
+from ..similarity.minhash_tuner import tune_minhash_params, recommend_params, HAS_DATASKETCH
 
 
 class DetectionPipeline:
@@ -1055,4 +1056,56 @@ class DetectionPipeline:
         return {
             "total_comparisons": len(comparisons),
             "comparisons": [c.summary() for c in comparisons],
+        }
+
+    @staticmethod
+    def tune_minhash(
+        fingerprints: Dict[str, Any],
+        ground_truth: Dict[str, set],
+        num_perm_candidates: Optional[List[int]] = None,
+        l_candidates: Optional[List[int]] = None,
+        sample_size: int = 100,
+    ) -> Dict[str, Any]:
+        """MinHash参数调优
+
+        Args:
+            fingerprints: 指纹集字典 {module_id: FingerprintSet}
+            ground_truth: 真实相似对 {module_id: {similar_ids}}
+            num_perm_candidates: num_perm候选值列表
+            l_candidates: l候选值列表
+            sample_size: 采样大小
+
+        Returns:
+            调优结果和推荐参数
+        """
+        if not HAS_DATASKETCH:
+            return {"error": "datasketch未安装，请运行: pip install datasketch"}
+
+        nperm = num_perm_candidates or [64, 128, 256]
+        lcand = l_candidates or [32, 64, 128]
+
+        results = tune_minhash_params(
+            fingerprints=fingerprints,
+            ground_truth=ground_truth,
+            num_perm_candidates=nperm,
+            l_candidates=lcand,
+            sample_size=sample_size,
+        )
+
+        best_num_perm, best_l = recommend_params(results)
+
+        return {
+            "recommended": {"num_perm": best_num_perm, "l": best_l},
+            "results": [
+                {
+                    "num_perm": r.num_perm,
+                    "l_param": r.l_param,
+                    "recall": r.recall,
+                    "precision": r.precision,
+                    "f1_score": r.f1_score,
+                    "build_time_ms": r.build_time_ms,
+                    "query_time_ms": r.query_time_ms,
+                }
+                for r in results
+            ],
         }

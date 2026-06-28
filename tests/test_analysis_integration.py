@@ -324,3 +324,18 @@ class TestPipelineAnalysisIntegration:
             candidates=["b"],
         )
         assert "error" in result
+
+    def test_tune_minhash_no_datasketch(self):
+        from gh_similarity_detector.core.orchestration.pipeline import DetectionPipeline
+        from gh_similarity_detector.core.similarity.minhash_tuner import HAS_DATASKETCH
+
+        if not HAS_DATASKETCH:
+            result = DetectionPipeline.tune_minhash({}, {})
+            assert "error" in result
+
+    def test_recommend_params_empty(self):
+        from gh_similarity_detector.core.similarity.minhash_tuner import recommend_params
+
+        best_num_perm, best_l = recommend_params([])
+        assert best_num_perm == 128
+        assert best_l == 64

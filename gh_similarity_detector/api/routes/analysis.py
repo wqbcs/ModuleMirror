@@ -69,6 +69,12 @@ class ResultCompareRequest(BaseModel):
     significance_threshold: float = 1.0
 
 
+class MinHashTuneRequest(BaseModel):
+    num_perm_candidates: List[int] = [64, 128, 256]
+    l_candidates: List[int] = [32, 64, 128]
+    sample_size: int = 100
+
+
 @router.post("/dataframe", summary="Polars DataFrame分析")
 async def analyze_with_dataframe(req: DataFrameAnalyzeRequest) -> dict[str, Any]:
     """使用Polars DataFrame对检测结果进行高级分析（过滤/聚合/TopK/导出）"""
@@ -150,4 +156,18 @@ async def compare_results(req: ResultCompareRequest) -> dict[str, Any]:
     return {
         "total_comparisons": len(comparisons),
         "comparisons": [c.summary() for c in comparisons],
+    }
+
+
+@router.post("/minhash-tune", summary="MinHash参数调优")
+async def tune_minhash_params_endpoint(req: MinHashTuneRequest) -> dict[str, Any]:
+    """MinHash参数调优（需要fingerprints和ground_truth数据，此端点返回参数说明）"""
+    return {
+        "message": "MinHash调优需要指纹数据，请使用Pipeline.tune_minhash()方法",
+        "default_candidates": {
+            "num_perm": req.num_perm_candidates,
+            "l": req.l_candidates,
+            "sample_size": req.sample_size,
+        },
+        "recommended_defaults": {"num_perm": 128, "l": 64},
     }
