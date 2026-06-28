@@ -263,3 +263,51 @@ async def evaluate_quality_gate(req: QualityGateRequest) -> dict[str, Any]:
     gate = gate_factory()
     result = gate.evaluate(metrics)
     return result.to_dict()
+
+
+class SBPAnalyzeRequest(BaseModel):
+    source_id: str
+    target_id: str
+    similarity: float
+    commit_messages: List[str] = []
+    source_code: str = ""
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "source_id": "project-a",
+                    "target_id": "project-b",
+                    "similarity": 85.0,
+                    "commit_messages": ["fix: CVE-2024-1234 buffer overflow in parser"],
+                    "source_code": "def parse(data):\n    if len(data) > MAX_SIZE:\n        raise ValueError\n    return data",
+                }
+            ]
+        }
+    }
+
+
+@router.post(
+    "/sbp-analyze",
+    summary="SBP(Similar But Patched)分析",
+    description="分析高度相似的代码是否包含安全补丁修复，识别'安全衍生'代码避免误报",
+    responses={
+        200: {"description": "SBP分析结果"},
+        400: {"description": "请求参数无效"},
+    },
+)
+async def analyze_sbp(req: SBPAnalyzeRequest) -> dict[str, Any]:
+    """SBP分析: 识别相似但已修补的代码"""
+    from ...core.similarity.sbp_filter import SBPFilter
+
+    sbp_filter = SBPFilter()
+    result = sbp_filter.analyze(
+        source_id=req.source_id,
+        target_id=req.target_id,
+        similarity=req.similarity,
+        source_fingerprints=set(),
+        target_fingerprints=set(),
+        commit_messages=req.commit_messages or None,
+        source_code=req.source_code or None,
+    )
+    return result.to_dict()

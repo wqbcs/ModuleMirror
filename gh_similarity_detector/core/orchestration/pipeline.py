@@ -9,7 +9,7 @@ Author: GitHub 项目代码相似度检测工具
 from __future__ import annotations
 
 import time
-from typing import Dict, List, Optional, Callable
+from typing import Any, Dict, List, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ...models.results import DetectionResult, PlagiarismResult
@@ -36,6 +36,7 @@ from ..similarity.cross_language_pipeline import (
     CrossLanguagePipeline,
     CrossLanguageConfig,
 )
+from ..similarity.sbp_filter import SBPFilter
 
 
 class DetectionPipeline:
@@ -81,6 +82,10 @@ class DetectionPipeline:
                 embedding_min_similarity=getattr(config, "cross_language_emb_threshold", 30.0) / 100.0,
             )
             self._cross_language_pipeline = CrossLanguagePipeline(cl_config)
+
+        self._sbp_filter = SBPFilter(
+            similarity_threshold=float(config.similarity_threshold),
+        )
 
     def detect(
         self,
@@ -605,3 +610,63 @@ class DetectionPipeline:
         source_langs = set(lang for _, lang in source_codes.values())
         target_langs = set(lang for _, lang in target_codes.values())
         return bool(source_langs - target_langs) or bool(target_langs - source_langs)
+
+    def analyze_sbp(
+        self,
+        results: List[DetectionResult],
+        fingerprint_map: Optional[Dict[str, set]] = None,
+        commit_message_map: Optional[Dict[str, List[str]]] = None,
+        code_map: Optional[Dict[str, str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """对检测结果进行SBP(Similar But Patched)分析
+
+        识别高度相似但已包含安全补丁的代码，避免误报。
+
+        Args:
+            results: 检测结果列表
+            fingerprint_map: {模块ID: Winnowing指纹集合}
+            commit_message_map: {项目名: 提交消息列表}
+            code_map: {模块ID: 源代码}
+
+        Returns:
+            带SBP分析的检测结果列表
+        """
+        analyzed = []
+        for r in results:
+            result_dict = {
+                "source_project": r.source_project,
+                "target_project": r.target_project,
+                "match_count": len(r.matches),
+                "statistics": r.statistics,
+            }
+
+            fp_map = fingerprint_map or {}
+            commit_map = commit_message_map or {}
+            c_map = code_map or {}
+
+            source_fps = fp_map.get(r.source_project, set())
+            target_fps = fp_map.get(r.target_project, set())
+            commits = commit_map.get(r.target_project, [])
+            code = c_map.get(r.target_project)
+
+            similarity = r.statistics.get("avg_similarity", 0)
+
+            sbp = self._sbp_filter.analyze(
+                source_id=r.source_project,
+                target_id=r.target_project,
+                similarity=similarity,
+                source_fingerprints=source_fps,
+                target_fingerprints=target_fps,
+                commit_messages=commits,
+                source_code=code,
+            )
+
+            result_dict["sbp_analysis"] = sbp.to_dict()
+            result_dict["is_safe_derivative"] = sbp.is_safe_derivative
+
+            if sbp.is_safe_derivative:
+                result_dict["filtered_reason"] = "safe_derivative"
+
+            analyzed.append(result_dict)
+
+        return analyzed
