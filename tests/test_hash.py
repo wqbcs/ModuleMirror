@@ -50,13 +50,22 @@ class TestStableHash:
         import subprocess
         import sys
 
-        code = 'from gh_similarity_detector.utils.hash import stable_hash; print(stable_hash("cross_process_test"))'
+        code = (
+            'import os; os.environ["MM_LOG_LEVEL"]="CRITICAL"; '
+            'from gh_similarity_detector.utils.hash import stable_hash; print(stable_hash("cross_process_test"))'
+        )
         result = subprocess.run(
             [sys.executable, "-c", code],
             capture_output=True, text=True, cwd=r"D:/xinjian/project/ModuleMirror",
         )
         expected = stable_hash("cross_process_test")
-        assert int(result.stdout.strip()) == expected
+        stdout = result.stdout.strip()
+        for line in stdout.splitlines():
+            line = line.strip()
+            if line.isdigit():
+                assert int(line) == expected
+                return
+        raise AssertionError(f"Could not find hash in subprocess output: {stdout[:200]}")
 
 
 class TestStableHash64:
