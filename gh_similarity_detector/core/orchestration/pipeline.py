@@ -9,7 +9,7 @@ Author: GitHub 项目代码相似度检测工具
 from __future__ import annotations
 
 import time
-from typing import List, Optional, Callable
+from typing import Dict, List, Optional, Callable
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ...models.results import DetectionResult, PlagiarismResult
@@ -31,6 +31,10 @@ from ...utils.idempotency import (
     DeterministicContext,
     compute_result_hash,
     compute_config_hash,
+)
+from ..similarity.cross_language_pipeline import (
+    CrossLanguagePipeline,
+    CrossLanguageConfig,
 )
 
 
@@ -69,6 +73,14 @@ class DetectionPipeline:
             parallelism=1 if config.enable_idempotency_check else config.parallelism,
         )
         self._config_hash = compute_config_hash(config)
+
+        self._cross_language_pipeline: Optional[CrossLanguagePipeline] = None
+        if getattr(config, "enable_cross_language", False):
+            cl_config = CrossLanguageConfig(
+                ir_threshold=getattr(config, "cross_language_ir_threshold", 0.5) / 100.0,
+                embedding_min_similarity=getattr(config, "cross_language_emb_threshold", 30.0) / 100.0,
+            )
+            self._cross_language_pipeline = CrossLanguagePipeline(cl_config)
 
     def detect(
         self,
@@ -437,3 +449,159 @@ class DetectionPipeline:
         logger.info(f"项目 {project_name} 有新提交，更新指纹（{local_updated} → {remote_updated}）")
         self.fingerprint_db.delete_project(project_name)
         return self.add_to_db(project_url, progress_callback)
+
+    def detect_cross_language(
+        self,
+        target_source: str,
+        candidate_sources: List[str],
+        progress_callback: Optional[Callable[[float], None]] = None,
+    ) -> List[DetectionResult]:
+        """执行跨语言检测
+
+        当源项目和候选项目使用不同编程语言时，启用跨语言检测模式。
+        融合IR结构指纹 + Embedding向量检索双通道。
+
+        Args:
+            target_source: 目标项目来源
+            candidate_sources: 候选项目来源列表
+            progress_callback: 进度回调
+
+        Returns:
+            跨语言检测结果列表
+        """
+        start_time = time.time()
+        results: List[DetectionResult] = []
+
+        try:
+            if progress_callback:
+                progress_callback(0.0)
+
+            cl_pipeline = self._cross_language_pipeline or CrossLanguagePipeline()
+
+            target_project = self.project_fetcher.fetch_project(target_source)
+            if target_project is None:
+                logger.error(f"无法获取目标项目: {target_source}")
+                return results
+
+            if progress_callback:
+                progress_callback(0.1)
+
+            target_modules = self.module_extractor.extract_all_modules(target_project)
+
+            target_codes: Dict[str, tuple[str, str]] = {}
+            for file_path, modules in target_modules.items():
+                for m in modules:
+                    if m.source_code:
+                        lang = self._detect_language(m.file_path)
+                        target_codes[m.id or m.name] = (m.source_code, lang)
+
+            cl_pipeline.index_source_batch(target_codes)
+
+            if progress_callback:
+                progress_callback(0.3)
+
+            for idx, candidate_source in enumerate(candidate_sources):
+                try:
+                    candidate_project = self.project_fetcher.fetch_project(candidate_source)
+                    if candidate_project is None:
+                        logger.warning(f"无法获取候选项目: {candidate_source}")
+                        continue
+
+                    candidate_modules = self.module_extractor.extract_all_modules(candidate_project)
+
+                    candidate_codes: Dict[str, tuple[str, str]] = {}
+                    for file_path, modules in candidate_modules.items():
+                        for m in modules:
+                            if m.source_code:
+                                lang = self._detect_language(m.file_path)
+                                candidate_codes[m.id or m.name] = (m.source_code, lang)
+
+                    is_cross_language = self._is_cross_language(target_codes, candidate_codes)
+
+                    if is_cross_language:
+                        cl_pipeline.index_target_batch(candidate_codes)
+
+                        cl_results = cl_pipeline.detect_cross_language(
+                            min_similarity=self.config.similarity_threshold,
+                        )
+
+                        statistics = {
+                            "avg_similarity": sum(r.similarity for r in cl_results) / len(cl_results)
+                            if cl_results
+                            else 0,
+                            "max_similarity": max((r.similarity for r in cl_results), default=0),
+                            "cross_language": True,
+                            "detection_mode": "cross_language",
+                        }
+
+                        result = DetectionResult(
+                            source_project=target_project.name,
+                            target_project=candidate_project.name,
+                            matches=cl_results,
+                            statistics=statistics,
+                        )
+                        results.append(result)
+                    else:
+                        similarity_results = self.similarity_calculator.calculate_similarities(
+                            target_modules,
+                            candidate_modules,
+                            self.fingerprint_generator.generate_fingerprints_batch(target_modules),
+                            self.fingerprint_generator.generate_fingerprints_batch(candidate_modules),
+                        )
+                        statistics = self.similarity_calculator.calculate_statistics(similarity_results)
+                        result = DetectionResult(
+                            source_project=target_project.name,
+                            target_project=candidate_project.name,
+                            matches=similarity_results,
+                            statistics={**statistics, "cross_language": False, "detection_mode": "same_language"},
+                        )
+                        results.append(result)
+
+                except Exception as e:
+                    logger.error(f"候选项目跨语言检测失败 [{candidate_source}]: {e}")
+
+                progress = 0.3 + 0.6 * (idx + 1) / len(candidate_sources)
+                if progress_callback:
+                    progress_callback(progress)
+
+            if progress_callback:
+                progress_callback(0.9)
+
+            report_path = self.report_generator.generate_report(results)
+
+            if progress_callback:
+                progress_callback(1.0)
+
+            elapsed = time.time() - start_time
+            logger.info(f"跨语言检测完成，耗时: {elapsed:.2f} 秒，报告: {report_path}")
+
+        except Exception as e:
+            logger.error(f"跨语言检测流程失败: {e}")
+            raise
+
+        finally:
+            self.project_fetcher.cleanup()
+
+        return results
+
+    @staticmethod
+    def _detect_language(file_path: str) -> str:
+        ext_map = {
+            ".py": "python", ".java": "java", ".js": "javascript",
+            ".ts": "typescript", ".go": "go", ".rs": "rust",
+            ".c": "c", ".cpp": "cpp", ".kt": "kotlin",
+            ".scala": "scala", ".rb": "ruby", ".php": "php",
+            ".swift": "swift",
+        }
+        from pathlib import Path as P
+        ext = P(file_path).suffix.lower()
+        return ext_map.get(ext, "unknown")
+
+    @staticmethod
+    def _is_cross_language(
+        source_codes: Dict[str, tuple[str, str]],
+        target_codes: Dict[str, tuple[str, str]],
+    ) -> bool:
+        source_langs = set(lang for _, lang in source_codes.values())
+        target_langs = set(lang for _, lang in target_codes.values())
+        return bool(source_langs - target_langs) or bool(target_langs - source_langs)
