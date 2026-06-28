@@ -47,6 +47,7 @@ from ..quality_gate import (
     create_default_gate,
     create_strict_gate,
 )
+from ..similarity.semantic_diff import SemanticDiffer
 
 
 class DetectionPipeline:
@@ -845,3 +846,22 @@ class DetectionPipeline:
 
         gate_result = gate.evaluate(metrics)
         return gate_result.to_dict()
+
+    @staticmethod
+    def analyze_semantic_diff(source_code: str, target_code: str) -> Dict[str, Any]:
+        """分析两个代码之间的语义差异
+
+        Args:
+            source_code: 源代码
+            target_code: 目标代码
+
+        Returns:
+            语义差异分析结果
+        """
+        extractor = SemanticDiffer()
+        changes = extractor.diff(source_code, target_code)
+
+        return {
+            "total_changes": len(changes),
+            "changes": [c.to_dict() for c in changes],
+        }

@@ -32,6 +32,7 @@ from .routes import (
     auth_router,
     rules_router,
     lineage_router,
+    semantic_diff_router,
 )
 from ..utils.logger import logger
 from ..infrastructure.lifecycle.graceful_shutdown import graceful_shutdown
@@ -160,6 +161,7 @@ app.include_router(webhook_router)
 app.include_router(auth_router)
 app.include_router(rules_router)
 app.include_router(lineage_router)
+app.include_router(semantic_diff_router)
 
 _static_dir = Path(__file__).parent / "static"
 if _static_dir.exists():

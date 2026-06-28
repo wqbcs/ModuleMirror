@@ -11,6 +11,7 @@ from .webhook import router as webhook_router
 from .auth import router as auth_router
 from .rules import router as rules_router
 from .lineage import router as lineage_router
+from .semantic_diff import router as semantic_diff_router
 
 __all__ = [
     "detect_router",
@@ -24,4 +25,5 @@ __all__ = [
     "auth_router",
     "rules_router",
     "lineage_router",
+    "semantic_diff_router",
 ]
