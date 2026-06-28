@@ -9,6 +9,7 @@ from .history import router as history_router
 from .ws import router as ws_router
 from .webhook import router as webhook_router
 from .auth import router as auth_router
+from .rules import router as rules_router
 
 __all__ = [
     "detect_router",
@@ -20,4 +21,5 @@ __all__ = [
     "ws_router",
     "webhook_router",
     "auth_router",
+    "rules_router",
 ]

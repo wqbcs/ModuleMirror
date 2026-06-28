@@ -37,6 +37,7 @@ from ..similarity.cross_language_pipeline import (
     CrossLanguageConfig,
 )
 from ..similarity.sbp_filter import SBPFilter
+from ..rules.engine import RuleEngine, RuleAction
 
 
 class DetectionPipeline:
@@ -86,6 +87,7 @@ class DetectionPipeline:
         self._sbp_filter = SBPFilter(
             similarity_threshold=float(config.similarity_threshold),
         )
+        self._rule_engine = RuleEngine()
 
     def detect(
         self,
@@ -670,3 +672,58 @@ class DetectionPipeline:
             analyzed.append(result_dict)
 
         return analyzed
+
+    def apply_rules(
+        self,
+        results: List[DetectionResult],
+        rules_yaml: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """对检测结果应用自定义规则引擎
+
+        Args:
+            results: 检测结果列表
+            rules_yaml: 可选YAML规则字符串
+
+        Returns:
+            带规则标记的检测结果列表
+        """
+        if rules_yaml:
+            self._rule_engine.load_from_yaml(rules_yaml)
+
+        processed = []
+        for r in results:
+            for match in r.matches:
+                snippet = match.matched_code_snippet or {}
+                rule_results = self._rule_engine.evaluate(
+                    similarity=match.similarity,
+                    source_file=snippet.get("source_file", match.source_module_id),
+                    target_file=snippet.get("target_file", match.target_module_id),
+                    source_code=snippet.get("source_code", ""),
+                    target_code=snippet.get("target_code", ""),
+                )
+
+                excluded = any(rr.action == RuleAction.EXCLUDE for rr in rule_results)
+                match_dict = {
+                    "source_module_id": match.source_module_id,
+                    "target_module_id": match.target_module_id,
+                    "similarity": match.similarity,
+                    "reuse_suggestion": match.reuse_suggestion.value,
+                    "excluded_by_rule": excluded,
+                    "rule_matches": [
+                        {
+                            "rule_id": rr.rule_id,
+                            "rule_name": rr.rule_name,
+                            "action": rr.action.value,
+                            "severity": rr.severity.value,
+                        }
+                        for rr in rule_results
+                    ],
+                }
+                if not excluded:
+                    processed.append(match_dict)
+
+        return processed
+
+    def load_rules_file(self, file_path: str) -> int:
+        """从YAML文件加载规则"""
+        return self._rule_engine.load_from_file(file_path)
