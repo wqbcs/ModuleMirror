@@ -38,6 +38,7 @@ from ..similarity.cross_language_pipeline import (
 )
 from ..similarity.sbp_filter import SBPFilter
 from ..rules.engine import RuleEngine, RuleAction
+from ..lineage import CloneLineageTracker, LineageNode
 
 
 class DetectionPipeline:
@@ -88,6 +89,7 @@ class DetectionPipeline:
             similarity_threshold=float(config.similarity_threshold),
         )
         self._rule_engine = RuleEngine()
+        self._lineage_tracker = CloneLineageTracker()
 
     def detect(
         self,
@@ -727,3 +729,66 @@ class DetectionPipeline:
     def load_rules_file(self, file_path: str) -> int:
         """从YAML文件加载规则"""
         return self._rule_engine.load_from_file(file_path)
+
+    def trace_lineage(
+        self,
+        module_id: str,
+        version: str,
+        max_depth: int = 10,
+    ) -> Dict[str, Any]:
+        """追踪代码克隆的血统传播路径
+
+        Args:
+            module_id: 模块ID
+            version: 版本标识
+            max_depth: 最大追踪深度
+
+        Returns:
+            血统追踪结果
+        """
+        lineage = self._lineage_tracker.trace_lineage(module_id, version, max_depth)
+        return {
+            "clone_id": lineage.clone_id,
+            "source_version": lineage.source_version,
+            "target_version": lineage.target_version,
+            "source_module": lineage.source_module,
+            "target_module": lineage.target_module,
+            "similarity": lineage.similarity,
+            "propagation_path": lineage.propagation_path,
+            "detected_at": lineage.detected_at,
+        }
+
+    def get_lineage_stats(self) -> Dict[str, int]:
+        """获取血统追踪统计"""
+        return self._lineage_tracker.get_stats()
+
+    def record_lineage(
+        self,
+        results: List[DetectionResult],
+        source_version: str = "",
+        target_version: str = "",
+    ) -> None:
+        """将检测结果记录到血统追踪器
+
+        Args:
+            results: 检测结果列表
+            source_version: 源版本标识
+            target_version: 目标版本标识
+        """
+        for r in results:
+            src_ver = source_version or r.source_project
+            tgt_ver = target_version or r.target_project
+            for match in r.matches:
+                source_node = f"{src_ver}:{match.source_module_id}"
+                target_node = f"{tgt_ver}:{match.target_module_id}"
+                if source_node not in self._lineage_tracker._nodes:
+                    self._lineage_tracker._nodes[source_node] = LineageNode(
+                        module_id=match.source_module_id, version=src_ver, is_source=True
+                    )
+                if target_node not in self._lineage_tracker._nodes:
+                    self._lineage_tracker._nodes[target_node] = LineageNode(
+                        module_id=match.target_module_id, version=tgt_ver
+                    )
+                self._lineage_tracker.add_clone_relation(
+                    source_node, target_node, match.similarity
+                )
