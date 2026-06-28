@@ -37,6 +37,13 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
+try:
+    from trogon import tui
+
+    TROGON_AVAILABLE = True
+except ImportError:
+    TROGON_AVAILABLE = False
+
 
 def _check_api_rate_limit(token: str) -> None:
     if not token:
@@ -49,8 +56,16 @@ def _check_api_rate_limit(token: str) -> None:
         click.echo("API 余额: 无法获取", err=True)
 
 
+if TROGON_AVAILABLE:
+    _tui_decorator = tui(command="tui", help="Open interactive TUI")
+else:
+    def _tui_decorator(f):
+        return f
+
+
+@_tui_decorator
 @click.group()
-@click.version_option(version="1.1.0", prog_name="gh-sim")
+@click.version_option(version="2.0.0", prog_name="gh-sim")
 def main() -> None:
     """GitHub 项目代码相似度检测工具
 
@@ -489,3 +504,22 @@ def completion(shell: str, output: str) -> None:
         click.echo(f"补全脚本已写入: {output}")
     else:
         click.echo(script)
+
+
+@main.command()
+def app() -> None:
+    """Launch interactive TUI application
+
+    Opens the ModuleMirror Textual TUI with dashboard,
+    detection wizard, results viewer, and fingerprint browser.
+    """
+    try:
+        from .tui_app import ModuleMirrorTUI
+
+        ModuleMirrorTUI().run()
+    except ImportError:
+        click.echo(
+            "TUI requires 'textual' package. Install with: pip install textual",
+            err=True,
+        )
+        sys.exit(1)

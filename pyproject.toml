@@ -47,8 +47,9 @@ visualization-enhanced = ["pyvis>=0.3.1", "pyecharts>=2.0.0"]
 vector-index = ["faiss-cpu>=1.7.0"]
 realtime = ["sse-starlette>=2.0.0"]
 structured-logging = ["structlog>=24.0.0"]
+tui = ["textual>=0.40.0", "trogon>=0.5.0"]
 all-languages = ["tree-sitter-go>=0.23.0", "tree-sitter-rust>=0.23.0", "tree-sitter-c>=0.23.0", "tree-sitter-cpp>=0.23.0"]
-all = ["gh-similarity-detector[api,visualization,vector-index,realtime,structured-logging,all-languages]"]
+all = ["gh-similarity-detector[api,visualization,vector-index,realtime,structured-logging,tui,all-languages]"]
 dev = [
     "pytest>=7.3.0",
     "pytest-asyncio>=0.21.0",
@@ -186,7 +187,7 @@ show_column_numbers = true
 pretty = true
 
 [[tool.mypy.overrides]]
-module = ["datasketch.*", "pyecharts.*", "faiss.*", "httpx.*", "tenacity.*", "tree_sitter.*", "pyvis.*", "sse_starlette.*", "slowapi.*", "prometheus_client.*", "orjson.*", "mmh3.*", "structlog.*"]
+module = ["datasketch.*", "pyecharts.*", "faiss.*", "httpx.*", "tenacity.*", "tree_sitter.*", "pyvis.*", "sse_starlette.*", "slowapi.*", "prometheus_client.*", "orjson.*", "mmh3.*", "structlog.*", "textual.*", "trogon.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
