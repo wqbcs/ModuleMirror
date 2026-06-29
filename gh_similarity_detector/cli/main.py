@@ -13,6 +13,7 @@ from ..core.similarity.differ import CodeDiffer
 from ..infrastructure.github_client.client import GitHubClient
 from ..infrastructure.engines.ncd import NCD
 from ..utils.logger import logger
+from .. import __version__
 from .db_commands import register_db_commands
 from .error_handler import handle_cli_error
 from .formatters import (
@@ -65,7 +66,7 @@ else:
 
 @_tui_decorator
 @click.group()
-@click.version_option(version="2.0.0", prog_name="gh-sim")
+@click.version_option(version=__version__, prog_name="gh-sim")
 def main() -> None:
     """GitHub 项目代码相似度检测工具
 
