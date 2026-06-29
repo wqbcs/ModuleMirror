@@ -284,7 +284,7 @@ class DashboardScreen(Screen):
                     if len(modules) > 20:
                         proj_node.add_leaf(f"... +{len(modules) - 20} more")
                 except (OSError, AttributeError):
-                    pass
+                    ...
         except Exception as e:
             tree.root.add_leaf(f"[red]Error: {e}[/red]")
 

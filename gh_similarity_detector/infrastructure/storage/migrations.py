@@ -74,7 +74,7 @@ def _release_migration_lock(conn: sqlite3.Connection) -> None:
         conn.execute("DELETE FROM migration_lock WHERE id = 1")
         conn.commit()
     except sqlite3.OperationalError:
-        pass
+        logger.debug("migration_lock_release_skip")
 
 
 def run_migrations(conn: sqlite3.Connection) -> None:

@@ -120,7 +120,7 @@ class TaskQueue:
         logger.info("任务队列已停止")
 
     async def _shutdown_sentinel(self) -> None:
-        pass
+        ...
 
     def submit(
         self,
