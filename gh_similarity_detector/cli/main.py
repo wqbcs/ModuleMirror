@@ -52,7 +52,7 @@ def _check_api_rate_limit(token: str) -> None:
         client = GitHubClient(token=token)
         info = asyncio.run(client.check_rate_limit())
         format_api_rate_info(info)
-    except Exception:
+    except (OSError, RuntimeError):
         click.echo("API 余额: 无法获取", err=True)
 
 
@@ -418,7 +418,7 @@ def browse(db: str) -> None:
                     proj_node.add(f"📄 {mod_name}")
                 if len(modules) > 10:
                     proj_node.add(f"... 还有 {len(modules) - 10} 个模块")
-            except Exception:
+            except (OSError, AttributeError):
                 logger.debug(f"模块列表渲染跳过: {proj_name}")
 
         console.print(tree)

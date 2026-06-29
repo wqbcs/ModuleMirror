@@ -130,7 +130,8 @@ class CircuitBreaker:
                 result = func(*args, **kwargs)
                 self.record_success()
                 return result
-            except Exception:
+            except Exception as e:
+                logger.debug("circuit_breaker_state_change_error", error=str(e))
                 self.record_failure()
                 raise
 

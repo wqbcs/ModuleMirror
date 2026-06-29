@@ -60,8 +60,8 @@ class ProjectFetcher:
         for instance in _fetcher_instances:
             try:
                 instance.cleanup()
-            except Exception:
-                logger.debug(f"atexit 清理失败: {instance}")
+            except (OSError, ValueError) as e:
+                logger.debug("atexit_cleanup_skip", reason=str(e))
 
     def fetch_project(self, source: str) -> Optional[Project]:
         if os.path.exists(source):
@@ -255,8 +255,8 @@ class ProjectFetcher:
                         )
                 except UnicodeDecodeError:
                     logger.warning(f"无法解码文件: {relative_path}")
-                except Exception as e:
-                    logger.error(f"读取文件失败 {relative_path}: {e}")
+                except (OSError, ValueError) as e:
+                    logger.warning("fetch_skip", reason=str(e))
 
         logger.info(f"扫描完成，找到 {len(files)} 个代码文件")
         return files

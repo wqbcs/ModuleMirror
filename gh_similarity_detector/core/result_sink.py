@@ -77,19 +77,19 @@ class CompositeSink(ResultSink):
         for sink in self.sinks:
             try:
                 sink.write(result)
-            except Exception as e:
-                logger.warning(f"CompositeSink 写入失败: {e}")
+            except (OSError, ValueError, RuntimeError) as e:
+                logger.error("result_sink_failed", error=str(e))
 
     def write_batch(self, results: List[Any]) -> None:
         for sink in self.sinks:
             try:
                 sink.write_batch(results)
-            except Exception as e:
-                logger.warning(f"CompositeSink 批量写入失败: {e}")
+            except (OSError, ValueError, RuntimeError) as e:
+                logger.error("result_sink_failed", error=str(e))
 
     def flush(self) -> None:
         for sink in self.sinks:
             try:
                 sink.flush()
-            except Exception as e:
-                logger.warning(f"CompositeSink flush 失败: {e}")
+            except (OSError, ValueError, RuntimeError) as e:
+                logger.error("result_sink_failed", error=str(e))

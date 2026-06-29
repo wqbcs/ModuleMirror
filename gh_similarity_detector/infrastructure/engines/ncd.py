@@ -138,7 +138,7 @@ class NCD:
                     )
                     break
                 chunks.append(content)
-            except Exception:
+            except (OSError, UnicodeDecodeError):
                 continue
 
         return b"\n".join(chunks)

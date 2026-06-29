@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sqlite3
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Header, Request
@@ -58,9 +59,9 @@ async def health() -> dict[str, Any]:
             stats = fp_db.get_stats()
             db_status = "ok"
             result["db"] = {"status": db_status, "project_count": stats.get("project_count", 0)}
-        except Exception:
+        except (OSError, sqlite3.Error) as e:
             db_status = "error"
-            logger.warning("健康检查数据库连接失败")
+            logger.warning("健康检查数据库连接失败", error=str(e))
             result["db"] = {"status": db_status}
     else:
         result["db"] = {"status": "not_initialized"}

@@ -422,8 +422,8 @@ class SimilarityCalculator:
                 behavior_sim = sig_a.similarity(sig_b) * 100
                 if behavior_sim > 0:
                     view_scores["behavior"] = behavior_sim
-            except Exception:
-                pass
+            except (ValueError, AttributeError) as e:
+                logger.debug("behavior_similarity_failed", error=str(e))
         return self._fusion_engine.compute_fused_similarity(view_scores)
 
     @staticmethod

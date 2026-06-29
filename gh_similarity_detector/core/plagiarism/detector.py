@@ -238,7 +238,8 @@ class PlagiarismDetector:
                         timelines[pid] = TimeRelation.UNKNOWN
                 else:
                     timelines[pid] = TimeRelation.UNKNOWN
-            except Exception:
+            except (ValueError, KeyError) as e:
+                logger.debug("plagiarism_check_skip", error=str(e))
                 timelines[pid] = TimeRelation.UNKNOWN
             finally:
                 if temp_dir:

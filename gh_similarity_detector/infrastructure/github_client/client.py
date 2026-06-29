@@ -162,7 +162,7 @@ class GitHubClient:
         except httpx.HTTPStatusError as e:
             self._handle_http_error(e, "获取仓库信息")
             return None
-        except Exception as e:
+        except (httpx.RequestError, OSError) as e:
             logger.error(f"请求失败: {e}")
             github_circuit.record_failure()
             return None
@@ -192,7 +192,7 @@ class GitHubClient:
         except httpx.HTTPStatusError as e:
             self._handle_http_error(e, "获取文件树")
             return None
-        except Exception as e:
+        except (httpx.RequestError, OSError) as e:
             logger.error(f"请求失败: {e}")
             return None
 
@@ -224,7 +224,7 @@ class GitHubClient:
         except httpx.HTTPStatusError as e:
             self._handle_http_error(e, "获取文件内容")
             return None
-        except Exception as e:
+        except (httpx.RequestError, OSError) as e:
             logger.error(f"请求失败: {e}")
             return None
 
@@ -240,7 +240,7 @@ class GitHubClient:
             response = await self._client.get(url)
             response.raise_for_status()
             return cast(Dict[str, Any], response.json())
-        except Exception as e:
+        except (httpx.RequestError, OSError) as e:
             logger.error(f"检查速率限制失败: {e}")
             return {}
 
@@ -311,6 +311,6 @@ class GitHubClient:
         except httpx.HTTPStatusError as e:
             self._handle_http_error(e, "搜索仓库")
             return []
-        except Exception as e:
+        except (httpx.RequestError, OSError) as e:
             logger.error(f"搜索请求失败: {e}")
             return []

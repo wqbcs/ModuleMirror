@@ -98,8 +98,8 @@ async def create_task(req: TaskCreateRequest, background_tasks: BackgroundTasks)
             if pipeline and hasattr(pipeline, "project_fetcher") and pipeline.project_fetcher:
                 try:
                     pipeline.project_fetcher.cleanup()
-                except Exception:
-                    logger.debug(f"任务 {task_id} 清理失败")
+                except (OSError, AttributeError) as e:
+                    logger.debug(f"任务 {task_id} 清理失败", error=str(e))
 
     thread = threading.Thread(target=_run_detection, daemon=True)
     thread.start()

@@ -137,6 +137,6 @@ class TestGitHubClientAPIMethods:
     async def test_check_rate_limit_failure(self):
         client = GitHubClient()
         client._client = AsyncMock()
-        client._client.get = AsyncMock(side_effect=Exception("network error"))
+        client._client.get = AsyncMock(side_effect=httpx.RequestError("network error"))
         result = await client.check_rate_limit()
         assert result == {}

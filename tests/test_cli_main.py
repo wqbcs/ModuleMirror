@@ -465,7 +465,7 @@ class TestCheckApiRateLimit:
     @patch("gh_similarity_detector.cli.main.GitHubClient")
     def test_check_rate_limit_exception(self, MockGHClient):
         mock_client = MagicMock()
-        mock_client.check_rate_limit = AsyncMock(side_effect=Exception("network error"))
+        mock_client.check_rate_limit = AsyncMock(side_effect=OSError("network error"))
         MockGHClient.return_value = mock_client
 
         _check_api_rate_limit("fake_token")

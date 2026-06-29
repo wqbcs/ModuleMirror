@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 import threading
-from queue import Queue, Empty
+from queue import Queue, Empty, Full
 
 from ...utils.resource_tracker import resource_tracker
 from ...utils.logger import logger
@@ -49,11 +49,11 @@ class _ConnectionPool:
     def release(self, conn: sqlite3.Connection) -> None:
         try:
             self._pool.put_nowait(conn)
-        except Exception:
+        except Full:
             try:
                 conn.close()
-            except Exception:
-                logger.debug(f"连接关闭失败 (pool:{self.db_path})")
+            except sqlite3.Error as e:
+                logger.debug("pool_release_close_failed", error=str(e))
             resource_tracker.untrack(conn)
             with self._lock:
                 self._created -= 1
@@ -64,7 +64,7 @@ class _ConnectionPool:
                 conn = self._pool.get_nowait()
                 resource_tracker.untrack(conn)
                 conn.close()
-            except Exception:
-                logger.debug(f"连接关闭失败 (pool:{self.db_path})")
+            except (sqlite3.Error, Empty) as e:
+                logger.debug("pool_close_conn_failed", error=str(e))
         with self._lock:
             self._created = 0
