@@ -10,18 +10,19 @@ Author: ModuleMirror
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
-try:
+from ...utils.logger import logger
+from ...utils.deps import DependencyRegistry
+
+_deps = DependencyRegistry.get_instance()
+HAS_PYECHARTS = _deps.is_available("pyecharts")
+
+if HAS_PYECHARTS:
     from pyecharts import options as opts
     from pyecharts.charts import HeatMap, Graph, Bar, Pie, Line, Grid
     from pyecharts.commons.utils import JsCode
-
-    HAS_PYECHARTS = True
-except ImportError:
-    HAS_PYECHARTS = False
+else:
     opts = None
     HeatMap = Graph = Bar = Pie = Line = Grid = None
-
-from ...utils.logger import logger
 
 
 def generate_similarity_heatmap(

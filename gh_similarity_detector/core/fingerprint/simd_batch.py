@@ -11,6 +11,9 @@ from typing import List, Dict, Any, Tuple, TYPE_CHECKING
 from dataclasses import dataclass
 
 from ...utils.rust_backend import is_rust_available
+from ...utils.deps import DependencyRegistry
+
+_deps = DependencyRegistry.get_instance()
 
 if is_rust_available():
     from ...utils.rust_backend import (
@@ -19,16 +22,16 @@ if is_rust_available():
         _rust_jaccard_sorted_many_parallel,
     )
 
-try:
-    import numpy as np
+HAS_NUMPY = _deps.is_available("numpy")
 
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
+if HAS_NUMPY:
+    import numpy as np
+else:
+    from typing import TYPE_CHECKING
     if TYPE_CHECKING:
         import numpy as np
     else:
-        np = None
+        np = None  # type: ignore[assignment]
 
 
 @dataclass

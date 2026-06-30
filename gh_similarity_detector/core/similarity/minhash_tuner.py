@@ -10,15 +10,15 @@ import time
 from typing import Dict, List, Tuple, Set
 from dataclasses import dataclass
 
-try:
-    from datasketch import MinHash, MinHashLSHForest
-
-    HAS_DATASKETCH = True
-except ImportError:
-    HAS_DATASKETCH = False
-
 from ...models.entities import FingerprintSet
 from ...utils.logger import logger
+from ...utils.deps import DependencyRegistry
+
+_deps = DependencyRegistry.get_instance()
+HAS_DATASKETCH = _deps.is_available("datasketch")
+
+if HAS_DATASKETCH:
+    from datasketch import MinHash, MinHashLSHForest
 
 
 @dataclass

@@ -20,6 +20,9 @@ from typing import Dict, List, Set, Optional, Tuple, Any
 from ...models.entities import FingerprintSet
 from ...utils.logger import logger
 from ...utils.rust_backend import is_rust_available
+from ...utils.deps import DependencyRegistry
+
+_deps = DependencyRegistry.get_instance()
 
 if is_rust_available():
     from ...utils.rust_backend import MinHashLSH as RustMinHashLSH
@@ -28,12 +31,10 @@ if is_rust_available():
 else:
     HAS_RUST_BACKEND = False
 
-try:
-    from datasketch import MinHash, MinHashLSHForest
+HAS_DATASKETCH = _deps.is_available("datasketch")
 
-    HAS_DATASKETCH = True
-except ImportError:
-    HAS_DATASKETCH = False
+if HAS_DATASKETCH:
+    from datasketch import MinHash, MinHashLSHForest
 
 
 class MinHashLSHIndex:

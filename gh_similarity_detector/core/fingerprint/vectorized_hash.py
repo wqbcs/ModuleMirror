@@ -8,18 +8,18 @@ Author: ModuleMirror
 
 from __future__ import annotations
 
-import numpy as np
 from typing import List, Optional
 
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
-
 from ...utils.hash import stable_hash
+from ...utils.deps import DependencyRegistry
+
+_deps = DependencyRegistry.get_instance()
+HAS_NUMPY = _deps.is_available("numpy")
+
+if HAS_NUMPY:
+    import numpy as np
+else:
+    np = None  # type: ignore[assignment]
 
 
 class VectorizedRollingHash:

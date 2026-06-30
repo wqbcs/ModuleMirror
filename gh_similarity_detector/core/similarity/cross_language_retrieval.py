@@ -22,20 +22,17 @@ from .embedding import (
     EmbeddingEngine,
     create_embedding_engine,
 )
+from ...utils.deps import DependencyRegistry
 
-try:
+_deps = DependencyRegistry.get_instance()
+HAS_NUMPY = _deps.is_available("numpy")
+HAS_FAISS = _deps.is_available("faiss")
+
+if HAS_NUMPY:
     import numpy as np
 
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-
-try:
+if HAS_FAISS:
     import faiss
-
-    HAS_FAISS = True
-except ImportError:
-    HAS_FAISS = False
 
 
 @dataclass

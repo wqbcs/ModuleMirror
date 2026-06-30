@@ -12,15 +12,16 @@ from __future__ import annotations
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
-try:
-    import polars as pl
-
-    HAS_POLARS = True
-except ImportError:
-    HAS_POLARS = False
-    pl = None  # type: ignore[assignment]
-
 from ...utils.logger import logger
+from ...utils.deps import DependencyRegistry
+
+_deps = DependencyRegistry.get_instance()
+HAS_POLARS = _deps.is_available("polars")
+
+if HAS_POLARS:
+    import polars as pl
+else:
+    pl = None  # type: ignore[assignment]
 
 
 class SimilarityDataFrame:
