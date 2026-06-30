@@ -187,7 +187,7 @@ show_column_numbers = true
 pretty = true
 
 [[tool.mypy.overrides]]
-module = ["datasketch.*", "pyecharts.*", "faiss.*", "httpx.*", "tenacity.*", "tree_sitter.*", "pyvis.*", "sse_starlette.*", "slowapi.*", "prometheus_client.*", "orjson.*", "mmh3.*", "structlog.*", "textual.*", "trogon.*"]
+module = ["datasketch.*", "pyecharts.*", "faiss.*", "httpx.*", "tenacity.*", "tree_sitter.*", "pyvis.*", "sse_starlette.*", "slowapi.*", "prometheus_client.*", "orjson.*", "mmh3.*", "structlog.*", "textual.*", "trogon.*", "polars.*", "fpdf.*", "datasketch.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]
