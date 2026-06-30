@@ -18,6 +18,7 @@ from ...infrastructure.storage.migrations import get_migration_status
 from ...infrastructure.github_client.client import GitHubClient, RateLimitError
 from ...infrastructure.observability.metrics import get_metrics, get_content_type
 from ...infrastructure.resilience.circuit_breaker import github_circuit
+from ...infrastructure.resilience.bulkhead import github_bulkhead, db_bulkhead
 from ...config.hot_reload import config_reloader
 from ...utils.logger import logger
 from ...utils.deps import DependencyRegistry
@@ -78,10 +79,33 @@ async def health() -> dict[str, Any]:
 
     result["circuit_breaker"] = github_circuit.stats
 
+    result["bulkheads"] = {
+        "github": github_bulkhead.get_stats(),
+        "db": db_bulkhead.get_stats(),
+    }
+
     registry = DependencyRegistry.get_instance()
     result["dependencies"] = registry.report
 
     return result
+
+
+@router.get(
+    "/circuit-breakers",
+    summary="断路器和隔离仓状态",
+    description="返回所有断路器和隔离仓的详细状态信息",
+)
+async def circuit_breakers() -> dict[str, Any]:
+    """断路器和隔离仓状态详情"""
+    return {
+        "circuit_breakers": {
+            "github": github_circuit.stats,
+        },
+        "bulkheads": {
+            "github": github_bulkhead.get_stats(),
+            "db": db_bulkhead.get_stats(),
+        },
+    }
 
 
 @router.post(
