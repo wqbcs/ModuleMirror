@@ -121,6 +121,10 @@ GitHub 项目代码相似度检测工具 REST API。
         {"name": "auth", "description": "认证管理（JWT Token/API Key/用户信息）"},
         {"name": "webhook", "description": "GitHub Webhook 集成（push/PR自动检测）"},
         {"name": "websocket", "description": "实时进度推送（WebSocket/SSE双通道）"},
+        {"name": "analysis", "description": "高级分析（DataFrame/批量检测/多仓库对比/结果对比/MinHash调优）"},
+        {"name": "semantic-diff", "description": "语义差异分析（实体级变更检测/批量对比）"},
+        {"name": "rules", "description": "规则引擎（YAML DSL规则管理）"},
+        {"name": "lineage", "description": "克隆血统追踪（代码来源追溯/统计）"},
     ],
 )
 

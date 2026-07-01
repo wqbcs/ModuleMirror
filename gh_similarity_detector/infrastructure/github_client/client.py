@@ -76,6 +76,12 @@ class GitHubClient:
         """关闭 HTTP 客户端连接池"""
         await self._client.aclose()
 
+    async def __aenter__(self) -> "GitHubClient":
+        return self
+
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        await self.close()
+
     def _handle_http_error(self, e: httpx.HTTPStatusError, operation: str) -> None:
         status = e.response.status_code
         github_circuit.record_failure()
