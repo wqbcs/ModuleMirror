@@ -128,7 +128,8 @@ ModuleMirror 采用**六边形架构（Hexagonal Architecture）**，核心业�
 
 - **语言扩展**：新增 tree-sitter 语言包即可支持新语言
 - **存储扩展**：FingerprintDB 抽象接口，可替换为 PostgreSQL
-- **算法扩展**：SimilarityCalculator 支持多算法组合（SimHash/MinHash LSH 待实现）
+- **算法扩展**：相似度算法插件化（基于 pluggy），内置 Winnowing(Jaccard)/Containment/SimHash(Charikar)，MinHash LSH 已落地；新增算法仅需实现 ``AlgorithmPlugin`` 端口或通过 ``moduler_mirror.algorithms`` 入口点注册
+- **API 扩展**：REST API 已加 ``/v1`` 前缀版本化（见 ``api/routes/v1``），未版本化路由保留向后兼容
 - **输出扩展**：ReportGenerator 基于 Jinja2 模板，可自定义报告格式
 - **获取扩展**：ProjectFetcher 可扩展 GitLab/Bitbucket 适配器
 
@@ -137,7 +138,7 @@ ModuleMirror 采用**六边形架构（Hexagonal Architecture）**，核心业�
 | 级别 | 标准 | 当前 |
 |------|------|------|
 | L1 可用 | 核心功能完整 | ✅ |
-| L2 可靠 | CI 门禁 + 80% 覆盖率 | 🔄 60%→80% |
-| L3 可扩展 | 插件化 + API 版本化 | ⬜ |
-| L4 可观测 | 指标/日志/追踪三支柱 | 🔄 部分有 |
+| L2 可靠 | CI 门禁 + 80% 覆盖率 | 🔄 门禁已强制 80%（覆盖率持续补齐中） |
+| L3 可扩展 | 插件化 + API 版本化 | ✅ |
+| L4 可观测 | 指标/日志/追踪三支柱 | 🔄 指标/追踪已接入检测与 API 路径，Logs 依赖可选 extra |
 | L5 可贡献 | 完善文档 + 社区规范 | ⬜ |
