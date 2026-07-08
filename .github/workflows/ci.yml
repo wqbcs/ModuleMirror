@@ -57,7 +57,7 @@ jobs:
       - name: Build Rust extension
         run: maturin develop --release
       - name: Run tests with coverage
-        run: pytest tests/ -v -n auto --tb=short --cov=gh_similarity_detector --cov-report=term-missing --cov-report=xml
+        run: pytest tests/ -v -n auto --tb=short --cov=gh_similarity_detector --cov-report=term-missing --cov-report=xml --cov-fail-under=80
       - name: Upload coverage
         if: matrix.python-version == '3.12' && matrix.os == 'ubuntu-latest'
         uses: actions/upload-artifact@v4
