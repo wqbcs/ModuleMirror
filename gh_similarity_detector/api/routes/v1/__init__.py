@@ -17,6 +17,7 @@ from ..db import router as db_router
 from ..detect import router as detect_router
 from ..history import router as history_router
 from ..lineage import router as lineage_router
+from ..plugins import router as plugins_router
 from ..reports import router as reports_router
 from ..rules import router as rules_router
 from ..semantic_diff import router as semantic_diff_router
@@ -40,6 +41,7 @@ _V1_ROUTERS: tuple[APIRouter, ...] = (
     lineage_router,
     semantic_diff_router,
     analysis_router,
+    plugins_router,
 )
 
 v1_router = APIRouter()

@@ -36,6 +36,7 @@ from .routes import (
     lineage_router,
     semantic_diff_router,
     analysis_router,
+    plugins_router,
 )
 from .routes.v1 import v1_router
 from ..utils.logger import logger
@@ -173,6 +174,7 @@ app.include_router(rules_router)
 app.include_router(lineage_router)
 app.include_router(semantic_diff_router)
 app.include_router(analysis_router)
+app.include_router(plugins_router)
 
 # 版本化 API（L3 可扩展）：所有功能路由聚合到 /v1 前缀下，提供稳定的带版本契约。
 # 未版本化路由仍保留以兼容旧客户端（dashboard 等）。
