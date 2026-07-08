@@ -8,6 +8,8 @@ Web API 接口
 from __future__ import annotations
 
 import os
+import re
+import time
 
 from .. import __version__
 import signal
@@ -35,9 +37,12 @@ from .routes import (
     semantic_diff_router,
     analysis_router,
 )
+from .routes.v1 import v1_router
 from ..utils.logger import logger
 from ..infrastructure.lifecycle.graceful_shutdown import graceful_shutdown
 from ..infrastructure.security.ip_filter import ip_filter
+from ..infrastructure.observability.metrics import MetricsCollector
+from ..infrastructure.observability.tracing import tracing_manager
 
 try:
     from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -169,6 +174,10 @@ app.include_router(lineage_router)
 app.include_router(semantic_diff_router)
 app.include_router(analysis_router)
 
+# 版本化 API（L3 可扩展）：所有功能路由聚合到 /v1 前缀下，提供稳定的带版本契约。
+# 未版本化路由仍保留以兼容旧客户端（dashboard 等）。
+app.include_router(v1_router, prefix="/v1")
+
 _static_dir = Path(__file__).parent / "static"
 if _static_dir.exists():
     app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
@@ -252,4 +261,46 @@ async def security_headers_and_auth(request: Request, call_next: Callable[[Reque
     response.headers["Referrer-Policy"] = "no-referrer"
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
     graceful_shutdown.end_request()
+    return response
+
+
+# ---------------------------------------------------------------------------
+# 可观测性中间件 (L4)：API 请求指标 + 链路追踪
+# 即使未安装 prometheus_client / opentelemetry，相关模块也已优雅降级，中间件安全空转。
+# ---------------------------------------------------------------------------
+
+_PATH_PARAM_RE = re.compile(
+    r"/(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
+    r"|[0-9a-f]{40}"
+    r"|\d+)"
+)
+
+
+def _normalize_path(path: str) -> str:
+    """将路径中的 ID 段归一化，降低 Prometheus 指标标签基数。"""
+    return _PATH_PARAM_RE.sub("/{id}", path)
+
+
+@app.middleware("http")
+async def metrics_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    start = time.perf_counter()
+    response = await call_next(request)
+    duration = time.perf_counter() - start
+    MetricsCollector.record_api_request(
+        duration, request.method, _normalize_path(request.url.path), response.status_code
+    )
+    return response
+
+
+@app.middleware("http")
+async def tracing_middleware(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    with tracing_manager.span(
+        f"{request.method} {request.url.path}",
+        {"http.method": request.method, "http.path": request.url.path},
+    ):
+        response = await call_next(request)
     return response

@@ -53,6 +53,7 @@ from ..comparison.batch_detector import BatchDetector, BatchTask
 from ..comparison.multi_repo import MultiRepositoryComparator
 from ..comparison.result_comparator import ResultComparator
 from ..similarity.minhash_tuner import tune_minhash_params, recommend_params, HAS_DATASKETCH
+from ...infrastructure.observability.metrics import MetricsCollector
 
 
 class DetectionPipeline:
@@ -105,6 +106,9 @@ class DetectionPipeline:
         self._rule_engine = RuleEngine()
         self._lineage_tracker = CloneLineageTracker()
 
+        # 可观测性：当前进行中的检测数（喂给 Prometheus ghsim_active_detections Gauge）
+        self._active_detections = 0
+
     def detect(
         self,
         target_source: str,
@@ -125,6 +129,8 @@ class DetectionPipeline:
             检测结果列表
         """
         start_time = time.time()
+        self._active_detections += 1
+        MetricsCollector.set_active_detections(self._active_detections)
         results: List[DetectionResult] = []
 
         try:
@@ -161,6 +167,7 @@ class DetectionPipeline:
             target_fingerprints = self.fingerprint_generator.generate_fingerprints_batch(
                 target_modules
             )
+            MetricsCollector.record_fingerprint_generation(language="python")
 
             if update_db and self.fingerprint_db:
                 self.fingerprint_db.add_project(target_project, target_modules, target_fingerprints)
@@ -263,6 +270,7 @@ class DetectionPipeline:
                 progress_callback(1.0)
 
             elapsed = time.time() - start_time
+            MetricsCollector.record_detection(elapsed, preset="balanced", language="python")
             logger.info(f"检测完成，耗时: {elapsed:.2f} 秒，报告: {report_path}")
 
             if self._idempotency_guard is not None:
@@ -295,6 +303,8 @@ class DetectionPipeline:
             raise
 
         finally:
+            self._active_detections = max(0, self._active_detections - 1)
+            MetricsCollector.set_active_detections(self._active_detections)
             self.project_fetcher.cleanup()
 
         return results
@@ -316,6 +326,8 @@ class DetectionPipeline:
             return []
 
         start_time = time.time()
+        self._active_detections += 1
+        MetricsCollector.set_active_detections(self._active_detections)
 
         try:
             if progress_callback:
@@ -335,6 +347,7 @@ class DetectionPipeline:
             target_fingerprints = self.fingerprint_generator.generate_fingerprints_batch(
                 target_modules
             )
+            MetricsCollector.record_fingerprint_generation(language="python")
 
             if progress_callback:
                 progress_callback(0.4)
@@ -349,6 +362,7 @@ class DetectionPipeline:
                 progress_callback(0.8)
 
             elapsed = time.time() - start_time
+            MetricsCollector.record_detection(elapsed, preset="plagiarism", language="python")
             logger.info(f"抄袭溯源检测完成，耗时: {elapsed:.2f} 秒")
 
             self.audit_logger.log_plagiarism(
@@ -367,6 +381,8 @@ class DetectionPipeline:
             raise
 
         finally:
+            self._active_detections = max(0, self._active_detections - 1)
+            MetricsCollector.set_active_detections(self._active_detections)
             self.project_fetcher.cleanup()
 
     def add_to_db(
