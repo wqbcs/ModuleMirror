@@ -465,3 +465,28 @@ class SimilarityCalculator:
             "count_80": sum(1 for s in similarities if 80 <= s < 90),
             "count_70": sum(1 for s in similarities if 70 <= s < 80),
         }
+
+    def similarity_with_algorithm(
+        self, name: str, fp_a: "FingerprintSet", fp_b: "FingerprintSet"
+    ) -> float:
+        """使用指定算法插件计算两组指纹的相似度。
+
+        将算法插件真正接入核心计算器（而非仅通过 API 暴露），使插件架构成为
+        检测引擎的一等公民。支持 winnowing(Jaccard)/containment/SimHash 等已注册插件。
+
+        Args:
+            name: 算法插件名称（见 /v1/algorithms）
+            fp_a: 目标指纹集合
+            fp_b: 候选指纹集合
+
+        Returns:
+            相似度，值域 [0, 1]
+        """
+        from ...infrastructure.plugins.manager import get_algorithm_plugin_manager
+
+        algo = get_algorithm_plugin_manager().get_algorithm(name)
+        if algo is None:
+            raise ValueError(f"未知算法插件: {name}")
+        set_a = set(fp_a.winnowing_fingerprints)
+        set_b = set(fp_b.winnowing_fingerprints)
+        return float(algo.similarity(set_a, set_b))
