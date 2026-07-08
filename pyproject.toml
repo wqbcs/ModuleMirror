@@ -195,3 +195,20 @@ ignore_missing_imports = true
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+source = ["gh_similarity_detector"]
+omit = ["*/tests/*", "*/__pycache__/*", "gh_similarity_detector/api/static/*"]
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if _HAS_OTEL:",
+    "if not _HAS_OTEL:",
+    "if _HAS_PLUGGY:",
+    "if not _HAS_PLUGGY:",
+    "raise NotImplementedError",
+    "if TYPE_CHECKING:",
+]
