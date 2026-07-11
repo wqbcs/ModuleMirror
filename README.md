@@ -1,9 +1,9 @@
 # ModuleMirror
 
-[![version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/wqbcs/ModuleMirror/releases/tag/v1.0.0)
-[![license](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![version](https://img.shields.io/badge/version-2.0.0-blue.svg)](https://github.com/wqbcs/ModuleMirror/releases/tag/v2.0.0)
+[![license](https://img.shields.io/badge/license-Apache--2.0-green.svg)](LICENSE)
 [![python](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/)
-[![tests](https://img.shields.io/badge/tests-1538%20passed-brightgreen.svg)](tests/)
+[![tests](https://img.shields.io/badge/tests-1880%20passed-brightgreen.svg)](tests/)
 [![ruff](https://img.shields.io/badge/ruff-0%20errors-brightgreen.svg)](https://docs.astral.sh/ruff/)
 
 GitHub 项目代码相似度检测工具，支持两大核心用途：

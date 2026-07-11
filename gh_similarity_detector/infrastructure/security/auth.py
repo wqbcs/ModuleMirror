@@ -175,7 +175,15 @@ class AuthManager:
     """统一认证管理器 — JWT + API Key"""
 
     def __init__(self, secret: Optional[str] = None) -> None:
-        self._secret = secret or JWT_SECRET or "dev-secret-change-me"
+        resolved = secret or JWT_SECRET
+        if not resolved:
+            import warnings
+            warnings.warn(
+                "MODULEMIRROR_JWT_SECRET 未设置，使用不安全的开发密钥。"
+                "生产环境必须设置 MODULEMIRROR_JWT_SECRET 环境变量！",
+                stacklevel=2,
+            )
+        self._secret = resolved or "dev-secret-change-me"
         self._blacklist = TokenBlacklist()
         self._api_key_store = APIKeyStore()
 
