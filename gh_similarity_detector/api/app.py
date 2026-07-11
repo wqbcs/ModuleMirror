@@ -40,6 +40,7 @@ from .routes import (
 )
 from .routes.v1 import v1_router
 from ..utils.logger import logger
+from ..utils.exceptions import ModuleMirrorError
 from ..infrastructure.lifecycle.graceful_shutdown import graceful_shutdown
 from ..infrastructure.security.ip_filter import ip_filter
 from ..infrastructure.observability.metrics import MetricsCollector
@@ -133,6 +134,36 @@ GitHub 项目代码相似度检测工具 REST API。
         {"name": "lineage", "description": "克隆血统追踪（代码来源追溯/统计）"},
     ],
 )
+
+
+@app.exception_handler(ModuleMirrorError)
+async def modulemirror_error_handler(request: Request, exc: ModuleMirrorError) -> Response:
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error_code": exc.error_code,
+            "message": exc.message,
+            "details": exc.details,
+            "request_id": request.headers.get("X-Request-ID", ""),
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def generic_error_handler(request: Request, exc: Exception) -> Response:
+    from fastapi.responses import JSONResponse
+    logger.error(f"Unhandled exception: {exc}", exc_info=True)
+    return JSONResponse(
+        status_code=500,
+        content={
+            "error_code": "MM999",
+            "message": "内部服务器错误",
+            "details": {},
+            "request_id": request.headers.get("X-Request-ID", ""),
+        },
+    )
+
 
 if RATE_LIMIT_ENABLED:
     app.state.limiter = _limiter
