@@ -58,9 +58,18 @@ class ASTFingerprintGenerator:
                 return set()
 
             fingerprints = set()
+            sequences = []
             for i in range(0, len(node_types) - self.window_size + 1, self.window_size):
-                sequence = ",".join(node_types[i : i + self.window_size])
-                fingerprints.add(stable_hash(sequence))
+                sequences.append(",".join(node_types[i : i + self.window_size]))
+
+            if sequences:
+                from ...utils.rust_backend import batch_stable_hash, is_rust_available
+                if is_rust_available():
+                    hashes = batch_stable_hash(sequences)
+                    fingerprints.update(hashes)
+                else:
+                    for seq in sequences:
+                        fingerprints.add(stable_hash(seq))
 
             return fingerprints
 

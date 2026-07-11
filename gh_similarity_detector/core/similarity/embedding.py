@@ -183,7 +183,8 @@ class Code2VecEngine(EmbeddingEngine):
 
             norm = math.sqrt(sum(v * v for v in vector))
             if norm > 0:
-                vector = [v / norm for v in vector]
+                from ...utils.rust_backend import l2_normalize as _l2_normalize
+                vector = _l2_normalize(vector)
 
         return CodeEmbedding(
             code_id=code_id or hashlib.md5(code.encode()).hexdigest()[:8],

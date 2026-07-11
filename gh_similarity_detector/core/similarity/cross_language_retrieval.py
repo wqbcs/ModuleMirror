@@ -80,26 +80,62 @@ class EmbeddingIndex:
         results = []
         exclude = exclude_ids or set()
 
-        for code_id, emb in self._embeddings.items():
-            if code_id in exclude:
-                continue
-            if emb.model_name != query.model_name:
-                continue
-            if emb.dimension != query.dimension:
-                continue
+        candidates = [
+            (code_id, emb)
+            for code_id, emb in self._embeddings.items()
+            if code_id not in exclude
+            and emb.model_name == query.model_name
+            and emb.dimension == query.dimension
+        ]
 
-            sim = query.cosine_similarity(emb)
-            if sim >= min_similarity:
-                results.append(
-                    RetrievalResult(
-                        query_id=query.code_id,
-                        candidate_id=code_id,
-                        similarity=sim,
-                        model_name=query.model_name,
-                        query_language=self._languages.get(query.code_id, ""),
-                        candidate_language=self._languages.get(code_id, ""),
+        if not candidates:
+            return []
+
+        if len(candidates) > 50:
+            from ...utils.rust_backend import batch_cosine_similarity as _batch_cosine, is_rust_available
+            if is_rust_available():
+                candidate_vectors = [emb.vector for _, emb in candidates]
+                similarities = _batch_cosine(query.vector, candidate_vectors)
+                for (code_id, emb), sim in zip(candidates, similarities):
+                    if sim >= min_similarity:
+                        results.append(
+                            RetrievalResult(
+                                query_id=query.code_id,
+                                candidate_id=code_id,
+                                similarity=sim,
+                                model_name=query.model_name,
+                                query_language=self._languages.get(query.code_id, ""),
+                                candidate_language=self._languages.get(code_id, ""),
+                            )
+                        )
+            else:
+                for code_id, emb in candidates:
+                    sim = query.cosine_similarity(emb)
+                    if sim >= min_similarity:
+                        results.append(
+                            RetrievalResult(
+                                query_id=query.code_id,
+                                candidate_id=code_id,
+                                similarity=sim,
+                                model_name=query.model_name,
+                                query_language=self._languages.get(query.code_id, ""),
+                                candidate_language=self._languages.get(code_id, ""),
+                            )
+                        )
+        else:
+            for code_id, emb in candidates:
+                sim = query.cosine_similarity(emb)
+                if sim >= min_similarity:
+                    results.append(
+                        RetrievalResult(
+                            query_id=query.code_id,
+                            candidate_id=code_id,
+                            similarity=sim,
+                            model_name=query.model_name,
+                            query_language=self._languages.get(query.code_id, ""),
+                            candidate_language=self._languages.get(code_id, ""),
+                        )
                     )
-                )
 
         results.sort(key=lambda r: r.similarity, reverse=True)
         return results[:top_k]
