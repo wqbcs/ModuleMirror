@@ -71,6 +71,13 @@ def main() -> None:
     """GitHub 项目代码相似度检测工具
 
     用于自我审视（发现可复用模块）和抄袭检测（追溯代码来源）。
+
+    \b
+    常用命令:
+      gh-sim detect user/repo --candidates user/repo2    自我审视检测
+      gh-sim plagiarism user/repo --db ./fp.sqlite      抄袭溯源检测
+      gh-sim db init && gh-sim db add user/repo          指纹库管理
+      gh-sim app                                          交互式TUI
     """
 
 
@@ -509,10 +516,9 @@ def completion(shell: str, output: str) -> None:
 
 @main.command()
 def app() -> None:
-    """Launch interactive TUI application
+    """启动交互式TUI应用
 
-    Opens the ModuleMirror Textual TUI with dashboard,
-    detection wizard, results viewer, and fingerprint browser.
+    打开ModuleMirror文本界面仪表盘，包含检测向导、结果查看器和指纹库浏览器。
     """
     try:
         from .tui_app import ModuleMirrorTUI
