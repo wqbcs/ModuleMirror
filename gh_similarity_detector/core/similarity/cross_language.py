@@ -49,16 +49,31 @@ class IRNode:
     attributes: Dict[str, Any] = field(default_factory=dict)
 
     def structural_hash(self) -> str:
+        """计算IRNode的结构哈希值
+        
+        Returns:
+            结构哈希字符串
+        """
         child_hashes = ";".join(c.structural_hash() for c in self.children)
         raw = f"{self.node_type.value}:{child_hashes}"
         return structural_hash(raw)
 
     def depth(self) -> int:
+        """计算IRNode的深度
+        
+        Returns:
+            节点树的深度
+        """
         if not self.children:
             return 1
         return 1 + max(c.depth() for c in self.children)
 
     def node_count(self) -> int:
+        """计算IRNode的总节点数
+        
+        Returns:
+            包括自身在内的所有子节点总数
+        """
         return 1 + sum(c.node_count() for c in self.children)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -72,6 +87,8 @@ class IRNode:
 
 @dataclass
 class CrossLanguageClone:
+    """跨语言克隆检测结果，表示不同语言间的代码相似对"""
+
     source_id: str
     target_id: str
     source_language: str
@@ -95,6 +112,8 @@ class CrossLanguageClone:
 
 
 class ASTNormalizer:
+    """AST规范化器，将不同语言的AST统一为中间表示(IR)"""
+
     NODE_TYPE_MAP = {
         "function_definition": IRNodeType.FUNCTION,
         "function_declaration": IRNodeType.FUNCTION,
@@ -114,6 +133,15 @@ class ASTNormalizer:
     }
 
     def normalize(self, tree_node: Any, language: str = "") -> IRNode:
+        """将tree-sitter AST节点规范化为IR
+        
+        Args:
+            tree_node: tree-sitter AST节点
+            language: 源代码语言
+            
+        Returns:
+            规范化后的IRNode
+        """
         if tree_node is None:
             return IRNode(node_type=IRNodeType.BLOCK)
 
@@ -146,6 +174,15 @@ class ASTNormalizer:
         )
 
     def normalize_code_structure(self, code: str, language: str) -> IRNode:
+        """直接从代码字符串提取IR结构（不依赖tree-sitter）
+        
+        Args:
+            code: 源代码字符串
+            language: 编程语言
+            
+        Returns:
+            模块级IRNode
+        """
         functions = []
         lines = code.strip().split("\n")
         current_func = None
@@ -239,17 +276,38 @@ class ASTNormalizer:
 
 
 class CrossLanguageDetector:
+    """跨语言克隆检测器，基于IR结构相似度检测不同语言间的代码克隆"""
+
     def __init__(self, similarity_threshold: float = 0.5):
         self._threshold = similarity_threshold
         self._normalizer = ASTNormalizer()
         self._ir_index: Dict[str, Tuple[str, IRNode, str]] = {}
 
     def index_code(self, code_id: str, code: str, language: str) -> IRNode:
+        """索引代码到IR存储
+        
+        Args:
+            code_id: 代码唯一标识
+            code: 源代码字符串
+            language: 编程语言
+            
+        Returns:
+            生成的IRNode
+        """
         ir = self._normalizer.normalize_code_structure(code, language)
         self._ir_index[code_id] = (ir.structural_hash(), ir, language)
         return ir
 
     def detect(self, source_id: str, target_id: str) -> Optional[CrossLanguageClone]:
+        """检测两个已索引代码间的跨语言克隆
+        
+        Args:
+            source_id: 源代码ID
+            target_id: 目标代码ID
+            
+        Returns:
+            若检测到跨语言克隆返回CrossLanguageClone，否则返回None
+        """
         source_entry = self._ir_index.get(source_id)
         target_entry = self._ir_index.get(target_id)
         if not source_entry or not target_entry:
@@ -276,6 +334,11 @@ class CrossLanguageDetector:
         return None
 
     def detect_all(self) -> List[CrossLanguageClone]:
+        """检测所有已索引代码对间的跨语言克隆
+        
+        Returns:
+            所有检测到的跨语言克隆列表
+        """
         results = []
         ids = list(self._ir_index.keys())
         for i in range(len(ids)):
