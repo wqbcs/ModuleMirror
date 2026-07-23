@@ -17,12 +17,14 @@ from enum import Enum
 
 
 class GateStatus(Enum):
+    """质量门禁状态枚举"""
     PASSED = "PASSED"
     FAILED = "FAILED"
     WARNING = "WARNING"
 
 
 class ConditionOperator(Enum):
+    """条件操作符枚举"""
     GT = "greater_than"
     LT = "less_than"
     GTE = "greater_than_or_equal"
@@ -32,12 +34,22 @@ class ConditionOperator(Enum):
 
 @dataclass
 class GateCondition:
+    """质量门禁条件，定义单个指标的阈值检查"""
+
     metric: str
     threshold: float
     operator: ConditionOperator = ConditionOperator.LT
     description: str = ""
 
     def evaluate(self, value: float) -> bool:
+        """评估给定值是否满足条件
+        
+        Args:
+            value: 实际指标值
+            
+        Returns:
+            是否满足条件
+        """
         ops: Dict[ConditionOperator, Callable[[float, float], bool]] = {
             ConditionOperator.GT: lambda v, t: v > t,
             ConditionOperator.LT: lambda v, t: v < t,
@@ -58,6 +70,8 @@ class GateCondition:
 
 @dataclass
 class GateResult:
+    """质量门禁评估结果"""
+
     status: GateStatus
     conditions_evaluated: List[Dict[str, Any]] = field(default_factory=list)
     metrics: Dict[str, float] = field(default_factory=dict)
@@ -77,10 +91,20 @@ class GateResult:
 
 @dataclass
 class QualityGate:
+    """质量门禁，包含多个条件的综合评估器"""
+
     name: str
     conditions: List[GateCondition] = field(default_factory=list)
 
     def evaluate(self, metrics: Dict[str, float]) -> GateResult:
+        """评估给定指标集是否通过门禁
+        
+        Args:
+            metrics: 指标名称到值的映射
+            
+        Returns:
+            GateResult评估结果
+        """
         results = []
         all_passed = True
         any_warning = False
@@ -130,6 +154,14 @@ class QualityGate:
         )
 
     def add_condition(self, condition: GateCondition) -> "QualityGate":
+        """添加门禁条件
+        
+        Args:
+            condition: 门禁条件
+            
+        Returns:
+            self支持链式调用
+        """
         self.conditions.append(condition)
         return self
 
@@ -141,6 +173,14 @@ class QualityGate:
 
 
 def extract_detection_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]:
+    """从检测结果提取质量指标
+    
+    Args:
+        results: 检测结果列表
+        
+    Returns:
+        指标名称到值的映射
+    """
     metrics = {
         "total_results": float(len(results)),
         "high_similarity_count": 0.0,
@@ -174,6 +214,11 @@ def extract_detection_metrics(results: List[Dict[str, Any]]) -> Dict[str, float]
 
 
 def create_default_gate() -> QualityGate:
+    """创建默认质量门禁（最大相似度<80%，高相似度结果<5个，平均相似度<50%）
+    
+    Returns:
+        默认配置的QualityGate
+    """
     return QualityGate(
         name="default",
         conditions=[
@@ -200,6 +245,11 @@ def create_default_gate() -> QualityGate:
 
 
 def create_strict_gate() -> QualityGate:
+    """创建严格质量门禁（最大相似度<60%，高相似度结果<2个，平均相似度<30%）
+    
+    Returns:
+        严格配置的QualityGate
+    """
     return QualityGate(
         name="strict",
         conditions=[
