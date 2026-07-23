@@ -108,10 +108,26 @@ _DEFAULT_SEED: int = 42
 
 
 def is_rust_available() -> bool:
+    """检查Rust后端扩展是否可用
+    
+    Returns:
+        True表示Rust后端已加载，False表示回退到Python实现
+    """
     return HAS_RUST_BACKEND
 
 
 def stable_hash(data: Union[str, bytes], seed: int = _DEFAULT_SEED) -> int:
+    """计算确定性MurmurHash3 32位哈希值
+    
+    优先使用Rust加速实现，不可用时回退到mmh3或SHA256实现。
+    
+    Args:
+        data: 待哈希的字符串或字节数据
+        seed: 哈希种子值，默认为42
+        
+    Returns:
+        32位无符号整数哈希值
+    """
     if HAS_RUST_BACKEND:
         text = data if isinstance(data, str) else data.decode("utf-8", errors="replace")
         return _rust_stable_hash(text, seed)  # type: ignore[operator]
@@ -130,6 +146,17 @@ def stable_hash(data: Union[str, bytes], seed: int = _DEFAULT_SEED) -> int:
 
 
 def stable_hash64(data: Union[str, bytes], seed: int = _DEFAULT_SEED) -> int:
+    """计算确定性MurmurHash3 64位哈希值
+    
+    优先使用Rust加速实现，不可用时回退到mmh3或SHA256实现。
+    
+    Args:
+        data: 待哈希的字符串或字节数据
+        seed: 哈希种子值，默认为42
+        
+    Returns:
+        64位无符号整数哈希值
+    """
     if HAS_RUST_BACKEND:
         text = data if isinstance(data, str) else data.decode("utf-8", errors="replace")
         return _rust_stable_hash64(text, seed)  # type: ignore[operator]
@@ -148,12 +175,32 @@ def stable_hash64(data: Union[str, bytes], seed: int = _DEFAULT_SEED) -> int:
 
 
 def batch_stable_hash(tokens: List[str], seed: int = _DEFAULT_SEED) -> List[int]:
+    """批量计算MurmurHash3 32位哈希值
+    
+    Args:
+        tokens: 待哈希的字符串列表
+        seed: 哈希种子值，默认为42
+        
+    Returns:
+        与输入列表等长的32位无符号整数哈希值列表
+    """
     if HAS_RUST_BACKEND:
         return _rust_batch_stable_hash(tokens, seed)  # type: ignore[operator]
     return [stable_hash(t, seed) for t in tokens]
 
 
 def batch_stable_hash_parallel(tokens: List[str], seed: int = _DEFAULT_SEED) -> List[int]:
+    """使用rayon并行批量计算MurmurHash3 32位哈希值
+    
+    Rust后端不可用时回退到串行批量实现。
+    
+    Args:
+        tokens: 待哈希的字符串列表
+        seed: 哈希种子值，默认为42
+        
+    Returns:
+        与输入列表等长的32位无符号整数哈希值列表
+    """
     if HAS_RUST_BACKEND:
         return _rust_batch_stable_hash_parallel(tokens, seed)  # type: ignore[operator]
     return batch_stable_hash(tokens, seed)
@@ -180,6 +227,14 @@ class RollingHash:
             self._rust_impl = _RustRollingHash(base, modulus)  # type: ignore[operator]
 
     def hash_sequence(self, sequence: List[str]) -> int:
+        """计算字符串序列的滚动哈希值
+        
+        Args:
+            sequence: 待哈希的字符串序列
+            
+        Returns:
+            滚动哈希整数值
+        """
         if self._rust_impl is not None:
             return self._rust_impl.hash_sequence(sequence, self.seed)  # type: ignore[union-attr]
 
@@ -189,6 +244,17 @@ class RollingHash:
         return hash_value
 
     def kgram_hashes(self, tokens: List[str], k: int) -> List[Tuple[int, int]]:
+        """计算token序列的k-gram滚动哈希列表
+        
+        使用Rabin-Karp滚动哈希算法高效计算所有k-gram的哈希值。
+        
+        Args:
+            tokens: 输入token字符串列表
+            k: k-gram的大小
+            
+        Returns:
+            元组列表，每个元素为(哈希值, 起始位置)
+        """
         if self._rust_impl is not None:
             return self._rust_impl.kgram_hashes(tokens, k, self.seed)  # type: ignore[union-attr]
 
@@ -230,6 +296,14 @@ class Winnowing:
             self._rust_impl = _RustWinnowing(window_size, kgram_size)  # type: ignore[operator]
 
     def winnow(self, kgram_hashes: List[Tuple[int, int]]) -> List[int]:
+        """对k-gram哈希列表执行Winnowing算法，提取指纹
+        
+        Args:
+            kgram_hashes: k-gram哈希列表，每个元素为(哈希值, 位置)
+            
+        Returns:
+            Winnowing指纹哈希值列表
+        """
         if self._rust_impl is not None:
             return self._rust_impl.winnow(kgram_hashes)  # type: ignore[union-attr]
         return self._winnow_python(kgram_hashes)
@@ -264,6 +338,16 @@ class Winnowing:
         return fingerprints
 
     def generate_fingerprints(self, tokens: List[str]) -> List[int]:
+        """从token列表生成Winnowing指纹
+        
+        对token序列计算k-gram滚动哈希后执行Winnowing算法。
+        
+        Args:
+            tokens: 输入token字符串列表
+            
+        Returns:
+            Winnowing指纹哈希值列表
+        """
         if self._rust_impl is not None:
             return self._rust_impl.generate_fingerprints(tokens, self.seed)  # type: ignore[union-attr]
 
@@ -297,6 +381,16 @@ class Winnowing:
         return self._winnow_python(kgram_hashes)
 
     def generate_fingerprints_parallel(self, tokens: List[str]) -> List[int]:
+        """使用rayon并行从token列表生成Winnowing指纹
+        
+        Rust后端不可用时回退到串行实现。
+        
+        Args:
+            tokens: 输入token字符串列表
+            
+        Returns:
+            Winnowing指纹哈希值列表
+        """
         if self._rust_impl is not None:
             return self._rust_impl.generate_fingerprints_parallel(tokens, self.seed)  # type: ignore[union-attr]
         return self.generate_fingerprints(tokens)
@@ -321,6 +415,11 @@ class MinHash:
                 self._py_impl = None  # type: ignore[assignment]
 
     def update_batch(self, tokens: List[str]) -> None:
+        """批量更新MinHash签名，将多个token纳入哈希计算
+        
+        Args:
+            tokens: 待纳入计算的token字符串列表
+        """
         if self._rust_impl is not None:
             self._rust_impl.update_batch(tokens)
             return
@@ -329,6 +428,11 @@ class MinHash:
             return
 
     def update(self, token: str) -> None:
+        """更新MinHash签名，将单个token纳入哈希计算
+        
+        Args:
+            token: 待纳入计算的token字符串
+        """
         if self._rust_impl is not None:
             self._rust_impl.update(token)
             return
@@ -337,6 +441,14 @@ class MinHash:
             return
 
     def jaccard(self, other: "MinHash") -> float:
+        """估算与另一个MinHash的Jaccard相似度
+        
+        Args:
+            other: 另一个MinHash实例
+            
+        Returns:
+            估算的Jaccard相似度，取值范围[0.0, 1.0]
+        """
         if self._rust_impl is not None and other._rust_impl is not None:
             return self._rust_impl.jaccard(other._rust_impl)
         if hasattr(self, "_py_impl") and self._py_impl is not None:
@@ -345,11 +457,21 @@ class MinHash:
         return 0.0
 
     def get_signature(self) -> List[int]:
+        """获取当前MinHash签名向量
+        
+        Returns:
+            MinHash签名的整数列表
+        """
         if self._rust_impl is not None:
             return self._rust_impl.get_signature()
         return []
 
     def merge(self, other: "MinHash") -> None:
+        """合并另一个MinHash的签名到当前实例
+        
+        Args:
+            other: 要合并的另一个MinHash实例
+        """
         if self._rust_impl is not None and other._rust_impl is not None:
             self._rust_impl.merge(other._rust_impl)
             return
@@ -374,62 +496,149 @@ class MinHashLSH:
             )
 
     def insert(self, module_id: str, tokens: List[str]) -> None:
+        """通过token列表插入模块到LSH索引
+        
+        Args:
+            module_id: 模块唯一标识符
+            tokens: 模块的token字符串列表
+        """
         if self._rust_impl is not None:
             self._rust_impl.insert(module_id, tokens)
 
     def insert_signature(self, module_id: str, signature: List[int]) -> None:
+        """通过MinHash签名插入模块到LSH索引
+        
+        Args:
+            module_id: 模块唯一标识符
+            signature: MinHash签名的整数列表
+        """
         if self._rust_impl is not None:
             self._rust_impl.insert_signature(module_id, signature)
 
     def query_by_tokens(self, tokens: List[str], top_k: int = 10) -> List[Tuple[str, float]]:
+        """通过token列表查询相似模块
+        
+        Args:
+            tokens: 查询用的token字符串列表
+            top_k: 返回最相似的top_k个结果，默认为10
+            
+        Returns:
+            元组列表，每个元素为(模块ID, Jaccard相似度)
+        """
         if self._rust_impl is not None:
             return self._rust_impl.query_by_tokens(tokens, top_k)
         return []
 
     def query_by_signature(self, signature: List[int], top_k: int = 10) -> List[Tuple[str, float]]:
+        """通过MinHash签名查询相似模块
+        
+        Args:
+            signature: 查询用的MinHash签名的整数列表
+            top_k: 返回最相似的top_k个结果，默认为10
+            
+        Returns:
+            元组列表，每个元素为(模块ID, Jaccard相似度)
+        """
         if self._rust_impl is not None:
             return self._rust_impl.query_by_signature(signature, top_k)
         return []
 
     def query_by_module(self, module_id: str, top_k: int = 10) -> List[Tuple[str, float]]:
+        """通过模块ID查询相似模块
+        
+        Args:
+            module_id: 已索引的模块唯一标识符
+            top_k: 返回最相似的top_k个结果，默认为10
+            
+        Returns:
+            元组列表，每个元素为(模块ID, Jaccard相似度)
+        """
         if self._rust_impl is not None:
             return self._rust_impl.query_by_module(module_id, top_k)
         return []
 
     def remove(self, module_id: str) -> None:
+        """从LSH索引中移除指定模块
+        
+        Args:
+            module_id: 要移除的模块唯一标识符
+        """
         if self._rust_impl is not None:
             self._rust_impl.remove(module_id)
 
     def get_signature(self, module_id: str) -> Optional[List[int]]:
+        """获取指定模块的MinHash签名
+        
+        Args:
+            module_id: 模块唯一标识符
+            
+        Returns:
+            MinHash签名的整数列表，模块不存在时返回None
+        """
         if self._rust_impl is not None:
             return self._rust_impl.get_signature(module_id)
         return None
 
     def estimate_jaccard(self, module_id1: str, module_id2: str) -> Optional[float]:
+        """估算两个已索引模块之间的Jaccard相似度
+        
+        Args:
+            module_id1: 第一个模块的唯一标识符
+            module_id2: 第二个模块的唯一标识符
+            
+        Returns:
+            估算的Jaccard相似度，任一模块不存在时返回None
+        """
         if self._rust_impl is not None:
             return self._rust_impl.estimate_jaccard(module_id1, module_id2)
         return None
 
     @property
     def module_count(self) -> int:
+        """获取LSH索引中的模块数量
+        
+        Returns:
+            已索引的模块总数
+        """
         if self._rust_impl is not None:
             return self._rust_impl.module_count
         return 0
 
     @property
     def num_bands(self) -> int:
+        """获取LSH的band数量
+        
+        Returns:
+            band数量
+        """
         if self._rust_impl is not None:
             return self._rust_impl.num_bands
         return 0
 
     @property
     def band_width(self) -> int:
+        """获取LSH每个band的宽度
+        
+        Returns:
+            每个band的宽度（签名长度/band数量）
+        """
         if self._rust_impl is not None:
             return self._rust_impl.band_width
         return 0
 
 
 def cosine_similarity(a: List[float], b: List[float]) -> float:
+    """计算两个向量的余弦相似度
+    
+    优先使用Rust SIMD加速实现。
+    
+    Args:
+        a: 第一个浮点向量
+        b: 第二个浮点向量
+        
+    Returns:
+        余弦相似度，取值范围[0.0, 1.0]，维度不匹配或零向量时返回0.0
+    """
     if HAS_RUST_BACKEND:
         try:
             return _rust_cosine_similarity(a, b)  # type: ignore[operator]
@@ -446,6 +655,17 @@ def cosine_similarity(a: List[float], b: List[float]) -> float:
 
 
 def euclidean_distance(a: List[float], b: List[float]) -> float:
+    """计算两个向量的欧氏距离
+    
+    优先使用Rust SIMD加速实现。
+    
+    Args:
+        a: 第一个浮点向量
+        b: 第二个浮点向量
+        
+    Returns:
+        欧氏距离值
+    """
     if HAS_RUST_BACKEND:
         try:
             return _rust_euclidean_distance(a, b)  # type: ignore[operator]
@@ -455,6 +675,14 @@ def euclidean_distance(a: List[float], b: List[float]) -> float:
 
 
 def l2_normalize(v: List[float]) -> List[float]:
+    """对向量进行L2归一化
+    
+    Args:
+        v: 待归一化的浮点向量
+        
+    Returns:
+        L2归一化后的向量，零向量原样返回
+    """
     if HAS_RUST_BACKEND:
         return _rust_l2_normalize(v)  # type: ignore[operator]
     norm = math.sqrt(sum(x * x for x in v))
@@ -464,18 +692,51 @@ def l2_normalize(v: List[float]) -> List[float]:
 
 
 def batch_cosine_similarity(query: List[float], candidates: List[List[float]]) -> List[float]:
+    """批量计算查询向量与多个候选向量的余弦相似度
+    
+    Args:
+        query: 查询浮点向量
+        candidates: 候选浮点向量列表
+        
+    Returns:
+        余弦相似度列表，与candidates等长
+    """
     if HAS_RUST_BACKEND:
         return _rust_batch_cosine_similarity(query, candidates)  # type: ignore[operator]
     return [cosine_similarity(query, c) for c in candidates]
 
 
 def batch_cosine_similarity_parallel(query: List[float], candidates: List[List[float]]) -> List[float]:
+    """使用rayon并行批量计算查询向量与多个候选向量的余弦相似度
+    
+    Rust后端不可用时回退到串行批量实现。
+    
+    Args:
+        query: 查询浮点向量
+        candidates: 候选浮点向量列表
+        
+    Returns:
+        余弦相似度列表，与candidates等长
+    """
     if HAS_RUST_BACKEND:
         return _rust_batch_cosine_similarity_parallel(query, candidates)  # type: ignore[operator]
     return batch_cosine_similarity(query, candidates)
 
 
 def code2vec_embed(code: str, dimension: int = 128, max_paths: int = 200, path_length: int = 5) -> List[float]:
+    """使用Code2Vec路径注意力机制生成代码嵌入向量
+    
+    优先使用Rust加速实现，不可用时回退到Python实现。
+    
+    Args:
+        code: 源代码字符串
+        dimension: 嵌入向量维度，默认为128
+        max_paths: 最大提取路径数，默认为200
+        path_length: 路径最大行跨度，默认为5
+        
+    Returns:
+        代码嵌入浮点向量
+    """
     if HAS_RUST_BACKEND:
         vector, _num_paths = _rust_code2vec_embed(code, dimension, max_paths, path_length)  # type: ignore[operator]
         return vector
@@ -483,6 +744,17 @@ def code2vec_embed(code: str, dimension: int = 128, max_paths: int = 200, path_l
 
 
 def code2vec_embed_with_meta(code: str, dimension: int = 128, max_paths: int = 200, path_length: int = 5) -> Tuple[List[float], int]:
+    """使用Code2Vec生成代码嵌入向量并返回元数据
+    
+    Args:
+        code: 源代码字符串
+        dimension: 嵌入向量维度，默认为128
+        max_paths: 最大提取路径数，默认为200
+        path_length: 路径最大行跨度，默认为5
+        
+    Returns:
+        元组(嵌入浮点向量, 提取的路径数量)
+    """
     if HAS_RUST_BACKEND:
         return _rust_code2vec_embed(code, dimension, max_paths, path_length)  # type: ignore[operator]
     vector = _code2vec_embed_python(code, dimension, max_paths, path_length)
@@ -551,6 +823,18 @@ def _code2vec_embed_python(code: str, dimension: int, max_paths: int, path_lengt
 
 
 def vectors_to_lsh_hash(vector: List[float], num_bands: int = 8, band_width: int = 4) -> List[str]:
+    """将向量转换为LSH哈希值列表
+    
+    将向量按band切分并计算每段的MD5哈希，用于局部敏感哈希检索。
+    
+    Args:
+        vector: 输入浮点向量
+        num_bands: band数量，默认为8
+        band_width: 每个band的宽度，默认为4
+        
+    Returns:
+        LSH哈希字符串列表，格式为"b{band索引}:{哈希值}"
+    """
     if HAS_RUST_BACKEND:
         return _rust_vectors_to_lsh_hash(vector, num_bands, band_width)  # type: ignore[operator]
     hashes = []
@@ -565,6 +849,17 @@ def vectors_to_lsh_hash(vector: List[float], num_bands: int = 8, band_width: int
 
 
 def sequence_ratio(source: List[str], target: List[str]) -> float:
+    """计算两个字符串序列的相似比率
+    
+    基于difflib.SequenceMatcher实现，优先使用Rust加速。
+    
+    Args:
+        source: 源字符串序列
+        target: 目标字符串序列
+        
+    Returns:
+        相似比率，取值范围[0.0, 1.0]
+    """
     if HAS_RUST_BACKEND:
         return _rust_sequence_ratio(source, target)  # type: ignore[operator]
     import difflib
@@ -573,6 +868,16 @@ def sequence_ratio(source: List[str], target: List[str]) -> float:
 
 
 def rust_text_diff(source_code: str, target_code: str, context_lines: int = 3) -> Optional[Any]:
+    """使用Rust后端计算文本差异
+    
+    Args:
+        source_code: 源代码字符串
+        target_code: 目标代码字符串
+        context_lines: 上下文行数，默认为3
+        
+    Returns:
+        差异结果对象，Rust后端不可用时返回None
+    """
     if HAS_RUST_BACKEND:
         return _rust_text_diff(source_code, target_code, context_lines)  # type: ignore[operator]
     return None
@@ -585,12 +890,33 @@ def rust_unified_diff(
     target_name: str = "target",
     context_lines: int = 3,
 ) -> Optional[str]:
+    """使用Rust后端生成统一格式差异输出
+    
+    Args:
+        source_code: 源代码字符串
+        target_code: 目标代码字符串
+        source_name: 源文件名标签，默认为"source"
+        target_name: 目标文件名标签，默认为"target"
+        context_lines: 上下文行数，默认为3
+        
+    Returns:
+        统一差异格式字符串，Rust后端不可用时返回None
+    """
     if HAS_RUST_BACKEND:
         return _rust_unified_diff(source_code, target_code, source_name, target_name, context_lines)  # type: ignore[operator]
     return None
 
 
 def rust_tokenize(code: str, language: str = "python") -> Optional[List[str]]:
+    """使用Rust后端对代码进行词法分析
+    
+    Args:
+        code: 源代码字符串
+        language: 编程语言标识，默认为"python"
+        
+    Returns:
+        token字符串列表，Rust后端不可用时返回None
+    """
     if HAS_RUST_BACKEND:
         return _rust_tokenize(code, language)  # type: ignore[operator]
     return None

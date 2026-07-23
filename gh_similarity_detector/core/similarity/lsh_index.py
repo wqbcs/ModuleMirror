@@ -78,6 +78,11 @@ class MinHashLSHIndex:
         return mh
 
     def build(self, fingerprints: Dict[str, FingerprintSet]) -> None:
+        """构建MinHash LSH索引
+        
+        Args:
+            fingerprints: 模块ID到FingerprintSet的映射字典
+        """
         self._minhashes.clear()
         self._fingerprint_sets.clear()
 
@@ -113,6 +118,12 @@ class MinHashLSHIndex:
         )
 
     def add_module(self, module_id: str, fingerprints: Set[int]) -> None:
+        """增量添加模块到LSH索引
+        
+        Args:
+            module_id: 模块标识
+            fingerprints: 模块的指纹集合
+        """
         if not fingerprints:
             return
 
@@ -136,6 +147,11 @@ class MinHashLSHIndex:
         logger.info(f"增量添加模块到LSH: {module_id}, {len(fingerprints)}个指纹")
 
     def remove_module(self, module_id: str) -> None:
+        """从LSH索引中移除指定模块
+        
+        Args:
+            module_id: 要移除的模块标识
+        """
         if module_id not in self._fingerprint_sets:
             return
         self._minhashes.pop(module_id, None)
@@ -157,6 +173,15 @@ class MinHashLSHIndex:
         module_id: str,
         top_k: int = 10,
     ) -> List[Tuple[str, float]]:
+        """根据模块ID查询最相似的候选模块
+        
+        Args:
+            module_id: 查询模块标识
+            top_k: 返回最相似的top_k个候选
+            
+        Returns:
+            (候选模块ID, Jaccard相似度估计值)元组列表，按相似度降序排列
+        """
         if not self._indexed or module_id not in self._fingerprint_sets:
             return []
 
@@ -187,6 +212,15 @@ class MinHashLSHIndex:
         fingerprints: Set[int],
         top_k: int = 10,
     ) -> List[Tuple[str, float]]:
+        """根据指纹集合查询最相似的候选模块
+        
+        Args:
+            fingerprints: 查询用的指纹集合
+            top_k: 返回最相似的top_k个候选
+            
+        Returns:
+            (候选模块ID, Jaccard相似度估计值)元组列表，按相似度降序排列
+        """
         if not self._indexed or not fingerprints:
             return []
 
@@ -213,6 +247,16 @@ class MinHashLSHIndex:
         top_k: int = 50,
         min_jaccard: float = 0.1,
     ) -> Dict[str, int]:
+        """获取候选模块及其指纹重叠数，先通过近似查询筛选再用精确重叠数验证
+        
+        Args:
+            fingerprints: 查询用的指纹集合
+            top_k: 近似查询返回的候选数量
+            min_jaccard: 最小Jaccard相似度阈值
+            
+        Returns:
+            候选模块ID到指纹重叠数的映射字典
+        """
         approx_results = self.query_by_fingerprints(fingerprints, top_k=top_k * 2)
 
         candidate_counts: Dict[str, int] = {}
@@ -229,6 +273,11 @@ class MinHashLSHIndex:
         return candidate_counts
 
     def get_module_count(self) -> int:
+        """获取已索引的模块数量
+        
+        Returns:
+            模块数量
+        """
         if self._rust_lsh is not None:
             return self._rust_lsh.module_count
         return len(self._minhashes)
@@ -258,16 +307,32 @@ class HybridIndex:
             self._approx = MinHashLSHIndex(num_perm=num_perm, l_param=l_param)
 
     def build(self, fingerprints: Dict[str, FingerprintSet]) -> None:
+        """同时构建精确索引和近似索引
+        
+        Args:
+            fingerprints: 模块ID到FingerprintSet的映射字典
+        """
         self._exact.build(fingerprints)
         if self._approx:
             self._approx.build(fingerprints)
 
     def add_module(self, module_id: str, fingerprints: Set[int]) -> None:
+        """向精确索引和近似索引同时添加模块
+        
+        Args:
+            module_id: 模块标识
+            fingerprints: 模块的指纹集合
+        """
         self._exact.add_module(module_id, fingerprints)
         if self._approx:
             self._approx.add_module(module_id, fingerprints)
 
     def remove_module(self, module_id: str) -> None:
+        """从精确索引和近似索引同时移除模块
+        
+        Args:
+            module_id: 要移除的模块标识
+        """
         self._exact.remove_module(module_id)
         if self._approx:
             self._approx.remove_module(module_id)
@@ -278,6 +343,16 @@ class HybridIndex:
         top_k_approx: int = 50,
         min_jaccard_approx: float = 0.1,
     ) -> Dict[str, int]:
+        """合并精确索引和近似索引的候选结果，返回并集
+        
+        Args:
+            fingerprints: 查询用的指纹集合
+            top_k_approx: 近似查询返回的候选数量
+            min_jaccard_approx: 近似查询的最小Jaccard阈值
+            
+        Returns:
+            候选模块ID到指纹重叠数的映射字典（合并去重后取较大值）
+        """
         exact_candidates = self._exact.get_candidates(fingerprints)
 
         approx_candidates = {}
@@ -294,6 +369,11 @@ class HybridIndex:
         return merged
 
     def get_module_count(self) -> int:
+        """获取精确索引中的模块数量
+        
+        Returns:
+            模块数量
+        """
         return self._exact.get_module_count()
 
     @property

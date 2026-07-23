@@ -63,12 +63,24 @@ class LanguagePlugin(ABC):
 
 
 class PythonPlugin(LanguagePlugin):
+    """Python语言插件，提供Python代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Python的tree-sitter Language对象
+        
+        Returns:
+            Python语言的tree-sitter Language实例
+        """
         import tree_sitter_python as tspython
 
         return Language(tspython.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Python语言能力描述
+        
+        Returns:
+            包含Python扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="python",
             display_name="Python",
@@ -78,22 +90,44 @@ class PythonPlugin(LanguagePlugin):
         )
 
     def get_extraction_query(self) -> Optional[str]:
+        """获取Python模块提取的tree-sitter查询
+        
+        Returns:
+            用于提取函数定义和类定义的tree-sitter查询字符串
+        """
         return """
         (function_definition name: (identifier) @name) @func
         (class_definition name: (identifier) @name) @class
         """
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取Python项目常见的忽略模式
+        
+        Returns:
+            Python项目应忽略的目录和文件模式列表
+        """
         return ["__pycache__/", "*.pyc", ".venv/", "venv/"]
 
 
 class JavaPlugin(LanguagePlugin):
+    """Java语言插件，提供Java代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Java的tree-sitter Language对象
+        
+        Returns:
+            Java语言的tree-sitter Language实例
+        """
         import tree_sitter_java as tsjava
 
         return Language(tsjava.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Java语言能力描述
+        
+        Returns:
+            包含Java扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="java",
             display_name="Java",
@@ -103,16 +137,33 @@ class JavaPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取Java项目常见的忽略模式
+        
+        Returns:
+            Java项目应忽略的目录和文件模式列表
+        """
         return ["target/", "build/", ".gradle/"]
 
 
 class JavaScriptPlugin(LanguagePlugin):
+    """JavaScript语言插件，提供JavaScript代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取JavaScript的tree-sitter Language对象
+        
+        Returns:
+            JavaScript语言的tree-sitter Language实例
+        """
         import tree_sitter_javascript as tsjavascript
 
         return Language(tsjavascript.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取JavaScript语言能力描述
+        
+        Returns:
+            包含JavaScript扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="javascript",
             display_name="JavaScript",
@@ -122,11 +173,25 @@ class JavaScriptPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取JavaScript项目常见的忽略模式
+        
+        Returns:
+            JavaScript项目应忽略的目录和文件模式列表
+        """
         return ["node_modules/", "dist/", ".next/"]
 
 
 class TypeScriptPlugin(LanguagePlugin):
+    """TypeScript语言插件，提供TypeScript代码的tree-sitter解析支持，不可用时回退到JavaScript"""
+
     def get_language(self) -> Language:
+        """获取TypeScript的tree-sitter Language对象
+        
+        优先使用tree-sitter-typescript，若不可用则回退到tree-sitter-javascript。
+        
+        Returns:
+            TypeScript或JavaScript语言的tree-sitter Language实例
+        """
         try:
             import tree_sitter_typescript as tstypescript
 
@@ -137,6 +202,11 @@ class TypeScriptPlugin(LanguagePlugin):
             return Language(tsjavascript.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取TypeScript语言能力描述
+        
+        Returns:
+            包含TypeScript扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="typescript",
             display_name="TypeScript",
@@ -147,16 +217,33 @@ class TypeScriptPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取TypeScript项目常见的忽略模式
+        
+        Returns:
+            TypeScript项目应忽略的目录和文件模式列表
+        """
         return ["node_modules/", "dist/", ".next/"]
 
 
 class GoPlugin(LanguagePlugin):
+    """Go语言插件，提供Go代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Go的tree-sitter Language对象
+        
+        Returns:
+            Go语言的tree-sitter Language实例
+        """
         import tree_sitter_go as tsgo  # type: ignore[import-not-found]
 
         return Language(tsgo.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Go语言能力描述
+        
+        Returns:
+            包含Go扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="go",
             display_name="Go",
@@ -167,12 +254,24 @@ class GoPlugin(LanguagePlugin):
 
 
 class RustPlugin(LanguagePlugin):
+    """Rust语言插件，提供Rust代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Rust的tree-sitter Language对象
+        
+        Returns:
+            Rust语言的tree-sitter Language实例
+        """
         import tree_sitter_rust as tsrust  # type: ignore[import-not-found]
 
         return Language(tsrust.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Rust语言能力描述
+        
+        Returns:
+            包含Rust扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="rust",
             display_name="Rust",
@@ -183,12 +282,24 @@ class RustPlugin(LanguagePlugin):
 
 
 class CPlugin(LanguagePlugin):
+    """C语言插件，提供C代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取C的tree-sitter Language对象
+        
+        Returns:
+            C语言的tree-sitter Language实例
+        """
         import tree_sitter_c as tsc  # type: ignore[import-not-found]
 
         return Language(tsc.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取C语言能力描述
+        
+        Returns:
+            包含C扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="c",
             display_name="C",
@@ -199,12 +310,24 @@ class CPlugin(LanguagePlugin):
 
 
 class CppPlugin(LanguagePlugin):
+    """C++语言插件，提供C++代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取C++的tree-sitter Language对象
+        
+        Returns:
+            C++语言的tree-sitter Language实例
+        """
         import tree_sitter_cpp as tscpp  # type: ignore[import-not-found]
 
         return Language(tscpp.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取C++语言能力描述
+        
+        Returns:
+            包含C++扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="cpp",
             display_name="C++",
@@ -214,16 +337,33 @@ class CppPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取C++项目常见的忽略模式
+        
+        Returns:
+            C++项目应忽略的目录和文件模式列表
+        """
         return ["build/", "cmake-build-*/"]
 
 
 class KotlinPlugin(LanguagePlugin):
+    """Kotlin语言插件，提供Kotlin代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Kotlin的tree-sitter Language对象
+        
+        Returns:
+            Kotlin语言的tree-sitter Language实例
+        """
         import tree_sitter_kotlin as tskotlin  # type: ignore[import-not-found]
 
         return Language(tskotlin.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Kotlin语言能力描述
+        
+        Returns:
+            包含Kotlin扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="kotlin",
             display_name="Kotlin",
@@ -233,16 +373,33 @@ class KotlinPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取Kotlin项目常见的忽略模式
+        
+        Returns:
+            Kotlin项目应忽略的目录和文件模式列表
+        """
         return ["build/", ".gradle/"]
 
 
 class ScalaPlugin(LanguagePlugin):
+    """Scala语言插件，提供Scala代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Scala的tree-sitter Language对象
+        
+        Returns:
+            Scala语言的tree-sitter Language实例
+        """
         import tree_sitter_scala as tsscala  # type: ignore[import-not-found]
 
         return Language(tsscala.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Scala语言能力描述
+        
+        Returns:
+            包含Scala扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="scala",
             display_name="Scala",
@@ -252,16 +409,33 @@ class ScalaPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取Scala项目常见的忽略模式
+        
+        Returns:
+            Scala项目应忽略的目录和文件模式列表
+        """
         return ["target/", ".sbt/", "project/target/"]
 
 
 class PhpPlugin(LanguagePlugin):
+    """PHP语言插件，提供PHP代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取PHP的tree-sitter Language对象
+        
+        Returns:
+            PHP语言的tree-sitter Language实例
+        """
         import tree_sitter_php as tsphp  # type: ignore[import-not-found]
 
         return Language(tsphp.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取PHP语言能力描述
+        
+        Returns:
+            包含PHP扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="php",
             display_name="PHP",
@@ -271,16 +445,33 @@ class PhpPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取PHP项目常见的忽略模式
+        
+        Returns:
+            PHP项目应忽略的目录和文件模式列表
+        """
         return ["vendor/", "node_modules/"]
 
 
 class RubyPlugin(LanguagePlugin):
+    """Ruby语言插件，提供Ruby代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Ruby的tree-sitter Language对象
+        
+        Returns:
+            Ruby语言的tree-sitter Language实例
+        """
         import tree_sitter_ruby as tsruby  # type: ignore[import-not-found]
 
         return Language(tsruby.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Ruby语言能力描述
+        
+        Returns:
+            包含Ruby扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="ruby",
             display_name="Ruby",
@@ -290,16 +481,33 @@ class RubyPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取Ruby项目常见的忽略模式
+        
+        Returns:
+            Ruby项目应忽略的目录和文件模式列表
+        """
         return ["vendor/", "node_modules/"]
 
 
 class SwiftPlugin(LanguagePlugin):
+    """Swift语言插件，提供Swift代码的tree-sitter解析支持"""
+
     def get_language(self) -> Language:
+        """获取Swift的tree-sitter Language对象
+        
+        Returns:
+            Swift语言的tree-sitter Language实例
+        """
         import tree_sitter_swift as tsswift  # type: ignore[import-not-found]
 
         return Language(tsswift.language())
 
     def get_capabilities(self) -> LanguageCapability:
+        """获取Swift语言能力描述
+        
+        Returns:
+            包含Swift扩展名、别名、注释风格等信息的能力描述对象
+        """
         return LanguageCapability(
             language="swift",
             display_name="Swift",
@@ -309,6 +517,11 @@ class SwiftPlugin(LanguagePlugin):
         )
 
     def get_ignore_patterns(self) -> List[str]:
+        """获取Swift项目常见的忽略模式
+        
+        Returns:
+            Swift项目应忽略的目录和文件模式列表
+        """
         return [".build/", "DerivedData/"]
 
 

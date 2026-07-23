@@ -1,0 +1,102 @@
+name: Bug 报告
+description: 报告 ModuleMirror 的缺陷或异常行为
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢提交 Bug 报告！请填写以下信息帮助我们快速定位问题。
+
+  - type: textarea
+    id: description
+    attributes:
+      label: 问题描述
+      description: 清晰描述遇到了什么问题
+      placeholder: "例如：执行 gh-sim detect repo1 repo2 时报 KeyError"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤
+      description: 详细列出复现该问题的步骤
+      placeholder: |
+        1. 安装 ModuleMirror v2.0.0
+        2. 运行 `gh-sim detect owner/repo1 owner/repo2`
+        3. 观察输出
+      value: |
+        1. 
+        2. 
+        3. 
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期望行为
+      description: 描述你期望发生的行为
+      placeholder: "例如：应输出相似度检测报告"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际行为
+      description: 描述实际发生了什么
+      placeholder: "例如：抛出 KeyError: 'fingerprint'"
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: ModuleMirror 版本
+      description: 运行 `gh-sim --version` 获取
+      placeholder: "2.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: python_version
+    attributes:
+      label: Python 版本
+      description: 运行 `python --version` 获取
+      placeholder: "3.11.x"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: 操作系统
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: 相关日志
+      description: 粘贴相关错误日志或堆栈跟踪（请移除敏感信息）
+      render: shell
+      placeholder: |
+        Traceback (most recent call last):
+          File "...", line X, in ...
+            ...
+    validations:
+      required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息
+      description: 任何有助于定位问题的额外信息（配置、数据集特征等）
+    validations:
+      required: false

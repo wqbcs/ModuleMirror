@@ -17,6 +17,7 @@ from ...utils.logger import logger
 
 @dataclass
 class FeatureFlag:
+    """特性开关定义，包含开关键、默认值、描述、变体和定向规则"""
     key: str
     default_value: bool
     description: str = ""
@@ -27,23 +28,45 @@ class FeatureFlag:
 
 @dataclass
 class EvaluationContext:
+    """特性开关评估上下文，包含定向键和自定义属性"""
     targeting_key: str = ""
     attributes: Dict[str, Any] = field(default_factory=dict)
 
     def get(self, key: str, default: Any = None) -> Any:
+        """从上下文属性中获取指定键的值
+
+        Args:
+            key: 属性键名
+            default: 键不存在时的默认值
+
+        Returns:
+            属性值或默认值
+        """
         return self.attributes.get(key, default)
 
 
 class FeatureFlagProvider:
+    """特性开关提供者，管理开关注册、评估和钩子"""
+
     def __init__(self) -> None:
         self._flags: Dict[str, FeatureFlag] = {}
         self._hooks: List[Callable[..., Any]] = []
 
     def register_flag(self, flag: FeatureFlag) -> None:
+        """注册单个特性开关
+
+        Args:
+            flag: 特性开关定义对象
+        """
         self._flags[flag.key] = flag
         logger.info(f"特性开关已注册: {flag.key} = {flag.default_value}")
 
     def register_flags_from_dict(self, flags_data: Dict[str, Dict[str, Any]]) -> None:
+        """从字典批量注册特性开关
+
+        Args:
+            flags_data: 特性开关数据字典，键为开关名称，值为开关配置字典
+        """
         for key, data in flags_data.items():
             flag = FeatureFlag(
                 key=key,
@@ -55,6 +78,11 @@ class FeatureFlagProvider:
             self.register_flag(flag)
 
     def register_flags_from_file(self, filepath: str) -> None:
+        """从 JSON 文件加载并注册特性开关
+
+        Args:
+            filepath: JSON 文件路径
+        """
         try:
             with open(filepath, "r", encoding="utf-8") as f:
                 data = json.load(f)
@@ -68,6 +96,16 @@ class FeatureFlagProvider:
         default_value: bool = False,
         context: Optional[EvaluationContext] = None,
     ) -> bool:
+        """评估特性开关的布尔值
+
+        Args:
+            flag_key: 特性开关键名
+            default_value: 开关不存在时的默认返回值
+            context: 评估上下文，用于定向规则匹配
+
+        Returns:
+            开关的布尔值
+        """
         if flag_key not in self._flags:
             return default_value
 
@@ -89,6 +127,16 @@ class FeatureFlagProvider:
         default_variant: str,
         context: Optional[EvaluationContext] = None,
     ) -> str:
+        """评估特性开关的变体值
+
+        Args:
+            flag_key: 特性开关键名
+            default_variant: 开关不存在时的默认变体名
+            context: 评估上下文，用于定向规则匹配
+
+        Returns:
+            匹配到的变体名称
+        """
         if flag_key not in self._flags:
             return default_variant
 
@@ -138,12 +186,30 @@ class FeatureFlagProvider:
         return True
 
     def add_hook(self, hook: Callable[..., Any]) -> None:
+        """添加评估钩子函数
+
+        Args:
+            hook: 钩子函数，在开关评估时被调用
+        """
         self._hooks.append(hook)
 
     def list_flags(self) -> List[str]:
+        """列出所有已注册的特性开关键名
+
+        Returns:
+            开关键名列表
+        """
         return list(self._flags.keys())
 
     def get_flag_metadata(self, flag_key: str) -> Optional[Dict[str, Any]]:
+        """获取特性开关的元数据
+
+        Args:
+            flag_key: 特性开关键名
+
+        Returns:
+            包含 key、default_value、description、variants 的字典，开关不存在返回 None
+        """
         if flag_key not in self._flags:
             return None
 
@@ -157,14 +223,26 @@ class FeatureFlagProvider:
 
 
 class FeatureFlags:
+    """特性开关全局门面，提供类方法级别的开关评估接口"""
+
     _provider: Optional[FeatureFlagProvider] = None
 
     @classmethod
     def initialize(cls, provider: Optional[FeatureFlagProvider] = None) -> None:
+        """初始化全局特性开关提供者
+
+        Args:
+            provider: 自定义提供者实例，None 则使用默认提供者
+        """
         cls._provider = provider or FeatureFlagProvider()
 
     @classmethod
     def get_provider(cls) -> FeatureFlagProvider:
+        """获取全局特性开关提供者，未初始化时自动初始化
+
+        Returns:
+            特性开关提供者实例
+        """
         if cls._provider is None:
             cls.initialize()
         return cast(FeatureFlagProvider, cls._provider)
@@ -173,14 +251,39 @@ class FeatureFlags:
     def enabled(
         cls, flag_key: str, default: bool = False, context: Optional[EvaluationContext] = None
     ) -> bool:
+        """判断特性开关是否启用
+
+        Args:
+            flag_key: 特性开关键名
+            default: 开关不存在时的默认值
+            context: 评估上下文
+
+        Returns:
+            开关是否启用的布尔值
+        """
         return cls.get_provider().evaluate(flag_key, default, context)
 
     @classmethod
     def variant(cls, flag_key: str, default: str, context: Optional[EvaluationContext] = None) -> str:
+        """获取特性开关的变体值
+
+        Args:
+            flag_key: 特性开关键名
+            default: 开关不存在时的默认变体
+            context: 评估上下文
+
+        Returns:
+            匹配到的变体名称
+        """
         return cls.get_provider().evaluate_variant(flag_key, default, context)
 
 
 def create_default_feature_flags() -> FeatureFlagProvider:
+    """创建并注册默认的特性开关集
+
+    Returns:
+        已注册默认开关的 FeatureFlagProvider 实例
+    """
     provider = FeatureFlagProvider()
 
     provider.register_flag(

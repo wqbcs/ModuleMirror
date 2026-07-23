@@ -13,6 +13,7 @@ from .logger import logger
 
 
 class DetectRequest(BaseModel):
+    """代码相似度检测请求校验模型"""
     source_url: str = Field(..., min_length=1, max_length=500, description="源项目URL")
     target_url: str = Field(..., min_length=1, max_length=500, description="目标项目URL")
     language: Optional[str] = Field(None, max_length=50, description="编程语言过滤")
@@ -24,6 +25,7 @@ class DetectRequest(BaseModel):
     @field_validator("source_url", "target_url")
     @classmethod
     def validate_url_not_empty(cls, v: str) -> str:
+        """校验URL不为空或仅含空白字符"""
         if not v.strip():
             raise ValueError("URL不能为空或仅含空白字符")
         return v.strip()
@@ -31,12 +33,14 @@ class DetectRequest(BaseModel):
     @field_validator("source_url", "target_url")
     @classmethod
     def validate_no_path_traversal(cls, v: str) -> str:
+        """校验URL不包含路径遍历字符"""
         if ".." in v or "~" in v:
             raise ValueError("URL不能包含路径遍历字符")
         return v
 
 
 class PlagiarismRequest(BaseModel):
+    """抄袭检测请求校验模型"""
     target_url: str = Field(..., min_length=1, max_length=500)
     candidate_urls: List[str] = Field(..., min_length=1, max_length=50)
     min_confidence: float = Field(0.5, ge=0.0, le=1.0)
@@ -44,6 +48,7 @@ class PlagiarismRequest(BaseModel):
     @field_validator("candidate_urls")
     @classmethod
     def validate_candidate_urls(cls, v: List[str]) -> List[str]:
+        """校验候选URL列表，去除空白并检查路径遍历"""
         cleaned = []
         for url in v:
             if not url.strip():
@@ -55,6 +60,7 @@ class PlagiarismRequest(BaseModel):
 
 
 class ProjectModel(BaseModel):
+    """项目数据校验模型"""
     name: str = Field(..., min_length=1, max_length=200)
     source: str = Field(..., min_length=1, max_length=500)
     url: Optional[str] = Field(None, max_length=500)
@@ -65,12 +71,14 @@ class ProjectModel(BaseModel):
     @field_validator("name")
     @classmethod
     def validate_name(cls, v: str) -> str:
+        """校验项目名称不为空"""
         if not v.strip():
             raise ValueError("项目名称不能为空")
         return v.strip()
 
 
 class ModuleModel(BaseModel):
+    """模块数据校验模型"""
     name: str = Field(..., min_length=1, max_length=200)
     file_path: str = Field(..., min_length=1, max_length=500)
     module_type: str = Field(..., pattern=r"^(file|function|class|method)$")
@@ -83,18 +91,21 @@ class ModuleModel(BaseModel):
     @field_validator("file_path")
     @classmethod
     def validate_file_path(cls, v: str) -> str:
+        """校验文件路径不包含路径遍历"""
         if ".." in v:
             raise ValueError("文件路径不能包含路径遍历")
         return v
 
     @model_validator(mode="after")
     def validate_line_range(self) -> "ModuleModel":
+        """校验结束行不小于起始行"""
         if self.end_line < self.start_line:
             raise ValueError(f"结束行({self.end_line})不能小于起始行({self.start_line})")
         return self
 
 
 class FingerprintSetModel(BaseModel):
+    """指纹集数据校验模型"""
     module_id: str = Field(..., min_length=1)
     winnowing_fingerprints: Set[int] = Field(default_factory=set)
     ast_fingerprints: Set[int] = Field(default_factory=set)
@@ -103,12 +114,14 @@ class FingerprintSetModel(BaseModel):
     @field_validator("module_id")
     @classmethod
     def validate_module_id(cls, v: str) -> str:
+        """校验模块ID不为空"""
         if not v.strip():
             raise ValueError("模块ID不能为空")
         return v
 
 
 class SimilarityResultModel(BaseModel):
+    """相似度检测结果校验模型"""
     source_module_id: str = Field(..., min_length=1)
     target_module_id: str = Field(..., min_length=1)
     similarity: float = Field(..., ge=0.0, le=100.0)
@@ -118,6 +131,7 @@ class SimilarityResultModel(BaseModel):
 
 
 class DetectionTaskModel(BaseModel):
+    """检测任务校验模型"""
     target_project: str = Field(..., min_length=1, max_length=200)
     candidates: str = Field("", max_length=10000)
     status: str = Field("pending", pattern=r"^(pending|running|completed|failed)$")
@@ -125,6 +139,7 @@ class DetectionTaskModel(BaseModel):
 
 
 class SearchRequest(BaseModel):
+    """搜索请求校验模型"""
     query: str = Field(..., min_length=1, max_length=200)
     language: Optional[str] = Field(None, max_length=50)
     max_results: int = Field(20, ge=1, le=100)
@@ -132,6 +147,7 @@ class SearchRequest(BaseModel):
     @field_validator("query")
     @classmethod
     def validate_query(cls, v: str) -> str:
+        """校验搜索查询不为空且不包含非法字符"""
         if not v.strip():
             raise ValueError("搜索查询不能为空")
         if re.search(r'[<>&\'"]', v):
@@ -140,11 +156,23 @@ class SearchRequest(BaseModel):
 
 
 class ReportRequest(BaseModel):
+    """报告生成请求校验模型"""
     format: str = Field("html", pattern=r"^(json|html|markdown)$")
     min_similarity: float = Field(0.0, ge=0.0, le=100.0)
 
 
 def validate_github_url(url: str) -> str:
+    """校验 GitHub URL 格式是否合法
+
+    Args:
+        url: 待校验的 GitHub URL
+
+    Returns:
+        校验通过的 URL 字符串
+
+    Raises:
+        ValueError: URL 为空或格式不合法
+    """
     if not url or not url.strip():
         raise ValueError("GitHub URL不能为空")
     url = url.strip()
@@ -160,6 +188,17 @@ def validate_github_url(url: str) -> str:
 
 
 def validate_project_name(name: str) -> str:
+    """校验项目名称是否合法
+
+    Args:
+        name: 待校验的项目名称
+
+    Returns:
+        校验通过的项目名称字符串
+
+    Raises:
+        ValueError: 名称不合法
+    """
     name = name.strip()
     if not name:
         raise ValueError("项目名称不能为空")
@@ -171,6 +210,17 @@ def validate_project_name(name: str) -> str:
 
 
 def validate_file_path(path: str) -> str:
+    """校验文件路径是否合法
+
+    Args:
+        path: 待校验的文件路径
+
+    Returns:
+        校验通过的文件路径字符串
+
+    Raises:
+        ValueError: 路径不合法
+    """
     if not path or not path.strip():
         raise ValueError("文件路径不能为空")
     path = path.strip()

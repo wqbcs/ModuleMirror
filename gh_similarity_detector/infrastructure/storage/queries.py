@@ -160,6 +160,8 @@ SQL_GET_DETECTION_TREND = """SELECT created_at, match_count, avg_similarity, max
 
 
 class Queries:
+    """数据库查询操作类，封装所有SQLite数据库的增删改查操作"""
+
     LOOKUP_BATCH_SIZE = 500
 
     def __init__(self, pool: _ConnectionPool, db_path: str):
@@ -184,6 +186,13 @@ class Queries:
         modules: Dict[str, List[Module]],
         fingerprints: Dict[str, FingerprintSet],
     ) -> None:
+        """添加项目及其模块和指纹到数据库
+        
+        Args:
+            project: 项目实体对象
+            modules: 模块字典，键为文件路径，值为该文件下的模块列表
+            fingerprints: 指纹集合字典，键为模块ID，值为指纹集合对象
+        """
         with self._get_conn() as conn:
             conn.execute(
                 SQL_INSERT_PROJECT,
@@ -246,6 +255,15 @@ class Queries:
     def find_modules_by_fingerprint(
         self, fingerprint: int, fp_type: str = "winnowing"
     ) -> List[str]:
+        """根据指纹值查找匹配的模块ID列表
+        
+        Args:
+            fingerprint: 指纹哈希值
+            fp_type: 指纹类型，默认为"winnowing"
+            
+        Returns:
+            匹配的模块ID列表
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_SELECT_MODULE_ID_BY_FINGERPRINT,
@@ -254,6 +272,14 @@ class Queries:
             return [row[0] for row in cursor.fetchall()]
 
     def get_module(self, module_id: str) -> Optional[Dict[str, Any]]:
+        """根据模块ID获取模块信息
+        
+        Args:
+            module_id: 模块唯一标识符
+            
+        Returns:
+            模块信息字典，模块不存在时返回None
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_MODULE,
@@ -275,6 +301,14 @@ class Queries:
             return None
 
     def get_project(self, project_id: str) -> Optional[Dict[str, Any]]:
+        """根据项目ID获取项目信息
+        
+        Args:
+            project_id: 项目唯一标识符
+            
+        Returns:
+            项目信息字典，项目不存在时返回None
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_PROJECT,
@@ -295,6 +329,15 @@ class Queries:
             return None
 
     def get_module_fingerprints(self, module_id: str, fp_type: str = "winnowing") -> Set[int]:
+        """获取指定模块的指纹集合
+        
+        Args:
+            module_id: 模块唯一标识符
+            fp_type: 指纹类型，默认为"winnowing"
+            
+        Returns:
+            指纹哈希值集合
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_MODULE_FINGERPRINTS,
@@ -303,6 +346,11 @@ class Queries:
             return {row[0] for row in cursor.fetchall()}
 
     def get_stats(self) -> Dict[str, Any]:
+        """获取数据库统计信息
+        
+        Returns:
+            包含project_count、module_count、fingerprint_count的字典
+        """
         with self._get_conn() as conn:
             project_count = conn.execute(SQL_COUNT_PROJECTS).fetchone()[0]
 
@@ -317,6 +365,11 @@ class Queries:
             }
 
     def list_projects(self) -> List[Dict[str, Any]]:
+        """列出所有项目，按更新时间降序排列
+        
+        Returns:
+            项目信息字典列表
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(SQL_LIST_PROJECTS)
             return [
@@ -332,6 +385,14 @@ class Queries:
             ]
 
     def delete_project(self, project_id: str) -> bool:
+        """删除指定项目
+        
+        Args:
+            project_id: 项目唯一标识符
+            
+        Returns:
+            是否成功删除
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(SQL_DELETE_PROJECT, (project_id,))
             deleted = bool(cursor.rowcount > 0)
@@ -346,6 +407,16 @@ class Queries:
     def lookup_candidates(
         self, fingerprints: Set[int], fp_type: str = "winnowing", top_k: int = 10
     ) -> List[Tuple[str, int]]:
+        """根据指纹集合查找候选匹配模块，按重叠数降序返回
+        
+        Args:
+            fingerprints: 查询用的指纹哈希值集合
+            fp_type: 指纹类型，默认为"winnowing"
+            top_k: 返回最相似的top_k个结果，默认为10
+            
+        Returns:
+            元组列表，每个元素为(模块ID, 指纹重叠数)
+        """
         if not fingerprints:
             return []
 
@@ -372,6 +443,15 @@ class Queries:
     def get_all_project_fingerprints(
         self, exclude_project_id: Optional[str] = None, fp_type: str = "winnowing"
     ) -> Dict[str, Set[int]]:
+        """获取所有模块的指纹映射，可排除指定项目
+        
+        Args:
+            exclude_project_id: 可选，要排除的项目ID
+            fp_type: 指纹类型，默认为"winnowing"
+            
+        Returns:
+            字典，键为模块ID，值为指纹哈希值集合
+        """
         with self._get_conn() as conn:
             query = SQL_GET_ALL_PROJECT_FINGERPRINTS
             params: list[str | int] = [fp_type]
@@ -391,6 +471,15 @@ class Queries:
             return result
 
     def get_similarity_cache(self, source_module_id: str, target_module_id: str) -> Optional[Dict[str, Any]]:
+        """获取两个模块之间的相似度缓存记录
+        
+        Args:
+            source_module_id: 源模块唯一标识符
+            target_module_id: 目标模块唯一标识符
+            
+        Returns:
+            相似度缓存字典，包含similarity、winnowing_overlap、ast_similarity、computed_at，不存在时返回None
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_SIMILARITY_CACHE,
@@ -414,6 +503,15 @@ class Queries:
         winnowing_overlap: Optional[int] = None,
         ast_similarity: Optional[float] = None,
     ) -> None:
+        """写入两个模块之间的相似度缓存记录
+        
+        Args:
+            source_module_id: 源模块唯一标识符
+            target_module_id: 目标模块唯一标识符
+            similarity: 相似度值
+            winnowing_overlap: 可选，Winnowing指纹重叠数
+            ast_similarity: 可选，AST相似度值
+        """
         with self._get_conn() as conn:
             conn.execute(
                 SQL_INSERT_SIMILARITY_CACHE,
@@ -428,6 +526,11 @@ class Queries:
             )
 
     def batch_put_similarity_cache(self, entries: List[Dict[str, Any]]) -> None:
+        """批量写入相似度缓存记录
+        
+        Args:
+            entries: 相似度缓存字典列表，每个元素需包含source_module_id、target_module_id、similarity等字段
+        """
         if not entries:
             return
         now = datetime.now().isoformat()
@@ -448,6 +551,14 @@ class Queries:
             )
 
     def clear_similarity_cache(self, older_than_days: Optional[int] = None) -> int:
+        """清除相似度缓存记录
+        
+        Args:
+            older_than_days: 可选，仅清除指定天数之前的记录，为None时清除全部
+            
+        Returns:
+            被删除的记录数
+        """
         with self._get_conn() as conn:
             if older_than_days:
                 cursor = conn.execute(
@@ -461,6 +572,14 @@ class Queries:
     def create_task(
         self, task_id: str, target_project: str, candidates: str, task_type: str = "detect"
     ) -> None:
+        """创建检测任务
+        
+        Args:
+            task_id: 任务唯一标识符
+            target_project: 目标项目标识
+            candidates: 候选项目描述
+            task_type: 任务类型，默认为"detect"
+        """
         with self._get_conn() as conn:
             conn.execute(
                 SQL_INSERT_DETECTION_TASK,
@@ -474,6 +593,14 @@ class Queries:
             )
 
     def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
+        """根据任务ID获取检测任务信息
+        
+        Args:
+            task_id: 任务唯一标识符
+            
+        Returns:
+            任务信息字典，任务不存在时返回None
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_GET_DETECTION_TASK,
@@ -494,6 +621,14 @@ class Queries:
             return None
 
     def list_tasks(self, status: Optional[str] = None) -> List[Dict[str, Any]]:
+        """列出检测任务，可按状态筛选
+        
+        Args:
+            status: 可选，任务状态筛选条件，为None时列出全部
+            
+        Returns:
+            任务信息字典列表
+        """
         with self._get_conn() as conn:
             if status:
                 cursor = conn.execute(
@@ -522,6 +657,17 @@ class Queries:
         progress: Optional[float] = None,
         result_path: Optional[str] = None,
     ) -> bool:
+        """更新检测任务的状态、进度或结果路径
+        
+        Args:
+            task_id: 任务唯一标识符
+            status: 可选，新状态
+            progress: 可选，新进度值
+            result_path: 可选，结果文件路径
+            
+        Returns:
+            是否成功更新
+        """
         with self._get_conn() as conn:
             sets: list[str] = []
             params: list[str | float] = []
@@ -544,11 +690,27 @@ class Queries:
             return bool(cursor.rowcount > 0)
 
     def delete_task(self, task_id: str) -> bool:
+        """删除检测任务
+        
+        Args:
+            task_id: 任务唯一标识符
+            
+        Returns:
+            是否成功删除
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(SQL_DELETE_DETECTION_TASK, (task_id,))
             return bool(cursor.rowcount > 0)
 
     def export_to_json(self, output_path: str) -> int:
+        """将数据库中的所有数据导出为JSON文件
+        
+        Args:
+            output_path: 输出文件路径
+            
+        Returns:
+            导出的项目数量
+        """
         with self._get_conn() as conn:
             projects = conn.execute(
                 SQL_EXPORT_SELECT_PROJECTS
@@ -596,6 +758,14 @@ class Queries:
         return len(projects)
 
     def import_from_json(self, input_path: str) -> int:
+        """从JSON文件导入数据到数据库，跳过已存在的项目
+        
+        Args:
+            input_path: 输入JSON文件路径
+            
+        Returns:
+            成功导入的项目数量
+        """
         with open(input_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
@@ -647,6 +817,19 @@ class Queries:
         max_similarity: Optional[float] = None,
         duration_ms: Optional[int] = None,
     ) -> int:
+        """记录一次检测执行结果到历史表
+        
+        Args:
+            target_project: 目标项目标识
+            candidate_count: 候选模块数量
+            match_count: 匹配模块数量
+            avg_similarity: 可选，平均相似度
+            max_similarity: 可选，最大相似度
+            duration_ms: 可选，执行耗时（毫秒）
+            
+        Returns:
+            新插入记录的行ID
+        """
         with self._get_conn() as conn:
             cursor = conn.execute(
                 SQL_INSERT_DETECTION_HISTORY,
@@ -667,6 +850,16 @@ class Queries:
         limit: int = 50,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
+        """获取检测历史记录，可按目标项目筛选
+        
+        Args:
+            target_project: 可选，目标项目标识筛选条件
+            limit: 返回记录上限，默认为50
+            offset: 偏移量，默认为0
+            
+        Returns:
+            检测历史记录字典列表
+        """
         with self._get_conn() as conn:
             if target_project:
                 rows = conn.execute(
@@ -697,6 +890,15 @@ class Queries:
         target_project: str,
         limit: int = 20,
     ) -> List[Dict[str, Any]]:
+        """获取指定项目的检测趋势数据
+        
+        Args:
+            target_project: 目标项目标识
+            limit: 返回记录上限，默认为20
+            
+        Returns:
+            趋势数据字典列表，包含created_at、match_count、avg_similarity、max_similarity
+        """
         with self._get_conn() as conn:
             rows = conn.execute(
                 SQL_GET_DETECTION_TREND,

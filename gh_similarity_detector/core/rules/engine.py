@@ -39,6 +39,7 @@ from ...utils.logger import logger
 
 
 class RuleAction(Enum):
+    """规则动作类型枚举，定义规则匹配后执行的操作"""
     FLAG = "flag"
     EXCLUDE = "exclude"
     WARN = "warn"
@@ -46,6 +47,7 @@ class RuleAction(Enum):
 
 
 class RuleSeverity(Enum):
+    """规则严重程度枚举"""
     CRITICAL = "critical"
     HIGH = "high"
     MEDIUM = "medium"
@@ -55,6 +57,7 @@ class RuleSeverity(Enum):
 
 @dataclass
 class DetectionRule:
+    """检测规则数据类，定义一条完整的规则及其匹配条件"""
     id: str
     name: str
     description: str = ""
@@ -75,6 +78,21 @@ class DetectionRule:
         target_language: str = "",
         metadata: Optional[Dict[str, Any]] = None,
     ) -> bool:
+        """判断给定的检测结果是否匹配本规则的所有条件
+        
+        Args:
+            similarity: 相似度分数
+            source_file: 源文件路径
+            target_file: 目标文件路径
+            source_code: 源代码内容
+            target_code: 目标代码内容
+            source_language: 源代码语言
+            target_language: 目标代码语言
+            metadata: 额外元数据字典
+            
+        Returns:
+            是否匹配本规则的所有条件
+        """
         if not self.enabled:
             return False
 
@@ -147,6 +165,7 @@ class DetectionRule:
 
 @dataclass
 class RuleMatchResult:
+    """规则匹配结果数据类，记录规则命中后的动作和严重程度"""
     rule_id: str
     rule_name: str
     action: RuleAction
@@ -156,17 +175,36 @@ class RuleMatchResult:
 
 
 class RuleEngine:
+    """规则引擎，管理检测规则的加载、匹配和结果过滤"""
     def __init__(self) -> None:
         self._rules: Dict[str, DetectionRule] = {}
 
     def add_rule(self, rule: DetectionRule) -> None:
+        """添加一条检测规则到引擎
+        
+        Args:
+            rule: 要添加的检测规则对象
+        """
         self._rules[rule.id] = rule
         logger.info(f"添加检测规则: {rule.name} ({rule.id})")
 
     def remove_rule(self, rule_id: str) -> None:
+        """根据规则ID移除一条规则
+        
+        Args:
+            rule_id: 要移除的规则ID
+        """
         self._rules.pop(rule_id, None)
 
     def load_from_yaml(self, yaml_str: str) -> int:
+        """从YAML字符串加载规则
+        
+        Args:
+            yaml_str: 包含规则定义的YAML字符串
+            
+        Returns:
+            成功加载的规则数量
+        """
         data = yaml.safe_load(yaml_str)
         if not data or "rules" not in data:
             return 0
@@ -182,6 +220,14 @@ class RuleEngine:
         return count
 
     def load_from_file(self, file_path: str) -> int:
+        """从YAML文件加载规则
+        
+        Args:
+            file_path: YAML规则文件路径
+            
+        Returns:
+            成功加载的规则数量
+        """
         from pathlib import Path
 
         path = Path(file_path)
@@ -232,6 +278,21 @@ class RuleEngine:
         target_language: str = "",
         metadata: Optional[Dict[str, Any]] = None,
     ) -> List[RuleMatchResult]:
+        """对所有规则进行评估，返回匹配的规则结果列表
+        
+        Args:
+            similarity: 相似度分数
+            source_file: 源文件路径
+            target_file: 目标文件路径
+            source_code: 源代码内容
+            target_code: 目标代码内容
+            source_language: 源代码语言
+            target_language: 目标代码语言
+            metadata: 额外元数据字典
+            
+        Returns:
+            匹配的规则结果列表
+        """
         results = []
         for rule in self._rules.values():
             if rule.matches(
@@ -260,6 +321,14 @@ class RuleEngine:
         self,
         results: List[Dict[str, Any]],
     ) -> List[Dict[str, Any]]:
+        """对检测结果列表应用规则过滤，排除被标记为exclude的结果，为匹配的结果添加标记和标签
+        
+        Args:
+            results: 原始检测结果字典列表
+            
+        Returns:
+            过滤后的检测结果列表
+        """
         filtered = []
         for r in results:
             sim = r.get("similarity", 0)
@@ -306,6 +375,11 @@ class RuleEngine:
         return filtered
 
     def list_rules(self) -> List[Dict[str, Any]]:
+        """列出所有已注册规则的摘要信息
+        
+        Returns:
+            规则摘要信息字典列表
+        """
         return [
             {
                 "id": r.id,
@@ -319,13 +393,28 @@ class RuleEngine:
         ]
 
     def get_rule_count(self) -> int:
+        """获取已注册规则的数量
+        
+        Returns:
+            规则数量
+        """
         return len(self._rules)
 
     def enable_rule(self, rule_id: str) -> None:
+        """启用指定规则
+        
+        Args:
+            rule_id: 要启用的规则ID
+        """
         if rule_id in self._rules:
             self._rules[rule_id].enabled = True
 
     def disable_rule(self, rule_id: str) -> None:
+        """禁用指定规则
+        
+        Args:
+            rule_id: 要禁用的规则ID
+        """
         if rule_id in self._rules:
             self._rules[rule_id].enabled = False
 
@@ -381,6 +470,11 @@ BUILTIN_RULES_YAML = """rules:
 
 
 def create_rule_engine_with_defaults() -> RuleEngine:
+    """创建带有内置默认规则的规则引擎实例
+    
+    Returns:
+        已加载默认规则的RuleEngine实例
+    """
     engine = RuleEngine()
     engine.load_from_yaml(BUILTIN_RULES_YAML)
     return engine

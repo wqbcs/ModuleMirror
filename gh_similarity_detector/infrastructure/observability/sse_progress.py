@@ -25,6 +25,7 @@ from ...utils.json_utils import dumps as json_dumps
 
 
 class ProgressEvent:
+    """进度事件，跟踪和记录检测进度状态"""
     def __init__(self) -> None:
         self._total = 0
         self._current = 0
@@ -33,21 +34,47 @@ class ProgressEvent:
         self._details: Dict[str, Any] = {}
 
     def set_total(self, total: int) -> None:
+        """设置总任务数
+        
+        Args:
+            total: 总任务数量
+        """
         self._total = total
 
     def advance(self, message: str = "") -> None:
+        """推进进度计数器，当前完成数加一
+        
+        Args:
+            message: 可选的进度消息
+        """
         self._current += 1
         if message:
             self._message = message
 
     def set_stage(self, stage: str, message: str = "") -> None:
+        """设置当前进度阶段
+        
+        Args:
+            stage: 阶段名称
+            message: 阶段消息
+        """
         self._stage = stage
         self._message = message
 
     def set_details(self, details: Dict[str, Any]) -> None:
+        """设置进度附加详情
+        
+        Args:
+            details: 详情字典
+        """
         self._details = details
 
     def to_dict(self) -> Dict[str, Any]:
+        """将进度事件转换为字典表示
+        
+        Returns:
+            包含current、total、progress、stage、message、details的字典
+        """
         progress = (self._current / self._total * 100) if self._total > 0 else 0.0
         return {
             "current": self._current,
@@ -65,6 +92,17 @@ async def progress_generator(
     items: List[Any],
     stage_name: str = "processing",
 ) -> AsyncGenerator[Dict[str, Any], None]:
+    """异步进度生成器，逐项处理并实时产生进度事件
+    
+    Args:
+        total: 总任务数量
+        process_func: 处理函数，支持同步和异步
+        items: 待处理的项目列表
+        stage_name: 阶段名称
+        
+    Returns:
+        异步生成器，每次yield一个进度字典
+    """
     event = ProgressEvent()
     event.set_total(total)
     event.set_stage(stage_name, f"开始处理 {total} 项")
@@ -97,6 +135,17 @@ async def progress_generator(
 
 
 def create_sse_response(generator: AsyncGenerator[Dict[str, Any], None]) -> Any:
+    """创建SSE响应对象，将进度数据以Server-Sent Events格式推送
+    
+    Args:
+        generator: 异步进度数据生成器
+        
+    Returns:
+        EventSourceResponse对象
+        
+    Raises:
+        ImportError: 当sse-starlette未安装时抛出
+    """
     if not HAS_SSE:
         raise ImportError("sse-starlette未安装，请运行: pip install sse-starlette")
 
@@ -108,31 +157,63 @@ def create_sse_response(generator: AsyncGenerator[Dict[str, Any], None]) -> Any:
 
 
 class ProgressTracker:
+    """进度追踪器，支持回调机制的通知型进度管理"""
     def __init__(self) -> None:
         self._event = ProgressEvent()
         self._callbacks: List[Any] = []
 
     def on_progress(self, callback: Any) -> None:
+        """注册进度变化回调函数
+        
+        Args:
+            callback: 回调函数，接收进度字典作为参数
+        """
         self._callbacks.append(callback)
 
     def start(self, total: int, stage: str = "starting") -> None:
+        """启动进度追踪，设置总任务数和初始阶段
+        
+        Args:
+            total: 总任务数量
+            stage: 初始阶段名称
+        """
         self._event.set_total(total)
         self._event.set_stage(stage, f"开始处理 {total} 项")
         self._notify()
 
     def advance(self, message: str = "") -> None:
+        """推进进度计数器并通知回调
+        
+        Args:
+            message: 可选的进度消息
+        """
         self._event.advance(message)
         self._notify()
 
     def complete(self, message: str = "") -> None:
+        """标记进度为完成状态并通知回调
+        
+        Args:
+            message: 完成消息，默认为"处理完成"
+        """
         self._event.set_stage("completed", message or "处理完成")
         self._notify()
 
     def error(self, message: str) -> None:
+        """标记进度为错误状态并通知回调
+        
+        Args:
+            message: 错误消息
+        """
         self._event.set_stage("error", message)
         self._notify()
 
     def get_progress(self) -> Dict[str, Any]:
+        """获取当前进度状态字典
+        
+        Returns:
+            包含current、total、progress、stage、message、details的字典
+        """
         return self._event.to_dict()
 
     def _notify(self) -> None:

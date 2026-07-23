@@ -10,7 +10,7 @@ keywords = ["code-similarity", "clone-detection", "plagiarism", "winnowing", "fi
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -49,8 +49,13 @@ realtime = ["sse-starlette>=2.0.0"]
 structured-logging = ["structlog>=24.0.0"]
 tui = ["textual>=0.40.0", "trogon>=0.5.0"]
 plugins = ["pluggy>=1.0.0"]
-all-languages = ["tree-sitter-go>=0.23.0", "tree-sitter-rust>=0.23.0", "tree-sitter-c>=0.23.0", "tree-sitter-cpp>=0.23.0"]
-all = ["gh-similarity-detector[api,visualization,vector-index,realtime,structured-logging,tui,all-languages]"]
+otel = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
+postgres = ["asyncpg>=0.29"]
+security = ["keyring>=25.0"]
+all-languages = ["tree-sitter-go>=0.23.0", "tree-sitter-rust>=0.23.0", "tree-sitter-c>=0.23.0", "tree-sitter-cpp>=0.23.0", "tree-sitter-kotlin>=0.23.0", "tree-sitter-scala>=0.23.0", "tree-sitter-php>=0.23.0", "tree-sitter-ruby>=0.23.0", "tree-sitter-swift>=0.23.0"]
+docs = ["mkdocs>=1.5.0", "mkdocs-material>=9.5.0"]
+profiling = ["scalene>=1.5.0", "memray>=1.7.0"]
+all = ["gh-similarity-detector[api,visualization,vector-index,realtime,structured-logging,tui,plugins,otel,postgres,security,all-languages]"]
 dev = [
     "pytest>=7.3.0",
     "pytest-asyncio>=0.21.0",
@@ -73,93 +78,6 @@ authors = ["ModuleMirror Team <modulemirror@example.com>"]
 license = "Apache-2.0"
 readme = "README.md"
 packages = [{include = "gh_similarity_detector"}]
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Topic :: Software Development :: Quality Assurance",
-    "Topic :: Security",
-    "Topic :: Utilities",
-]
-keywords = ["code-similarity", "clone-detection", "plagiarism", "winnowing", "fingerprint"]
-
-[tool.poetry.dependencies]
-python = "^3.9"
-tree-sitter = "^0.25.0"
-tree-sitter-python = "^0.23.0"
-tree-sitter-java = "^0.23.0"
-tree-sitter-javascript = "^0.23.0"
-tree-sitter-typescript = "^0.23.0"
-httpx = "^0.24.0"
-tenacity = "^8.2.0"
-click = "^8.1.0"
-rich = "^13.3.0"
-jinja2 = "^3.1.0"
-markupsafe = "^2.1"
-pyyaml = "^6.0"
-numpy = "^1.24"
-prometheus-client = "^0.17"
-PyJWT = "^2.8"
-fastapi = {version = "^0.95.0", optional = true}
-uvicorn = {version = "^0.22.0", optional = true}
-slowapi = {version = "^0.1.9", optional = true}
-opentelemetry-api = {version = "^1.20", optional = true}
-opentelemetry-sdk = {version = "^1.20", optional = true}
-asyncpg = {version = "^0.29", optional = true}
-keyring = {version = "^25.0", optional = true}
-tree-sitter-go = {version = "^0.23.0", optional = true}
-tree-sitter-rust = {version = "^0.23.0", optional = true}
-tree-sitter-c = {version = "^0.23.0", optional = true}
-tree-sitter-cpp = {version = "^0.23.0", optional = true}
-tree-sitter-kotlin = {version = "^0.23.0", optional = true}
-tree-sitter-scala = {version = "^0.23.0", optional = true}
-tree-sitter-php = {version = "^0.23.0", optional = true}
-tree-sitter-ruby = {version = "^0.23.0", optional = true}
-tree-sitter-swift = {version = "^0.23.0", optional = true}
-datasketch = "^1.6.0"
-pyvis = {version = "^0.3.1", optional = true}
-faiss-cpu = {version = "^1.7.0", optional = true}
-sse-starlette = {version = "^2.0.0", optional = true}
-pyecharts = {version = "^2.0.0", optional = true}
-
-[tool.poetry.group.dev.dependencies]
-pytest = "^7.3.0"
-pytest-asyncio = "^0.21.0"
-pytest-cov = "^4.0.0"
-pytest-xdist = "^3.3.0"
-hypothesis = "^6.78.0"
-black = "^23.3.0"
-ruff = "^0.0.265"
-mypy = "^1.2.0"
-bandit = "^1.7.0"
-mkdocs = {version = "^1.5.0", optional = true}
-mkdocs-material = {version = "^9.5.0", optional = true}
-mkdocs-git-revision-date-localized-plugin = {version = "^1.2.0", optional = true}
-mkdocs-minify-plugin = {version = "^0.7.0", optional = true}
-scalene = {version = "^1.5.0", optional = true}
-memray = {version = "^1.7.0", optional = true}
-
-[tool.poetry.extras]
-api = ["fastapi", "uvicorn", "slowapi"]
-otel = ["opentelemetry-api", "opentelemetry-sdk"]
-postgres = ["asyncpg"]
-security = ["keyring", "PyJWT"]
-visualization = ["pyvis"]
-visualization-enhanced = ["pyvis", "pyecharts"]
-vector-index = ["faiss-cpu"]
-realtime = ["sse-starlette"]
-plugins = ["pluggy"]
-all-languages = ["tree-sitter-go", "tree-sitter-rust", "tree-sitter-c", "tree-sitter-cpp", "tree-sitter-kotlin", "tree-sitter-scala", "tree-sitter-php", "tree-sitter-ruby", "tree-sitter-swift"]
-all = ["fastapi", "uvicorn", "slowapi", "opentelemetry-api", "opentelemetry-sdk", "asyncpg", "keyring", "tree-sitter-go", "tree-sitter-rust", "tree-sitter-c", "tree-sitter-cpp", "tree-sitter-kotlin", "tree-sitter-scala", "tree-sitter-php", "tree-sitter-ruby", "tree-sitter-swift", "pyvis", "faiss-cpu", "sse-starlette", "pyecharts"]
-docs = ["mkdocs", "mkdocs-material", "mkdocs-git-revision-date-localized-plugin", "mkdocs-minify-plugin"]
-profiling = ["scalene", "memray"]
-
-[tool.poetry.scripts]
-gh-sim = "gh_similarity_detector.cli.main:main"
 
 [build-system]
 requires = ["poetry-core"]

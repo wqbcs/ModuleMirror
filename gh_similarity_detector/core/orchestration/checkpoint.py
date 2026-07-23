@@ -7,6 +7,7 @@ from ...utils.logger import logger
 
 
 class Checkpoint:
+    """检查点管理器，用于持久化检测任务的进度和结果，支持断点续检"""
     def __init__(self, checkpoint_path: str):
         self.path = Path(checkpoint_path)
         self.data: Dict[str, Any] = {
@@ -18,12 +19,18 @@ class Checkpoint:
         }
 
     def save(self) -> None:
+        """将当前检查点数据保存到磁盘文件"""
         self.path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.path, "w", encoding="utf-8") as f:
             json.dump(self.data, f, ensure_ascii=False, indent=2)
         logger.info(f"检查点已保存: {self.path}")
 
     def load(self) -> bool:
+        """从磁盘文件加载检查点数据
+        
+        Returns:
+            是否成功加载，文件不存在或加载失败时返回False
+        """
         if not self.path.exists():
             return False
         try:
@@ -43,6 +50,11 @@ class Checkpoint:
             return False
 
     def exists(self) -> bool:
+        """检查检查点文件是否存在
+        
+        Returns:
+            文件是否存在
+        """
         return self.path.exists()
 
     @property
@@ -68,6 +80,11 @@ class Checkpoint:
         return val if isinstance(val, list) else []
 
     def mark_completed(self, candidate_source: str) -> None:
+        """标记候选源为已完成
+        
+        Args:
+            candidate_source: 已完成的候选源标识
+        """
         if candidate_source not in self.data["completed_candidates"]:
             self.data["completed_candidates"].append(candidate_source)
 
@@ -77,6 +94,12 @@ class Checkpoint:
         return val if isinstance(val, list) else []
 
     def mark_failed(self, candidate_source: str, error: str) -> None:
+        """标记候选源为失败状态
+        
+        Args:
+            candidate_source: 失败的候选源标识
+            error: 错误信息
+        """
         self.data["failed_candidates"].append({"source": candidate_source, "error": error})
 
     @property
@@ -87,6 +110,14 @@ class Checkpoint:
     def add_result(
         self, source_project: str, target_project: str, match_count: int, statistics: Dict[str, Any]
     ) -> None:
+        """添加一条检测结果记录
+        
+        Args:
+            source_project: 源项目名称
+            target_project: 目标项目名称
+            match_count: 匹配数量
+            statistics: 统计信息字典
+        """
         self.data["results"].append(
             {
                 "source_project": source_project,
@@ -97,6 +128,11 @@ class Checkpoint:
         )
 
     def get_pending_candidates(self) -> List[str]:
+        """获取尚未完成且未失败的候选源列表
+        
+        Returns:
+            待处理的候选源标识列表
+        """
         completed = set(self.completed_candidates)
         failed_sources = {f["source"] for f in self.failed_candidates}
         return [
@@ -104,6 +140,7 @@ class Checkpoint:
         ]
 
     def clear(self) -> None:
+        """清除检查点文件和内存数据，重置为初始状态"""
         if self.path.exists():
             self.path.unlink()
         self.data = {

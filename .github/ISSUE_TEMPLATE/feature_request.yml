@@ -1,0 +1,72 @@
+name: 功能请求
+description: 为 ModuleMirror 提出新功能或改进建议
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        感谢提出功能建议！请描述你的需求和期望的解决方案。
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: 你遇到了什么问题？
+      description: 描述促使你提出此功能的痛点或场景
+      placeholder: "例如：检测大规模仓库时内存占用过高，无法分批处理"
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: 期望的解决方案
+      description: 描述你期望的功能行为
+      placeholder: "例如：支持 --batch-size 参数，分批加载文件指纹"
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: 考虑过的替代方案
+      description: 描述你考虑过的其他解决方案或变通方法
+      placeholder: "例如：手动拆分仓库为子目录后逐个检测"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: 功能类别
+      options:
+        - 核心检测引擎
+        - API 接口
+        - CLI 命令行
+        - TUI 终端界面
+        - 可视化报告
+        - 性能优化
+        - Rust 加速
+        - 国际化 (i18n)
+        - 其他
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 优先级
+      description: 从用户角度评估此功能的紧迫程度
+      options:
+        - 高 — 阻塞核心使用场景
+        - 中 — 显著提升使用体验
+        - 低 — 锦上添花
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 补充信息
+      description: 相关的开源项目参考、技术方案、截图等
+    validations:
+      required: false

@@ -19,6 +19,7 @@ from ...utils.hash import structural_hash
 
 
 class ViewType(Enum):
+    """代码视图类型枚举，支持AST/DFG/CFG三种视图"""
     AST = "ast"
     DFG = "dfg"
     CFG = "cfg"
@@ -26,6 +27,7 @@ class ViewType(Enum):
 
 @dataclass
 class ViewFeature:
+    """单视图特征数据类，描述一个代码视图的结构特征"""
     view_type: ViewType
     node_types: List[str] = field(default_factory=list)
     edge_types: List[str] = field(default_factory=list)
@@ -35,6 +37,11 @@ class ViewFeature:
     structural_hash: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
+        """将视图特征转换为字典表示
+        
+        Returns:
+            包含view_type、node_types、edge_types、depth、node_count、edge_count的字典
+        """
         return {
             "view_type": self.view_type.value,
             "node_types": self.node_types,
@@ -47,18 +54,33 @@ class ViewFeature:
 
 @dataclass
 class MultiViewFeature:
+    """多视图融合特征数据类，组合AST/DFG/CFG三个视图的特征"""
     code_id: str
     ast_feature: ViewFeature = field(default_factory=lambda: ViewFeature(view_type=ViewType.AST))
     dfg_feature: ViewFeature = field(default_factory=lambda: ViewFeature(view_type=ViewType.DFG))
     cfg_feature: ViewFeature = field(default_factory=lambda: ViewFeature(view_type=ViewType.CFG))
 
     def fused_hash(self) -> str:
+        """将三个视图的结构哈希融合为一个综合哈希值
+        
+        Returns:
+            融合后的结构哈希字符串
+        """
         combined = f"{self.ast_feature.structural_hash}:{self.dfg_feature.structural_hash}:{self.cfg_feature.structural_hash}"
         return structural_hash(combined)
 
     def fused_similarity(
         self, other: "MultiViewFeature", weights: Optional[Dict[str, float]] = None
     ) -> float:
+        """计算与另一个多视图特征的加权融合相似度
+        
+        Args:
+            other: 另一个MultiViewFeature对象
+            weights: 各视图的权重字典，默认ast=0.4, dfg=0.3, cfg=0.3
+            
+        Returns:
+            融合相似度分数，范围[0, 1]
+        """
         w = weights or {"ast": 0.4, "dfg": 0.3, "cfg": 0.3}
 
         ast_sim = self._view_similarity(self.ast_feature, other.ast_feature)
@@ -88,6 +110,11 @@ class MultiViewFeature:
         return jaccard * 0.5 + depth_sim * 0.25 + count_sim * 0.25
 
     def to_dict(self) -> Dict[str, Any]:
+        """将多视图特征转换为字典表示
+        
+        Returns:
+            包含code_id、fused_hash及各视图特征字典的字典
+        """
         return {
             "code_id": self.code_id,
             "fused_hash": self.fused_hash(),
@@ -98,7 +125,16 @@ class MultiViewFeature:
 
 
 class ASTViewExtractor:
+    """AST视图特征提取器，从代码中提取抽象语法树结构特征"""
     def extract(self, code: str) -> ViewFeature:
+        """从代码中提取AST视图特征
+        
+        Args:
+            code: 源代码字符串
+            
+        Returns:
+            AST视图特征对象
+        """
         lines = code.strip().split("\n")
         node_types = []
         max_depth = 0
@@ -150,7 +186,16 @@ class ASTViewExtractor:
 
 
 class DFGViewExtractor:
+    """DFG视图特征提取器，从代码中提取数据流图特征（def-use链）"""
     def extract(self, code: str) -> ViewFeature:
+        """从代码中提取DFG视图特征
+        
+        Args:
+            code: 源代码字符串
+            
+        Returns:
+            DFG视图特征对象
+        """
         lines = code.strip().split("\n")
         definitions: Dict[str, int] = {}
         uses: List[str] = []
@@ -199,7 +244,16 @@ class DFGViewExtractor:
 
 
 class CFGViewExtractor:
+    """CFG视图特征提取器，从代码中提取控制流图特征（分支和循环）"""
     def extract(self, code: str) -> ViewFeature:
+        """从代码中提取CFG视图特征
+        
+        Args:
+            code: 源代码字符串
+            
+        Returns:
+            CFG视图特征对象
+        """
         lines = code.strip().split("\n")
         node_types = []
         edge_types = []
@@ -253,12 +307,22 @@ class CFGViewExtractor:
 
 
 class MultiViewFusion:
+    """多视图融合器，组合AST/DFG/CFG三个视图提取器进行特征提取和相似度计算"""
     def __init__(self) -> None:
         self._ast = ASTViewExtractor()
         self._dfg = DFGViewExtractor()
         self._cfg = CFGViewExtractor()
 
     def extract(self, code: str, code_id: str = "") -> MultiViewFeature:
+        """从代码中提取多视图融合特征
+        
+        Args:
+            code: 源代码字符串
+            code_id: 代码标识，为空时自动生成哈希ID
+            
+        Returns:
+            多视图融合特征对象
+        """
         return MultiViewFeature(
             code_id=code_id or structural_hash(code)[:8],
             ast_feature=self._ast.extract(code),
@@ -272,4 +336,14 @@ class MultiViewFusion:
         feature_b: MultiViewFeature,
         weights: Optional[Dict[str, float]] = None,
     ) -> float:
+        """计算两个多视图特征之间的融合相似度
+        
+        Args:
+            feature_a: 第一个多视图特征
+            feature_b: 第二个多视图特征
+            weights: 各视图权重，默认ast=0.4, dfg=0.3, cfg=0.3
+            
+        Returns:
+            融合相似度分数，范围[0, 1]
+        """
         return feature_a.fused_similarity(feature_b, weights)

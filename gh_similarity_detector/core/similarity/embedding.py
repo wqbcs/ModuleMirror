@@ -38,6 +38,8 @@ if _numpy_available:
 
 @dataclass
 class CodeEmbedding:
+    """代码嵌入向量数据类，封装代码的向量化表示及其元信息"""
+
     code_id: str
     vector: List[float]
     model_name: str
@@ -45,6 +47,16 @@ class CodeEmbedding:
     metadata: Dict[str, Any] = field(default_factory=dict)
 
     def cosine_similarity(self, other: "CodeEmbedding") -> float:
+        """计算与另一个代码嵌入的余弦相似度
+        
+        优先使用Rust SIMD加速，其次使用numpy，最后回退到纯Python实现。
+        
+        Args:
+            other: 另一个代码嵌入实例
+            
+        Returns:
+            余弦相似度，维度不匹配时返回0.0
+        """
         if self.dimension != other.dimension:
             return 0.0
         if HAS_RUST_BACKEND:
@@ -65,6 +77,16 @@ class CodeEmbedding:
         return float(dot / (na * nb))
 
     def euclidean_distance(self, other: "CodeEmbedding") -> float:
+        """计算与另一个代码嵌入的欧氏距离
+        
+        优先使用Rust SIMD加速，其次使用numpy，最后回退到纯Python实现。
+        
+        Args:
+            other: 另一个代码嵌入实例
+            
+        Returns:
+            欧氏距离值
+        """
         if HAS_RUST_BACKEND:
             return _rust_euclidean(self.vector, other.vector)
         if _numpy_available:
@@ -74,6 +96,11 @@ class CodeEmbedding:
         return math.sqrt(sum((a - b) ** 2 for a, b in zip(self.vector, other.vector)))
 
     def to_dict(self) -> Dict[str, Any]:
+        """将代码嵌入转换为字典表示（向量截断为前10维）
+        
+        Returns:
+            包含code_id、截断向量、模型名和维度的字典
+        """
         return {
             "code_id": self.code_id,
             "vector": self.vector[:10],
@@ -83,21 +110,65 @@ class CodeEmbedding:
 
 
 class EmbeddingEngine(ABC):
-    @abstractmethod
-    def embed(self, code: str, code_id: str = "") -> CodeEmbedding: ...
+    """代码嵌入引擎抽象基类，定义统一的嵌入接口"""
 
     @abstractmethod
-    def embed_batch(self, codes: Dict[str, str]) -> List[CodeEmbedding]: ...
+    def embed(self, code: str, code_id: str = "") -> CodeEmbedding:
+        """将源代码嵌入为向量表示
+        
+        Args:
+            code: 源代码字符串
+            code_id: 代码标识符，为空时自动生成
+            
+        Returns:
+            代码嵌入对象
+        """
+        ...
 
     @abstractmethod
-    def model_name(self) -> str: ...
+    def embed_batch(self, codes: Dict[str, str]) -> List[CodeEmbedding]:
+        """批量将源代码嵌入为向量表示
+        
+        Args:
+            codes: 字典，键为代码ID，值为源代码字符串
+            
+        Returns:
+            代码嵌入对象列表
+        """
+        ...
 
     @abstractmethod
-    def dimension(self) -> int: ...
+    def model_name(self) -> str:
+        """获取嵌入模型名称
+        
+        Returns:
+            模型名称字符串
+        """
+        ...
+
+    @abstractmethod
+    def dimension(self) -> int:
+        """获取嵌入向量维度
+        
+        Returns:
+            向量维度整数
+        """
+        ...
 
 
 class DummyEngine(EmbeddingEngine):
+    """哑嵌入引擎，使用SHA256哈希生成确定性伪向量，零依赖"""
+
     def embed(self, code: str, code_id: str = "") -> CodeEmbedding:
+        """使用SHA256哈希生成16维伪嵌入向量
+        
+        Args:
+            code: 源代码字符串
+            code_id: 代码标识符，为空时使用MD5自动生成
+            
+        Returns:
+            16维伪嵌入向量
+        """
         h = hashlib.sha256(code.encode()).digest()
         vector = [float(b) / 255.0 for b in h[:16]]
         return CodeEmbedding(
@@ -108,16 +179,36 @@ class DummyEngine(EmbeddingEngine):
         )
 
     def embed_batch(self, codes: Dict[str, str]) -> List[CodeEmbedding]:
+        """批量生成伪嵌入向量
+        
+        Args:
+            codes: 字典，键为代码ID，值为源代码字符串
+            
+        Returns:
+            伪嵌入向量列表
+        """
         return [self.embed(code, code_id) for code_id, code in codes.items()]
 
     def model_name(self) -> str:
+        """获取哑嵌入模型名称
+        
+        Returns:
+            字符串"dummy"
+        """
         return "dummy"
 
     def dimension(self) -> int:
+        """获取哑嵌入向量维度
+        
+        Returns:
+            固定维度16
+        """
         return 16
 
 
 class Code2VecEngine(EmbeddingEngine):
+    """Code2Vec嵌入引擎，基于AST路径注意力机制生成代码向量表示"""
+
     def __init__(self, dimension: int = 128, max_paths: int = 200, path_length: int = 5):
         self._dimension = dimension
         self._max_paths = max_paths
@@ -158,6 +249,17 @@ class Code2VecEngine(EmbeddingEngine):
                 self._weights.append((seed / 0x7FFFFFFF) - 0.5)
 
     def embed(self, code: str, code_id: str = "") -> CodeEmbedding:
+        """使用Code2Vec路径注意力机制生成代码嵌入
+        
+        优先使用Rust加速实现，不可用时回退到Python实现。
+        
+        Args:
+            code: 源代码字符串
+            code_id: 代码标识符，为空时使用MD5自动生成
+            
+        Returns:
+            Code2Vec嵌入向量
+        """
         if HAS_RUST_BACKEND:
             vector, num_paths = _rust_code2vec_embed_with_meta(code, self._dimension, self._max_paths, self._path_length)
             return CodeEmbedding(
@@ -195,16 +297,36 @@ class Code2VecEngine(EmbeddingEngine):
         )
 
     def embed_batch(self, codes: Dict[str, str]) -> List[CodeEmbedding]:
+        """批量生成Code2Vec嵌入向量
+        
+        Args:
+            codes: 字典，键为代码ID，值为源代码字符串
+            
+        Returns:
+            Code2Vec嵌入向量列表
+        """
         return [self.embed(code, code_id) for code_id, code in codes.items()]
 
     def model_name(self) -> str:
+        """获取Code2Vec模型名称
+        
+        Returns:
+            字符串"code2vec"
+        """
         return "code2vec"
 
     def dimension(self) -> int:
+        """获取Code2Vec向量维度
+        
+        Returns:
+            配置的向量维度
+        """
         return self._dimension
 
 
 class CodeBERTEngine(EmbeddingEngine):
+    """CodeBERT嵌入引擎，基于Transformer预训练模型生成代码语义向量"""
+
     def __init__(self, model_name: str = "microsoft/codebert-base", device: str = "cpu"):
         self._model_name = model_name
         self._device = device
@@ -227,6 +349,15 @@ class CodeBERTEngine(EmbeddingEngine):
             raise ImportError("CodeBERT需要transformers库: pip install transformers torch")
 
     def embed(self, code: str, code_id: str = "") -> CodeEmbedding:
+        """使用CodeBERT模型生成代码嵌入
+        
+        Args:
+            code: 源代码字符串
+            code_id: 代码标识符，为空时使用MD5自动生成
+            
+        Returns:
+            CodeBERT嵌入向量（768维）
+        """
         self._load_model()
         import torch
 
@@ -244,16 +375,46 @@ class CodeBERTEngine(EmbeddingEngine):
         )
 
     def embed_batch(self, codes: Dict[str, str]) -> List[CodeEmbedding]:
+        """批量生成CodeBERT嵌入向量
+        
+        Args:
+            codes: 字典，键为代码ID，值为源代码字符串
+            
+        Returns:
+            CodeBERT嵌入向量列表
+        """
         return [self.embed(code, code_id) for code_id, code in codes.items()]
 
     def model_name(self) -> str:
+        """获取CodeBERT模型名称
+        
+        Returns:
+            配置的模型名称字符串
+        """
         return self._model_name
 
     def dimension(self) -> int:
+        """获取CodeBERT向量维度
+        
+        Returns:
+            固定维度768
+        """
         return self._dimension
 
 
 def create_embedding_engine(engine_type: str = "dummy", **kwargs: Any) -> EmbeddingEngine:
+    """创建代码嵌入引擎实例
+    
+    Args:
+        engine_type: 引擎类型，可选"dummy"、"code2vec"、"codebert"，默认为"dummy"
+        **kwargs: 传递给引擎构造函数的额外参数
+        
+    Returns:
+        嵌入引擎实例
+        
+    Raises:
+        ValueError: 引擎类型未知时抛出
+    """
     engines = {
         "dummy": DummyEngine,
         "code2vec": Code2VecEngine,
@@ -268,6 +429,17 @@ def create_embedding_engine(engine_type: str = "dummy", **kwargs: Any) -> Embedd
 def compute_semantic_similarity(
     embeddings_a: List[CodeEmbedding], embeddings_b: List[CodeEmbedding]
 ) -> List[Dict[str, Any]]:
+    """计算两组代码嵌入之间的语义相似度
+    
+    仅比较使用相同模型的嵌入对，返回余弦相似度和欧氏距离。
+    
+    Args:
+        embeddings_a: 第一组代码嵌入列表
+        embeddings_b: 第二组代码嵌入列表
+        
+    Returns:
+        相似度结果列表，每个元素包含source_id、target_id、semantic_similarity、model、euclidean_distance
+    """
     results = []
     for emb_a in embeddings_a:
         for emb_b in embeddings_b:

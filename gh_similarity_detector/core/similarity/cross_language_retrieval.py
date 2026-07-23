@@ -37,6 +37,8 @@ if HAS_FAISS:
 
 @dataclass
 class RetrievalResult:
+    """跨语言检索结果"""
+
     query_id: str
     candidate_id: str
     similarity: float
@@ -45,6 +47,11 @@ class RetrievalResult:
     candidate_language: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
+        """将检索结果转换为字典
+
+        Returns:
+            包含查询ID、候选ID、相似度、模型名称及是否跨语言的字典
+        """
         return {
             "query_id": self.query_id,
             "candidate_id": self.candidate_id,
@@ -57,16 +64,34 @@ class RetrievalResult:
 
 
 class EmbeddingIndex:
+    """Embedding 暴力检索索引
+
+    基于余弦相似度的暴力搜索索引，适用于小规模（<1000）向量检索。
+    支持跨语言过滤。
+    """
+
     def __init__(self) -> None:
         self._embeddings: Dict[str, CodeEmbedding] = {}
         self._languages: Dict[str, str] = {}
 
     def add(self, code_id: str, embedding: CodeEmbedding, language: str = "") -> None:
+        """添加代码 embedding 到索引
+
+        Args:
+            code_id: 代码唯一标识
+            embedding: 代码 embedding 向量
+            language: 编程语言标签
+        """
         self._embeddings[code_id] = embedding
         if language:
             self._languages[code_id] = language
 
     def remove(self, code_id: str) -> None:
+        """从索引中移除指定代码
+
+        Args:
+            code_id: 要移除的代码唯一标识
+        """
         self._embeddings.pop(code_id, None)
         self._languages.pop(code_id, None)
 
@@ -77,6 +102,17 @@ class EmbeddingIndex:
         exclude_ids: Optional[set[str]] = None,
         min_similarity: float = 0.0,
     ) -> List[RetrievalResult]:
+        """搜索与查询向量最相似的代码
+
+        Args:
+            query: 查询 embedding 向量
+            top_k: 返回前 K 个结果
+            exclude_ids: 需排除的代码ID集合
+            min_similarity: 最低相似度阈值
+
+        Returns:
+            检索结果列表，按相似度降序排列
+        """
         results = []
         exclude = exclude_ids or set()
 
@@ -147,6 +183,17 @@ class EmbeddingIndex:
         top_k: int = 10,
         min_similarity: float = 0.3,
     ) -> List[RetrievalResult]:
+        """跨语言搜索，仅返回与查询语言不同的结果
+
+        Args:
+            query: 查询 embedding 向量
+            target_language: 目标语言过滤，空字符串表示任意跨语言
+            top_k: 返回前 K 个结果
+            min_similarity: 最低相似度阈值
+
+        Returns:
+            跨语言检索结果列表
+        """
         all_results = self.search(query, top_k=top_k * 3, min_similarity=min_similarity)
         cross_lang = []
         for r in all_results:
@@ -158,9 +205,15 @@ class EmbeddingIndex:
 
     @property
     def size(self) -> int:
+        """返回索引中的向量数量"""
         return len(self._embeddings)
 
     def get_language_stats(self) -> Dict[str, int]:
+        """获取各编程语言的代码数量统计
+
+        Returns:
+            语言名称到代码数量的映射字典
+        """
         stats: Dict[str, int] = {}
         for lang in self._languages.values():
             stats[lang] = stats.get(lang, 0) + 1
@@ -180,6 +233,13 @@ class FaissEmbeddingIndex:
     """
 
     def __init__(self, dimension: int = 16, nlist: int = 100, use_gpu: bool = False):
+        """初始化 FAISS 向量索引
+
+        Args:
+            dimension: 向量维度，默认16
+            nlist: IVF 聚类数，默认100
+            use_gpu: 是否使用 GPU 加速，默认 False
+        """
         if not HAS_FAISS:
             raise ImportError("faiss-cpu未安装，请运行: pip install faiss-cpu")
         if not HAS_NUMPY:
@@ -232,6 +292,13 @@ class FaissEmbeddingIndex:
         self._index.add(vecs)
 
     def add(self, code_id: str, embedding: CodeEmbedding, language: str = "") -> None:
+        """添加代码 embedding 到 FAISS 索引
+
+        Args:
+            code_id: 代码唯一标识
+            embedding: 代码 embedding 向量
+            language: 编程语言标签
+        """
         if embedding.dimension != self._dimension:
             return
         self._embeddings[code_id] = embedding
@@ -243,6 +310,11 @@ class FaissEmbeddingIndex:
         self._index = None
 
     def remove(self, code_id: str) -> None:
+        """从 FAISS 索引中移除指定代码
+
+        Args:
+            code_id: 要移除的代码唯一标识
+        """
         self._embeddings.pop(code_id, None)
         self._languages.pop(code_id, None)
         idx = self._id_to_idx.pop(code_id, None)
@@ -257,6 +329,17 @@ class FaissEmbeddingIndex:
         exclude_ids: Optional[set[str]] = None,
         min_similarity: float = 0.0,
     ) -> List[RetrievalResult]:
+        """使用 FAISS 索引搜索与查询向量最相似的代码
+
+        Args:
+            query: 查询 embedding 向量
+            top_k: 返回前 K 个结果
+            exclude_ids: 需排除的代码ID集合
+            min_similarity: 最低相似度阈值
+
+        Returns:
+            检索结果列表，按相似度降序排列
+        """
         self._ensure_index()
 
         if self._index is None or self._index.ntotal == 0:
@@ -302,6 +385,17 @@ class FaissEmbeddingIndex:
         top_k: int = 10,
         min_similarity: float = 0.3,
     ) -> List[RetrievalResult]:
+        """跨语言搜索，仅返回与查询语言不同的结果
+
+        Args:
+            query: 查询 embedding 向量
+            target_language: 目标语言过滤，空字符串表示任意跨语言
+            top_k: 返回前 K 个结果
+            min_similarity: 最低相似度阈值
+
+        Returns:
+            跨语言检索结果列表
+        """
         all_results = self.search(query, top_k=top_k * 3, min_similarity=min_similarity)
         cross_lang = []
         for r in all_results:
@@ -313,9 +407,15 @@ class FaissEmbeddingIndex:
 
     @property
     def size(self) -> int:
+        """返回索引中的向量数量"""
         return len(self._embeddings)
 
     def get_language_stats(self) -> Dict[str, int]:
+        """获取各编程语言的代码数量统计
+
+        Returns:
+            语言名称到代码数量的映射字典
+        """
         stats: Dict[str, int] = {}
         for lang in self._languages.values():
             stats[lang] = stats.get(lang, 0) + 1
@@ -323,10 +423,20 @@ class FaissEmbeddingIndex:
 
     @classmethod
     def is_available(cls) -> bool:
+        """检查 FAISS 和 numpy 是否可用
+
+        Returns:
+            两者均可用返回 True，否则返回 False
+        """
         return HAS_FAISS and HAS_NUMPY
 
 
 class CrossLanguageRetrievalPipeline:
+    """跨语言代码检索管道
+
+    整合 Embedding 引擎和向量索引，提供端到端的跨语言代码相似度检索能力。
+    """
+
     def __init__(
         self,
         engine_type: str = "code2vec",
@@ -334,6 +444,14 @@ class CrossLanguageRetrievalPipeline:
         top_k: int = 10,
         min_similarity: float = 0.3,
     ):
+        """初始化跨语言检索管道
+
+        Args:
+            engine_type: Embedding 引擎类型，默认 code2vec
+            engine_kwargs: 引擎初始化参数字典
+            top_k: 检索返回前 K 个结果
+            min_similarity: 最低相似度阈值
+        """
         self._engine = create_embedding_engine(engine_type, **(engine_kwargs or {}))
         self._index = EmbeddingIndex()
         self._top_k = top_k
@@ -341,18 +459,38 @@ class CrossLanguageRetrievalPipeline:
 
     @property
     def engine(self) -> EmbeddingEngine:
+        """获取当前使用的 Embedding 引擎"""
         return self._engine
 
     @property
     def index(self) -> EmbeddingIndex:
+        """获取当前的向量索引实例"""
         return self._index
 
     def index_code(self, code_id: str, code: str, language: str = "") -> CodeEmbedding:
+        """将代码片段索引到向量索引中
+
+        Args:
+            code_id: 代码唯一标识
+            code: 代码文本内容
+            language: 编程语言标签
+
+        Returns:
+            生成的代码 embedding
+        """
         embedding = self._engine.embed(code, code_id)
         self._index.add(code_id, embedding, language)
         return embedding
 
     def index_batch(self, codes: Dict[str, Tuple[str, str]]) -> List[CodeEmbedding]:
+        """批量索引代码片段
+
+        Args:
+            codes: 代码字典，键为代码ID，值为(代码内容, 语言)元组
+
+        Returns:
+            生成的 embedding 列表
+        """
         results = []
         for code_id, (code, language) in codes.items():
             emb = self.index_code(code_id, code, language)
@@ -365,6 +503,16 @@ class CrossLanguageRetrievalPipeline:
         query_language: str = "",
         target_language: str = "",
     ) -> List[RetrievalResult]:
+        """检索与查询代码相似的代码
+
+        Args:
+            query_code: 查询代码文本
+            query_language: 查询代码的编程语言
+            target_language: 目标语言过滤，非空时仅返回跨语言结果
+
+        Returns:
+            检索结果列表
+        """
         query_emb = self._engine.embed(query_code, "query")
         if target_language:
             return self._index.search_cross_language(
@@ -380,6 +528,11 @@ class CrossLanguageRetrievalPipeline:
         )
 
     def get_stats(self) -> Dict[str, Any]:
+        """获取检索管道统计信息
+
+        Returns:
+            包含引擎名称、向量维度、索引大小和语言统计的字典
+        """
         return {
             "engine": self._engine.model_name(),
             "dimension": self._engine.dimension(),
