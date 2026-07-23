@@ -32,7 +32,7 @@ jobs:
       - name: Ruff format check
         run: ruff format --check gh_similarity_detector/ tests/
       - name: Mypy type check
-        run: mypy gh_similarity_detector/ --ignore-missing-imports || true
+        run: mypy gh_similarity_detector/ --ignore-missing-imports
 
   test:
     name: L2 测试 + 覆盖率 (${{ matrix.os }}, Python ${{ matrix.python-version }})
@@ -87,7 +87,7 @@ jobs:
       - name: Install maturin + dev deps
         run: |
           python -m pip install --upgrade pip
-          pip install maturin
+          pip install maturin pip-audit
           pip install -e ".[dev]" --no-build-isolation || true
       - name: Build Rust extension
         run: maturin develop --release
@@ -96,26 +96,27 @@ jobs:
           bandit -r gh_similarity_detector/ \
             -ll -ii \
             -f json -o bandit-report.json \
-            || true
-          bandit -r gh_similarity_detector/ -ll -ii -f custom \
-            || true
+            -f custom
       - name: Check for HIGH severity
         run: |
           python -c "
-          import json
+          import json, sys
           with open('bandit-report.json') as f:
               data = json.load(f)
           high = data.get('metrics', {}).get('_totals', {}).get('SEVERITY.HIGH', 0)
           if high > 0:
-              print(f'WARNING: {high} HIGH severity issues found - review bandit-report.json')
+              print(f'FAILED: {high} HIGH severity issues found - review bandit-report.json')
+              sys.exit(1)
           else:
               print('OK: 0 HIGH severity issues')
           "
+      - name: pip-audit SCA scan
+        run: pip-audit --desc
       - name: Cargo audit
         working-directory: src/_module_mirror_rust
         run: |
-          cargo install cargo-audit || true
-          cargo audit || true
+          cargo install cargo-audit
+          cargo audit
 
   docker:
     name: L4 Docker 多架构构建

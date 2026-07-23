@@ -24,6 +24,7 @@ from ...utils.hash import structural_hash
 
 
 class IRNodeType(Enum):
+    """跨语言中间表示节点类型枚举"""
     FUNCTION = "function"
     CLASS = "class"
     METHOD = "method"
@@ -40,6 +41,8 @@ class IRNodeType(Enum):
 
 @dataclass
 class IRNode:
+    """中间表示节点，表示语言无关的代码结构"""
+
     node_type: IRNodeType
     label: str = ""
     children: List["IRNode"] = field(default_factory=list)
