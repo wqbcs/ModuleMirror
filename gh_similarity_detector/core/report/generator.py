@@ -10,6 +10,8 @@ Author: GitHub 项目代码相似度检测工具
 from __future__ import annotations
 
 import json
+import csv
+import io
 import re
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -71,6 +73,8 @@ class ReportGenerator:
             return self._generate_sarif_report(results, output_path)
         elif self.config.report_format == ReportFormat.PDF:
             return self._generate_pdf_report(results, output_path)
+        elif self.config.report_format == ReportFormat.CSV:
+            content = self._generate_csv_report(results)
         else:
             content = self._generate_markdown_report(results)
 
@@ -294,3 +298,41 @@ class ReportGenerator:
             path = path.with_suffix(".pdf")
 
         return generate_pdf_report(results, output_path=str(path))
+
+    def _generate_csv_report(self, results: List[DetectionResult]) -> str:
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow([
+            "source_project", "target_project", "source_module",
+            "target_module", "similarity", "winnowing_overlap",
+            "winnowing_union", "ast_similarity", "reuse_suggestion",
+            "source_file", "source_lines", "target_file", "target_lines",
+        ])
+        for result in results:
+            for match in result.matches:
+                source_file = ""
+                source_lines = ""
+                target_file = ""
+                target_lines = ""
+                if match.matched_code_snippet:
+                    s = match.matched_code_snippet
+                    source_file = s.get("source_file", "")
+                    source_lines = s.get("source_lines", "")
+                    target_file = s.get("target_file", "")
+                    target_lines = s.get("target_lines", "")
+                writer.writerow([
+                    result.source_project,
+                    result.target_project,
+                    match.source_module_id,
+                    match.target_module_id,
+                    f"{match.similarity:.2f}",
+                    match.winnowing_overlap,
+                    match.winnowing_union,
+                    f"{match.ast_similarity:.2f}" if match.ast_similarity else "",
+                    match.reuse_suggestion.value,
+                    source_file,
+                    source_lines,
+                    target_file,
+                    target_lines,
+                ])
+        return output.getvalue()

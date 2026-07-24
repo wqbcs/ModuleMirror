@@ -51,6 +51,7 @@ class ReportFormat(Enum):
     MARKDOWN = "markdown"
     SARIF = "sarif"
     PDF = "pdf"
+    CSV = "csv"
 
     def __str__(self) -> str:
         return self.value

@@ -70,22 +70,12 @@ dev = [
 [project.scripts]
 gh-sim = "gh_similarity_detector.cli.main:main"
 
-[tool.poetry]
-name = "gh-similarity-detector"
-version = "2.0.0"
-description = "GitHub 项目代码相似度检测工具 - 用于自我审视和抄袭溯源"
-authors = ["ModuleMirror Team <modulemirror@example.com>"]
-license = "Apache-2.0"
-readme = "README.md"
-packages = [{include = "gh_similarity_detector"}]
-
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
-[tool.black]
-line-length = 100
-target-version = ['py39', 'py310', 'py311']
+[tool.setuptools.packages.find]
+include = ["gh_similarity_detector*"]
 
 [tool.ruff]
 line-length = 100

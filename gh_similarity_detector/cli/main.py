@@ -530,3 +530,69 @@ def app() -> None:
             err=True,
         )
         sys.exit(1)
+
+
+@main.command()
+@click.argument("input_file", type=click.Path(exists=True))
+@click.option(
+    "-f",
+    "--format",
+    "fmt",
+    type=click.Choice(["csv", "json"]),
+    default="csv",
+    help="导出格式",
+)
+@click.option("-o", "--output", "output_path", default=None, help="输出文件路径")
+def export(input_file: str, fmt: str, output_path: str | None) -> None:
+    """导出检测结果为CSV或JSON格式
+
+    INPUT_FILE 为检测结果文件路径（JSON格式）
+    """
+    import json as _json
+
+    from ..infrastructure.i18n import t
+
+    P = Path
+    data = P(input_file).read_text(encoding="utf-8")
+    try:
+        results_data = _json.loads(data)
+    except _json.JSONDecodeError:
+        click.echo(f"错误: 无法解析 JSON 文件: {input_file}", err=True)
+        sys.exit(1)
+
+    if not results_data.get("results"):
+        click.echo(t("cli.export.no_results"))
+        return
+
+    if output_path is None:
+        output_path = str(P(input_file).with_suffix(f".{fmt}"))
+
+    if fmt == "csv":
+        import csv as _csv
+        import io as _io
+
+        output = _io.StringIO()
+        writer = _csv.writer(output)
+        writer.writerow([
+            "source_project", "target_project", "source_module",
+            "target_module", "similarity", "reuse_suggestion",
+        ])
+        for result in results_data["results"]:
+            src_proj = result.get("source_project", "")
+            tgt_proj = result.get("target_project", "")
+            for match in result.get("matches", []):
+                writer.writerow([
+                    src_proj,
+                    tgt_proj,
+                    match.get("source_module_id", ""),
+                    match.get("target_module_id", ""),
+                    match.get("similarity", ""),
+                    match.get("reuse_suggestion", ""),
+                ])
+        P(output_path).write_text(output.getvalue(), encoding="utf-8")
+    else:
+        P(output_path).write_text(
+            _json.dumps(results_data, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+
+    click.echo(t("cli.export.exported", path=output_path, format=fmt))

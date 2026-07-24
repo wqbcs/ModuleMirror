@@ -90,6 +90,7 @@ docker run -d -p 8000:8000 -e GITHUB_TOKEN=ghp_xxx modulemirror:latest
 | `gh-sim search` | 搜索 GitHub 仓库 |
 | `gh-sim db` | 指纹库管理 |
 | `gh-sim config` | 配置管理 |
+| `gh-sim export` | 导出检测结果（CSV/JSON） |
 | `gh-sim dashboard` | 交互式 Web 仪表盘 |
 | `gh-sim tui` | 终端 TUI 模式 |
 
@@ -155,6 +156,7 @@ docker run -d -p 8000:8000 -e GITHUB_TOKEN=ghp_xxx modulemirror:latest
 | POST | `/analysis/multi-repo` | 多仓库对比检测 |
 | POST | `/analysis/compare` | 对比两次检测结果差异 |
 | POST | `/analysis/minhash-tune` | MinHash 参数调优 |
+| POST | `/analysis/cluster` | 检测结果聚类分析 |
 
 ### 规则引擎
 
@@ -213,6 +215,12 @@ docker run -d -p 8000:8000 -e GITHUB_TOKEN=ghp_xxx modulemirror:latest
 | GET | `/config/reload` | 配置热重载状态 |
 | POST | `/config/reload` | 手动触发配置热重载 |
 | POST | `/search` | 搜索 GitHub 仓库 |
+
+### 仪表盘
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/dashboard` | 交互式 Web 仪表盘（HTML） |
 
 ### WebSocket
 
