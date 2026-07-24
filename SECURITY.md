@@ -4,7 +4,10 @@
 
 | Version | Supported |
 | ------- | --------- |
-| 0.1.x   | ✅        |
+| 2.0.x   | ✅        |
+| 1.1.x   | ✅        |
+| 1.0.x   | ⚠️ 仅安全修复 |
+| < 1.0   | ❌        |
 
 ## Reporting a Vulnerability
 
@@ -42,8 +45,8 @@ ModuleMirror implements the following security controls:
 
 We run automated security scans in CI:
 - **Bandit**: SAST scanning for Python code
-- **pip-audit**: Known vulnerability detection in dependencies
-- **safety**: Dependency vulnerability database check
+- **pip-audit**: Known vulnerability detection in dependencies (SCA)
+- **Cargo audit**: Rust dependency vulnerability scanning
 
 ## Dependency Security
 

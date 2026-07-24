@@ -8,10 +8,12 @@ services:
     environment:
       - GITHUB_TOKEN=${GITHUB_TOKEN:-}
       - MODULEMIRROR_API_KEY=${MODULEMIRROR_API_KEY:-}
-      - MODULEMIRROR_CORS_ORIGINS=${MODULEMIRROR_CORS_ORIGINS:-}
+      - MODULEMIRROR_CORS_ORIGINS=${MODULEMIRROR_CORS_ORIGINS:-*}
       - MODULEMIRROR_DB_PATH=/app/data/fingerprint_db.sqlite
+      - MODULEMIRROR_JWT_SECRET=${MODULEMIRROR_JWT_SECRET:-change-me-in-production}
+      - MODULEMIRROR_LOG_LEVEL=${MODULEMIRROR_LOG_LEVEL:-info}
     volumes:
-      - ./data:/app/data
+      - mm-data:/app/data
     restart: unless-stopped
     deploy:
       resources:
@@ -32,3 +34,26 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
+
+  worker:
+    build: .
+    command: ["python", "-m", "gh_similarity_detector.cli.main", "db", "stats"]
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - MODULEMIRROR_DB_PATH=/app/data/fingerprint_db.sqlite
+      - MODULEMIRROR_JWT_SECRET=${MODULEMIRROR_JWT_SECRET:-change-me-in-production}
+    volumes:
+      - mm-data:/app/data
+    restart: "no"
+    depends_on:
+      api:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+
+volumes:
+  mm-data:
+    driver: local

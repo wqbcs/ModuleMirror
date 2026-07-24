@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "如果此软件对您的研究有帮助，请按如下格式引用"
+type: software
+title: "ModuleMirror"
+version: 2.0.0
+abstract: >
+  GitHub项目代码相似度检测工具，支持Winnowing指纹、AST结构指纹、
+  MinHash LSH三大核心算法，Rust核心加速5-50x，提供Web API、CLI、
+  TUI多种交互方式，支持跨语言检测、聚类分析、频率分析等高级功能。
+authors:
+  - given-names: ModuleMirror
+    email: modulemirror@example.com
+repository-code: "https://github.com/wqbcs/ModuleMirror"
+url: "https://github.com/wqbcs/ModuleMirror"
+license: Apache-2.0
+keywords:
+  - code-similarity
+  - clone-detection
+  - plagiarism
+  - winnowing
+  - fingerprint
+  - minhash
+  - rust
+languages:
+  - Python
+  - Rust
