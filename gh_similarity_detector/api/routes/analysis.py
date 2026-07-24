@@ -222,3 +222,91 @@ async def cluster_results_endpoint(req: ClusterRequest) -> dict[str, Any]:
         min_cluster_size=req.min_cluster_size,
     )
     return result.to_dict()
+
+
+class FrequencyAnalyzeRequest(BaseModel):
+    matches: List[dict[str, Any]]
+    tokens_a: List[str]
+    tokens_b: List[str]
+    strategy: str = "complete_matches"
+    weighting: str = "sigmoid"
+    rarity_threshold: int = 5
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "matches": [
+                        {"start_a": 0, "end_a": 10, "start_b": 0, "end_b": 10, "tokens": ["def", "foo"]}
+                    ],
+                    "tokens_a": ["def", "foo", "(", ")", ":"],
+                    "tokens_b": ["def", "bar", "(", ")", ":"],
+                    "strategy": "complete_matches",
+                    "weighting": "sigmoid",
+                }
+            ]
+        }
+    }
+
+
+@router.post("/frequency", summary="频率分析（稀有匹配加权）")
+async def frequency_analyze_endpoint(req: FrequencyAnalyzeRequest) -> dict[str, Any]:
+    """分析匹配token的稀有度并加权，稀有token贡献更大权重
+    
+    支持四种加权策略:
+    - proportional: 比例加权
+    - linear: 线性加权
+    - quadratic: 二次加权
+    - sigmoid: S形加权（默认）
+    """
+    from ...core.analysis.frequency import analyze_frequency
+
+    return analyze_frequency(
+        matches=req.matches,
+        tokens_a=req.tokens_a,
+        tokens_b=req.tokens_b,
+        strategy=req.strategy,
+        weighting=req.weighting,
+        rarity_threshold=req.rarity_threshold,
+    )
+
+
+class MatchMergeRequest(BaseModel):
+    matches: List[dict[str, Any]]
+    max_gap_size: int = 6
+    min_neighbor_length: int = 2
+    min_required_merges: int = 6
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "matches": [
+                        {"start_a": 0, "end_a": 5, "start_b": 0, "end_b": 5},
+                        {"start_a": 7, "end_a": 12, "start_b": 7, "end_b": 12},
+                    ],
+                    "max_gap_size": 6,
+                    "min_neighbor_length": 2,
+                }
+            ]
+        }
+    }
+
+
+@router.post("/merge", summary="匹配合并（反混淆）")
+async def match_merge_endpoint(req: MatchMergeRequest) -> dict[str, Any]:
+    """合并相邻匹配片段以对抗代码混淆（插入垃圾代码）
+    
+    参数说明:
+    - max_gap_size: 允许合并的最大gap距离（默认6）
+    - min_neighbor_length: 最小邻居匹配长度（默认2）
+    - min_required_merges: 最少合并次数才应用合并（默认6）
+    """
+    from ...core.analysis.frequency import merge_matches
+
+    return merge_matches(
+        matches=req.matches,
+        max_gap_size=req.max_gap_size,
+        min_neighbor_length=req.min_neighbor_length,
+        min_required_merges=req.min_required_merges,
+    )
