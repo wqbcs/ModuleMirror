@@ -83,6 +83,7 @@ docker run -d -p 8000:8000 -e GITHUB_TOKEN=ghp_xxx modulemirror:latest
 
 | 命令 | 说明 |
 |------|------|
+| `gh-sim init` | 交互式配置向导（3步完成首次检测配置） |
 | `gh-sim detect` | 自我审视检测 |
 | `gh-sim plagiarism` | 抄袭溯源检测 |
 | `gh-sim ncd` | NCD 整体相似度 |
@@ -156,7 +157,9 @@ docker run -d -p 8000:8000 -e GITHUB_TOKEN=ghp_xxx modulemirror:latest
 | POST | `/analysis/multi-repo` | 多仓库对比检测 |
 | POST | `/analysis/compare` | 对比两次检测结果差异 |
 | POST | `/analysis/minhash-tune` | MinHash 参数调优 |
-| POST | `/analysis/cluster` | 检测结果聚类分析 |
+| POST | `/analysis/cluster` | 聚类分析（Agglomerative/Spectral） |
+| POST | `/analysis/frequency` | 频率分析（稀有匹配加权） |
+| POST | `/analysis/merge` | 匹配合并（反混淆） |
 
 ### 规则引擎
 
