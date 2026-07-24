@@ -763,7 +763,14 @@ class DetectionPipeline:
         return processed
 
     def load_rules_file(self, file_path: str) -> int:
-        """从YAML文件加载规则"""
+        """从YAML文件加载自定义规则
+
+        Args:
+            file_path: YAML规则文件路径
+
+        Returns:
+            成功加载的规则数量
+        """
         return self._rule_engine.load_from_file(file_path)
 
     def trace_lineage(
@@ -795,7 +802,11 @@ class DetectionPipeline:
         }
 
     def get_lineage_stats(self) -> Dict[str, int]:
-        """获取血统追踪统计"""
+        """获取血统追踪统计数据
+
+        Returns:
+            血统追踪统计信息字典，包含节点数、边数等
+        """
         return self._lineage_tracker.get_stats()
 
     def record_lineage(

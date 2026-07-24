@@ -111,6 +111,16 @@ class FingerprintGenerator:
         self.cache = cache
 
     def generate_fingerprints(self, module: Module) -> FingerprintSet:
+        """为单个模块生成指纹（Winnowing + AST 结构指纹）
+
+        优先从缓存中获取，缓存未命中时重新生成并写入缓存。
+
+        Args:
+            module: 代码模块
+
+        Returns:
+            模块的指纹集合，包含 Winnowing 指纹和 AST 结构指纹
+        """
         if self.cache:
             cached = self.cache.get(module)
             if cached is not None:
@@ -130,6 +140,16 @@ class FingerprintGenerator:
     def generate_fingerprints_batch(
         self, modules: Dict[str, List[Module]]
     ) -> Dict[str, FingerprintSet]:
+        """批量生成模块指纹，支持并行和缓存
+
+        根据配置决定使用线程池或进程池并行生成指纹，单模块或并行度为1时退化为串行执行。
+
+        Args:
+            modules: 按文件路径分组的模块字典 {文件路径: [模块列表]}
+
+        Returns:
+            模块指纹字典 {模块ID: 指纹集合}
+        """
         fingerprints = {}
         total = sum(len(m) for m in modules.values())
         cache_hits = 0

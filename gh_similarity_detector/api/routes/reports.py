@@ -89,6 +89,7 @@ async def get_report_summary(
     report_id: str,
     report_dir: str = Query(default="./report"),
 ) -> dict[str, Any]:
+    """获取报告摘要"""
     target = _safe_report_path(report_dir, report_id)
     if target.suffix == ".json":
         with open(target, "r", encoding="utf-8") as f:

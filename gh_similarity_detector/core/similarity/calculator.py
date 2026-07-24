@@ -109,6 +109,14 @@ class InvertedIndex:
         return self.index.get(fingerprint, [])
 
     def get_candidates(self, fingerprints: Set[int]) -> Dict[str, int]:
+        """根据指纹集合查找候选模块及其重叠计数
+
+        Args:
+            fingerprints: 待查询的 Winnowing 指纹集合
+
+        Returns:
+            候选模块ID到指纹重叠数量的映射 {模块ID: 重叠指纹数}
+        """
         candidate_counts: Dict[str, int] = defaultdict(int)
 
         for fp in fingerprints & self.index.keys():

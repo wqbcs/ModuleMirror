@@ -80,6 +80,7 @@ class EvaluateRequest(BaseModel):
 
 @router.get("", summary="列出所有规则")
 async def list_rules() -> dict[str, Any]:
+    """列出所有检测规则"""
     rules = []
     for rule in _engine._rules.values():
         rules.append({
@@ -97,6 +98,7 @@ async def list_rules() -> dict[str, Any]:
 
 @router.post("", summary="添加规则", responses={400: {"description": "规则ID已存在"}})
 async def add_rule(req: RuleCreateRequest) -> dict[str, Any]:
+    """添加自定义检测规则"""
     if req.id in _engine._rules:
         raise HTTPException(status_code=400, detail=f"Rule ID already exists: {req.id}")
     try:
@@ -124,6 +126,7 @@ async def add_rule(req: RuleCreateRequest) -> dict[str, Any]:
 
 @router.delete("/{rule_id}", summary="删除规则", responses={404: {"description": "规则不存在"}})
 async def remove_rule(rule_id: str) -> dict[str, Any]:
+    """删除指定检测规则"""
     if rule_id not in _engine._rules:
         raise HTTPException(status_code=404, detail=f"Rule not found: {rule_id}")
     _engine.remove_rule(rule_id)
@@ -132,12 +135,14 @@ async def remove_rule(rule_id: str) -> dict[str, Any]:
 
 @router.post("/load-yaml", summary="从YAML加载规则")
 async def load_yaml_rules(req: YamlLoadRequest) -> dict[str, Any]:
+    """从YAML配置批量加载检测规则"""
     count = _engine.load_from_yaml(req.yaml)
     return {"loaded": count, "total_rules": len(_engine._rules)}
 
 
 @router.post("/evaluate", summary="评估规则匹配")
 async def evaluate_rules(req: EvaluateRequest) -> dict[str, Any]:
+    """评估代码对是否匹配检测规则"""
     results = _engine.evaluate(
         similarity=req.similarity,
         source_file=req.source_file,
