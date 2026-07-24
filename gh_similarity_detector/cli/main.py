@@ -596,3 +596,86 @@ def export(input_file: str, fmt: str, output_path: str | None) -> None:
         )
 
     click.echo(t("cli.export.exported", path=output_path, format=fmt))
+
+
+@main.command()
+@click.option("--github-token", envvar="GITHUB_TOKEN", default=None, help="GitHub API Token")
+@click.option("--api-key", envvar="MODULEMIRROR_API_KEY", default=None, help="API 认证密钥")
+@click.option("--db-path", default="./fingerprint_db.sqlite", help="指纹库路径")
+@click.option("--non-interactive", is_flag=True, default=False, help="非交互模式（使用默认值）")
+def init(github_token: str, api_key: str, db_path: str, non_interactive: bool) -> None:
+    """交互式配置向导 — 3步完成首次检测配置
+    
+    步骤1: 配置 GitHub Token（可选，提升API速率限制）
+    步骤2: 配置认证密钥（可选，保护API端点）
+    步骤3: 验证配置并生成 .env 文件
+    """
+    if non_interactive:
+        _init_non_interactive(github_token, api_key, db_path)
+        return
+
+    click.echo("\n" + "=" * 50)
+    click.echo("  ModuleMirror 配置向导")
+    click.echo("=" * 50 + "\n")
+
+    if not github_token:
+        click.echo("步骤1/3: GitHub Token")
+        click.echo("  设置 GitHub Token 可将 API 速率限制从 60/h 提升至 5000/h")
+        github_token = click.prompt("  请输入 GitHub Token（留空跳过）", default="")
+        click.echo()
+
+    if not api_key:
+        click.echo("步骤2/3: API 认证密钥")
+        click.echo("  设置密钥后，所有 API 请求需携带 X-API-Key 请求头")
+        api_key = click.prompt("  请输入 API Key（留空跳过）", default="")
+        click.echo()
+
+    click.echo("步骤3/3: 验证配置")
+    click.echo(f"  GitHub Token: {'已设置 ✓' if github_token else '未设置'}")
+    click.echo(f"  API Key:      {'已设置 ✓' if api_key else '未设置'}")
+    click.echo(f"  指纹库路径:   {db_path}")
+
+    if not click.confirm("\n  确认生成 .env 文件？", default=True):
+        click.echo("  已取消配置")
+        return
+
+    env_content = _generate_env_file(github_token, api_key, db_path)
+    env_path = Path(".env")
+    env_path.write_text(env_content, encoding="utf-8")
+    click.echo(f"\n  配置文件已生成: {env_path.absolute()}")
+
+    if github_token:
+        click.echo("\n  提示: 运行以下命令验证配置:")
+        click.echo("    gh-sim detect -t https://github.com/user/repo -c https://github.com/other/repo")
+    else:
+        click.echo("\n  提示: 设置 GitHub Token 后可获得更好的体验")
+        click.echo("    编辑 .env 文件添加 GITHUB_TOKEN=ghp_xxx")
+
+
+def _init_non_interactive(github_token: str, api_key: str, db_path: str) -> None:
+    """非交互模式初始化"""
+    env_content = _generate_env_file(github_token, api_key, db_path)
+    env_path = Path(".env")
+    env_path.write_text(env_content, encoding="utf-8")
+    click.echo(f"配置文件已生成: {env_path.absolute()}")
+
+
+def _generate_env_file(github_token: str, api_key: str, db_path: str) -> str:
+    """生成 .env 文件内容"""
+    lines = [
+        "# ModuleMirror 环境配置（由 gh-sim init 生成）",
+        "",
+    ]
+    if github_token:
+        lines.append(f"GITHUB_TOKEN={github_token}")
+    else:
+        lines.append("GITHUB_TOKEN=")
+    if api_key:
+        lines.append(f"MODULEMIRROR_API_KEY={api_key}")
+    else:
+        lines.append("MODULEMIRROR_API_KEY=")
+    lines.append(f"MODULEMIRROR_DB_PATH={db_path}")
+    lines.append("MODULEMIRROR_JWT_SECRET=change-me-in-production")
+    lines.append("MODULEMIRROR_LOG_LEVEL=info")
+    lines.append("")
+    return "\n".join(lines)
