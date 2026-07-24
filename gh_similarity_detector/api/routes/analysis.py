@@ -171,3 +171,54 @@ async def tune_minhash_params_endpoint(req: MinHashTuneRequest) -> dict[str, Any
         },
         "recommended_defaults": {"num_perm": 128, "l": 64},
     }
+
+
+class ClusterRequest(BaseModel):
+    results: List[dict[str, Any]]
+    algorithm: str = "spectral"
+    metric: str = "average_similarity"
+    n_clusters: Optional[int] = None
+    min_cluster_size: int = 2
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "results": [
+                        {"source": "repo-a", "target": "repo-b", "similarity": 0.85},
+                        {"source": "repo-a", "target": "repo-c", "similarity": 0.72},
+                        {"source": "repo-b", "target": "repo-c", "similarity": 0.68},
+                    ],
+                    "algorithm": "spectral",
+                    "metric": "average_similarity",
+                }
+            ]
+        }
+    }
+
+
+@router.post("/cluster", summary="检测结果聚类分析")
+async def cluster_results_endpoint(req: ClusterRequest) -> dict[str, Any]:
+    """对检测结果执行聚类分析，将相似项目分组为可疑簇
+    
+    支持两种算法:
+    - agglomerative: 层次聚类（自底向上合并）
+    - spectral: 谱聚类（基于图割，默认）
+    
+    支持多种相似度度量:
+    - average_similarity: 平均相似度（默认）
+    - minimum_similarity: 最小相似度
+    - maximum_similarity: 最大相似度
+    - intersection: 匹配交集
+    - longest_match: 最长匹配长度
+    """
+    from ...core.analysis.clustering import cluster_detection_results
+
+    result = cluster_detection_results(
+        results=req.results,
+        algorithm=req.algorithm,
+        metric=req.metric,
+        n_clusters=req.n_clusters,
+        min_cluster_size=req.min_cluster_size,
+    )
+    return result.to_dict()

@@ -52,6 +52,12 @@ from ..similarity.polars_df import SimilarityDataFrame
 from ..comparison.batch_detector import BatchDetector, BatchTask
 from ..comparison.multi_repo import MultiRepositoryComparator
 from ..comparison.result_comparator import ResultComparator
+from ..analysis.clustering import (
+    ClusteringEngine,
+    ClusteringAlgorithm,
+    ClusterMetric,
+    ClusteringResult,
+)
 from ..similarity.minhash_tuner import tune_minhash_params, recommend_params, HAS_DATASKETCH
 from ...infrastructure.observability.metrics import MetricsCollector
 
@@ -1125,3 +1131,31 @@ class DetectionPipeline:
                 for r in results
             ],
         }
+
+    @staticmethod
+    def cluster_results(
+        results: List[Dict[str, Any]],
+        algorithm: str = "spectral",
+        metric: str = "average_similarity",
+        n_clusters: Optional[int] = None,
+        min_cluster_size: int = 2,
+    ) -> ClusteringResult:
+        """对检测结果执行聚类分析
+        
+        Args:
+            results: 检测结果列表
+            algorithm: 聚类算法（agglomerative/spectral）
+            metric: 相似度度量（average_similarity等）
+            n_clusters: 簇数量（None自动推断）
+            min_cluster_size: 最小簇大小
+            
+        Returns:
+            ClusteringResult聚类结果
+        """
+        engine = ClusteringEngine(
+            algorithm=ClusteringAlgorithm(algorithm),
+            metric=ClusterMetric(metric),
+            n_clusters=n_clusters,
+            min_cluster_size=min_cluster_size,
+        )
+        return engine.fit(results)
