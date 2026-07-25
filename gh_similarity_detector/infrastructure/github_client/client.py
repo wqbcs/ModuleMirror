@@ -26,6 +26,8 @@ from ... import __version__
 
 
 class GitHubAPIError(Exception):
+    """GitHub API 请求异常基类"""
+
     def __init__(self, status_code: int, message: str, retry_after: Optional[int] = None):
         self.status_code = status_code
         self.message = message

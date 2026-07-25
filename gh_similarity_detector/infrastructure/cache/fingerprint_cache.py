@@ -68,9 +68,25 @@ class FingerprintCache:
 
     @staticmethod
     def compute_content_hash(source_code: str) -> str:
+        """计算源代码内容的 SHA256 哈希值
+
+        Args:
+            source_code: 源代码字符串
+
+        Returns:
+            十六进制格式的 SHA256 哈希值
+        """
         return hashlib.sha256(source_code.encode("utf-8")).hexdigest()
 
     def get(self, module: Module) -> Optional[FingerprintSet]:
+        """从缓存中获取模块的指纹集合
+
+        Args:
+            module: 模块实体
+
+        Returns:
+            指纹集合，缓存未命中或内容已变更时返回 None
+        """
         cache_key = module.id or ""
         content_hash = self.compute_content_hash(module.source_code)
 
@@ -86,6 +102,12 @@ class FingerprintCache:
         return None
 
     def put(self, module: Module, fp_set: FingerprintSet) -> None:
+        """将模块的指纹集合写入缓存
+
+        Args:
+            module: 模块实体
+            fp_set: 指纹集合
+        """
         content_hash = self.compute_content_hash(module.source_code)
         mid = module.id or ""
         self._cache[mid] = {
@@ -98,20 +120,29 @@ class FingerprintCache:
         self._evict()
 
     def flush(self) -> None:
+        """将内存中的缓存持久化到磁盘文件"""
         self._save()
         logger.info(f"指纹缓存已保存: {len(self._cache)} 条记录")
 
     def invalidate(self, module_id: str) -> None:
+        """使指定模块的缓存条目失效
+
+        Args:
+            module_id: 模块标识符
+        """
         self._cache.pop(module_id, None)
 
     def clear(self) -> None:
+        """清空所有缓存条目并持久化"""
         self._cache.clear()
         self._save()
 
     @property
     def size(self) -> int:
+        """当前缓存条目数量"""
         return len(self._cache)
 
     @property
     def max_entries(self) -> int:
+        """缓存最大条目数"""
         return self._max_entries

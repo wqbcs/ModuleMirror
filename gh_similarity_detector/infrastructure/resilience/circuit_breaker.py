@@ -18,6 +18,8 @@ from ...utils.logger import logger
 
 
 class CircuitState(Enum):
+    """电路断路器状态枚举"""
+
     CLOSED = "closed"
     OPEN = "open"
     HALF_OPEN = "half_open"
@@ -61,6 +63,11 @@ class CircuitBreaker:
 
     @property
     def state(self) -> CircuitState:
+        """获取当前电路状态，若 OPEN 状态超时则自动转为 HALF_OPEN
+
+        Returns:
+            当前电路状态
+        """
         if self._state == CircuitState.OPEN:
             if self._last_failure_time and (
                 time.monotonic() - self._last_failure_time >= self.recovery_timeout
@@ -71,6 +78,7 @@ class CircuitBreaker:
         return self._state
 
     def record_success(self) -> None:
+        """记录一次成功调用，HALF_OPEN 状态下连续成功达到阈值后恢复为 CLOSED"""
         if self._state == CircuitState.HALF_OPEN:
             self._success_count += 1
             if self._success_count >= self.success_threshold:
@@ -81,6 +89,7 @@ class CircuitBreaker:
             self._failure_count = 0
 
     def record_failure(self) -> None:
+        """记录一次失败调用，CLOSED 状态下连续失败达到阈值后断开为 OPEN"""
         self._failure_count += 1
         self._last_failure_time = time.monotonic()
 
@@ -96,6 +105,11 @@ class CircuitBreaker:
                 )
 
     def allow_request(self) -> bool:
+        """判断是否允许发起请求
+
+        Returns:
+            CLOSED 或 HALF_OPEN 状态返回 True，OPEN 状态返回 False
+        """
         state = self.state
         if state == CircuitState.CLOSED:
             return True
@@ -104,6 +118,7 @@ class CircuitBreaker:
         return False
 
     def check(self) -> None:
+        """检查电路状态，若不允许请求则抛出 CircuitBreakerOpenError"""
         if not self.allow_request():
             elapsed = time.monotonic() - (self._last_failure_time or 0)
             retry_after = self.recovery_timeout - elapsed
@@ -111,12 +126,18 @@ class CircuitBreaker:
 
     @property
     def retry_after(self) -> float:
+        """距离电路恢复还可重试的剩余秒数
+
+        Returns:
+            剩余等待时间（秒），无失败记录时返回 0.0
+        """
         if self._last_failure_time is None:
             return 0.0
         elapsed = time.monotonic() - self._last_failure_time
         return max(0.0, self.recovery_timeout - elapsed)
 
     def reset(self) -> None:
+        """重置电路断路器为 CLOSED 状态，清除所有计数"""
         self._state = CircuitState.CLOSED
         self._failure_count = 0
         self._success_count = 0
@@ -139,6 +160,11 @@ class CircuitBreaker:
 
     @property
     def stats(self) -> dict[str, Any]:
+        """获取电路断路器当前统计信息
+
+        Returns:
+            包含 name、state、failure_count、success_count 等字段的字典
+        """
         return {
             "name": self.name,
             "state": self.state.value,
